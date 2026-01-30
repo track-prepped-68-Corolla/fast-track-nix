@@ -22,6 +22,8 @@
     # The desktop environment and display manager. turn it on by adding with ft.desktop.cosmic.enable = true;
     ./system/cosmic.nix
 
+    ./hardware/vm.nix
+
     # --- 2. EXTERNAL MODULES (From Flake Inputs) ---
     # These bring in tools from the internet that we defined in flake.nix.
     

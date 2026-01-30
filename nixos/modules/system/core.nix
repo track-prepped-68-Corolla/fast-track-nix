@@ -61,6 +61,8 @@
 
   # --- 7. CORE PACKAGES ---
   # Tools that should be present on ANY system, even a headless server.
+  programs.zsh.enable = true; #zsh is the default shell in fsat track
+
   environment.systemPackages = with pkgs; [
     nano          # Text Editor (Emergency backup if NeoVim breaks)
     git           # Version Control

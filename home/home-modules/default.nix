@@ -64,7 +64,7 @@
     # - Installs 'lazydocker' dashboard.
     # - Configures container aliases (docker -> podman).
     # - This is OPT-IN via 'ft.containers.enable = true'.
-    ./podman-user.nix
+    #./podman-user.nix
     
     # --------------------------------------------------------------------------
     # 4. GAMING (Coming Soon...)

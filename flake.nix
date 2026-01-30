@@ -22,10 +22,6 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     # Note: These are Home Manager modules (User Desktop Configs)
-    plasma-manager.url = "github:nix-community/plasma-manager";
-    plasma-manager.inputs.nixpkgs.follows = "nixpkgs";
-    plasma-manager.inputs.home-manager.follows = "home-manager";
-
     cosmic-manager.url = "github:HeitorAugustoLN/cosmic-manager";
     cosmic-manager.inputs.nixpkgs.follows = "nixpkgs";
     cosmic-manager.inputs.home-manager.follows = "home-manager";
@@ -42,7 +38,11 @@
       # To add a new machine, just add its name here and create 
       # the folder: ./hosts/<name>/default.nix
       systems = [ 
-        "spec" 
+        "strix" 
+        "talos"
+        "rog"
+        "t14"
+        "spec"
         "proto"         
       ];
       
@@ -69,20 +69,11 @@
           modules = [
             # 1. The Core Aggregator 
             # This imports all the common "plumbing" (Home Manager, Stylix, Sops)
-            ./modules/default.nix
+            ./nixos/modules/default.nix
 
             # 2. The Host Specific Config
             # This dynamically imports the folder matching the hostname
-            ./hosts/${host}/default.nix
-
-            # 3. User Definitions
-            # Instead of a separate file, we define users directly here for visibility.
-            # This maps to options defined in modules/system/user.nix
-            {
-              mainuser = "driver";
-              superUsers = [ "admin" ];
-              normalUsers = [ "guest" ];
-            }
+            ./nixos/hosts/${host}/default.nix
           ];
         }
       );

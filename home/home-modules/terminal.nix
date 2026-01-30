@@ -127,19 +127,37 @@
   # ----------------------------------------------------------------------------
   home.packages = with pkgs; [
     # Foundation
-    git curl wget gnutar gzip unzip zip psmisc which tree
-    
+    git 
+    curl 
+    wget 
+    gnutar 
+    gzip 
+    unzip 
+    zip 
+    psmisc 
+    which 
+    tree    
     # System Info
-    fastfetch cpufetch
-
+    fastfetch 
+    cpufetch
     # Modern Core
-    bat eza btop fd ripgrep du-dust
-    
+    #kitty
+    #neovim
+    bat 
+    eza 
+    btop 
+    fd 
+    ripgrep 
+    dust    
     # Workflow
-    yazi lazygit tealdeer jq gping
-    
+    yazi 
+    lazygit 
+    tealdeer 
+    jq 
+    gping
     # Internet
-    browsh ddgr
+    browsh 
+    ddgr
   ];
 
   # ----------------------------------------------------------------------------
