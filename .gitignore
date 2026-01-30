@@ -1,2 +1,4 @@
 *.pub
 *.qcow2
+id_ed25519_sk_rk
+id_ed25519_sk_rk_fasttrack
