@@ -5,7 +5,7 @@
   #  FAST TRACK NIX - HOST CONFIGURATION
   # -------------------------------------------------------------------------
   #
-  #  This file defines the unique identity of this specific machine ("rog").
+  #  This file defines the unique identity of this specific machine ("talos").
   #
   #  WHERE IS THE REST?
   #  You might notice this file is very short! That is intentional.
@@ -46,9 +46,12 @@
   #  3. If you want to disable something, just set it to 'false' (or delete it).
   # -------------------------------------------------------------------------
 
-  #ft.gaming.enable = true;         # Steam, Gamemode, Lutris, MangoHud
-  ft.desktop.cosmic.enable = true; # cosmic Desktop Environment
-  #ft.drivers.nvidia.enable = true; # Proprietary Drivers (Required for RTX cards)
+  # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
+#ft.gaming.enable = true;
+  ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
+  # NVIDIA Drivers: Uncomment to enable proprietary NVIDIA drivers (required for RTX cards)
+  #ft.drivers.nvidia.enable = true;
   
-  # ft.virtualisation.podman.enable = true; # Containers & Docker compatibility
+  # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
+  #ft.virtualisation.podman.enable = true;
 }
