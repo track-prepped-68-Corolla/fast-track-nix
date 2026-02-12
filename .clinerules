@@ -1,0 +1,27 @@
+# Fast-Track-Nix Autonomous Workflow Rules
+
+## 1. Source of Truth: todo.md
+- Use `todo.md` as your primary task list.
+- Check off items as you complete them.
+- If you identify a sub-task or a bug, append it to `todo.md` under a "Pending Review" header.
+
+## 2. The Git Protocol (Safety First)
+- **Branching:** NEVER work on the `main` or `master` branch. Create a session branch: `cline/dev-[task-name]-[date]`.
+- **Atomic Commits:** Commit after every successful logical change. Use clear messages like `feat(zsh): add syntax highlighting` or `fix(kitty): correct font path`.
+- **Rollback:** If a change causes a build failure that you cannot fix in 2 iterations, `git revert` the last commit and stop.
+
+## 3. Nix Integrity Checks
+- Before committing, you MUST run:
+  1. `nix flake check` to verify flake syntax and locks.
+  2. `nixos-rebuild build --flake .#spec` (or the current dev host) to ensure the config compiles.
+- DO NOT commit code that breaks the evaluation.
+
+## 4. Personal Config (ft-home) Constraints
+- **Symlinks:** Always use `config.lib.dag.entryAfter ["writeBoundary"] { ... mkOutOfStoreSymlink ... }` for dotfiles.
+- **Portability:** Ensure paths used in symlinks are derived from variables where possible, so the "sanitization" process remains easy later.
+- **Privacy:** If you see plain-text secrets, flag them in `todo.md` for `sops-nix` integration rather than committing them.
+
+## 5. Review & Handoff
+- Create a `CLINE_LOG.md` at the end of your session.
+- List: Branches created, Files modified, and Build status.
+- State exactly where you stopped so I can resume in the morning.

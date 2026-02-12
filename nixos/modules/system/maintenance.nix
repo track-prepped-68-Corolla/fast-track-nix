@@ -1,50 +1,109 @@
 { config, lib, pkgs, ... }:
 
 ################################################################################
-# FAST TRACK MAINTENANCE MODULE ("ft" CLI)
+# SYSTEM MAINTENANCE MODULE
 # ------------------------------------------------------------------------------
-# A unified, aesthetic CLI for managing your NixOS system.
-#
-# COMMANDS:
-# ft fmt                        -> Format all .nix files.
-# ft check                      -> Verify flake validity (no build).
-# ft test                       -> Dry run / Temporary switch (reboot reverts).
-# ft upd | update               -> Update flake.lock (get new package versions).
-# ft gen | switch | generate    -> Build -> Switch -> Ask to Commit.
-# ft pull                       -> Git pull and sync.
-# ft push                       -> Git push to remote.
+# This module provides a powerful and user-friendly CLI (`nh` and `ft` commands)
+# for managing your NixOS flake configuration. It includes features for
+# formatting code, checking flake validity, testing configurations, updating
+# flake inputs, switching generations, and synchronizing with Git repositories.
 ################################################################################
 
 let
-  cfg = config.ft.maintenance;
+  cfg = config.ft.system.maintenance;
 
-  # ----------------------------------------------------------------------------
-  # THE "ft" APPLICATION
-  # ----------------------------------------------------------------------------
+  # --- Format Command ---
+  # Formats all .nix files within the flake directory using nixfmt-rfc-style.
+  formatCmd = ''
+    echo "--- ✨ Formatting ---"
+    ${pkgs.findutils}/bin/find "$FLAKE_DIR" -name "*.nix" -exec ${pkgs.nixfmt-rfc-style}/bin/nixfmt {} +
+  '';
+
+  # --- Script 1: nh-test (Dry Run / Temporary Switch) ---
+  # Tests the configuration without making permanent changes. Reboot to revert.
+  nhTestScript = pkgs.writeShellScriptBin "nh-test" ''
+    set -e
+    FLAKE_DIR="${cfg.flakeDir}"
+
+    ${formatCmd}
+
+    echo "--- 🛠️  Staging ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" add .
+
+    echo "--- 📄 Source Code Changes (Delta) ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff --cached | ${pkgs.delta}/bin/delta
+
+    echo "--- 🧪 Running Test ---"
+    ${pkgs.nh}/bin/nh os test "$FLAKE_DIR" --ask
+    echo "✅ Test complete. Reboot to revert." 
+  '';
+
+  # --- Script 2: nh-update (Commit & Switch) ---
+  # Updates flake inputs, builds, switches to the new generation, and prompts for a Git commit.
+  nhUpdateScript = pkgs.writeShellScriptBin "nh-update" ''
+    set -e
+    FLAKE_DIR="${cfg.flakeDir}"
+
+    ${formatCmd}
+
+    echo "--- 🛠️  Staging ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" add .
+
+    echo "--- 🔍 Previewing Build ---"
+    ${pkgs.nh}/bin/nh os test "$FLAKE_DIR" --dry
+
+    echo ""
+    echo "--- 📄 Source Code Changes (Delta) ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff --cached | ${pkgs.delta}/bin/delta
+
+    echo ""
+    read -p "Apply and commit? [y/N]: " choice
+    if [[ "$choice" =~ ^[yY]$ ]]; then
+      echo "--- 🚀 Switching ---"
+      ${pkgs.nh}/bin/nh os switch "$FLAKE_DIR"
+
+      echo "--- 💾 Committing ---"
+      read -p "Commit message: " msg
+      ${pkgs.git}/bin/git -C "$FLAKE_DIR" commit -m "$msg"
+      echo "✅ Update Complete!"
+    else
+      echo "🛑 Cancelled."
+    fi
+  '' ;
+
+  # --- Script 3: nh-sync (Pull & Switch) ---
+  # Pulls latest changes from Git, applies them, and switches the system.
+  nhSyncScript = pkgs.writeShellScriptBin "nh-sync" ''
+    set -e
+    FLAKE_DIR="${cfg.flakeDir}"
+    echo "--- ⬇️  Pulling updates ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" pull --rebase --autostash
+
+    echo "--- 📄 Incoming Changes (Delta) ---"
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff HEAD@{1}..HEAD | ${pkgs.delta}/bin/delta
+
+    echo "--- 🚀 Building and Switching ---"
+    ${pkgs.nh}/bin/nh os switch "$FLAKE_DIR" --ask
+    echo "✅ System updated!"
+  '';
+
+  # --- The 'ft' Application CLI ---
+  # This consolidates all maintenance scripts under a single, easy-to-use command.
   ftScript = pkgs.writeShellApplication {
     name = "ft";
-    
-    # 1. RUNTIME INPUTS (Dependencies)
-    # These tools are automatically available in the script's PATH.
     runtimeInputs = with pkgs; [
-      git               
-      lix               # Faster Nix implementation
-      nixfmt-rfc-style  
-      nh                # Build helper
-      delta             # Diff visualizer
-      findutils         
-      nvd               
+      git
+      lix
+      nh
+      nixfmt-rfc-style
+      delta
+      findutils
+      nvd # For 'nvd diff' if desired, not used directly in current scripts
     ];
-
-    # 2. THE SCRIPT
     text = ''
-      set -e 
-
-      # --- CONFIGURATION ---
-      # This variable is injected from your Host Configuration file.
+      set -e
       FLAKE_DIR="${cfg.flakeDir}"
-      
-      # --- STYLING (Themed via Stylix) ---
+
       BOLD=$(tput bold)
       BLUE=$(tput setaf 4)
       GREEN=$(tput setaf 2)
@@ -55,129 +114,62 @@ let
       success() { echo -e "\n''${BOLD}''${GREEN}✅ $1''${RESET}"; }
       error()   { echo -e "\n''${BOLD}''${RED}❌ $1''${RESET}"; }
 
-      # --- 1. FORMAT ---
-      do_fmt() {
-        header "✨ Formatting Code"
-        find "$FLAKE_DIR" -name "*.nix" -exec nixfmt {} +
-        success "Code formatted."
-      }
-
-      # --- 2. CHECK ---
-      do_check() {
-        do_fmt
-        header "🛡️  Checking Flake Validity"
-        lix flake check "$FLAKE_DIR" --show-trace
-        success "Flake is valid."
-      }
-
-      # --- 3. TEST (Dry Run) ---
-      do_test() {
-        do_fmt
-        header "🧪 Testing Configuration (Dry Run)"
-        
-        # Show Side-by-Side Diff
-        git -C "$FLAKE_DIR" add .
-        git -C "$FLAKE_DIR" diff --cached | delta --side-by-side
-
-        nh os test "$FLAKE_DIR" --ask
-        success "Test complete. Reboot to revert changes."
-      }
-
-      # --- 4. UPDATE (Lockfile only) ---
-      do_update() {
-        header "🔄 Updating Flake Inputs (flake.lock)"
-        lix flake update --flake "$FLAKE_DIR"
-        success "Flake inputs updated. Run 'ft gen' to apply them."
-      }
-
-      # --- 5. GENERATE (Build & Switch) ---
-      do_generate() {
-        do_fmt
-        header "🚀 Generating System (Build & Switch)"
-        
-        nh os switch "$FLAKE_DIR" --ask
-
-        echo ""
-        read -p "❓ System Active. Stage and Commit changes? [y/N]: " choice
-        if [[ "$choice" =~ ^[yY]$ ]]; then
-          header "💾 Committing"
-          
-          git -C "$FLAKE_DIR" add .
-          
-          # Show Side-by-Side Diff before committing
-          git -C "$FLAKE_DIR" diff --cached | delta --side-by-side
-          
-          echo ""
-          read -p "📝 Commit Message: " msg
-          git -C "$FLAKE_DIR" commit -m "$msg"
-          success "Changes committed to git."
-        else
-          echo "Changes applied but NOT committed."
-        fi
-      }
-
-      # --- 6. GIT SYNC ---
-      do_pull() {
-        header "⬇️  Pulling from Remote"
-        git -C "$FLAKE_DIR" pull --rebase --autostash
-        
-        header "📄 Incoming Changes"
-        # Show Side-by-Side Diff of what just arrived
-        git -C "$FLAKE_DIR" diff HEAD@{1}..HEAD | delta --side-by-side
-        
-        success "Repo synced."
-      }
-
-      do_push() {
-        header "⬆️  Pushing to Remote"
-        if [[ -n $(git -C "$FLAKE_DIR" status --porcelain) ]]; then
-           error "You have uncommitted changes. Run 'ft gen' or commit manually first."
-           exit 1
-        fi
-        git -C "$FLAKE_DIR" push
-        success "Pushed to remote."
-      }
-
-      # --- ROUTING ---
       case "$1" in
-        fmt)                     do_fmt ;;
-        check)                   do_check ;;
-        test)                    do_test ;;
-        upd|update)              do_update ;;
-        gen|switch|generate)     do_generate ;;
-        pull)                    do_pull ;;
-        push)                    do_push ;;
-        *)
-          echo "Usage: ft {fmt|check|test|upd|gen|pull|push}"
-          exit 1
-          ;;
+        fmt)                     ${formatCmd} ; success "Code formatted." ;;
+        check)                   ${formatCmd} ; header "🛡️  Checking Flake Validity" ; lix flake check "$FLAKE_DIR" --show-trace ; success "Flake is valid." ;;
+        test)                    ${nhTestScript}/bin/nh-test ;;
+        upd|update)              header "🔄 Updating Flake Inputs (flake.lock)" ; lix flake update --flake "$FLAKE_DIR" ; success "Flake inputs updated." ;;
+        gen|switch|generate)     ${nhUpdateScript}/bin/nh-update ;;
+        pull)                    ${nhSyncScript}/bin/nh-sync ;;
+        push)                    header "⬆️  Pushing to Remote" ; if [[ -n $(git -C "$FLAKE_DIR" status --porcelain) ]]; then error "You have uncommitted changes. Run 'ft gen' or commit manually first." ; exit 1 ; fi ; git -C "$FLAKE_DIR" push ; success "Pushed to remote." ;;
+        clean)                   nh clean all ; success "Nix store cleaned." ;;
+        *)                       echo "Usage: ft {fmt|check|test|upd|gen|pull|push|clean}" ; exit 1 ;;
       esac
     '';
   };
 
 in
 {
-  # ----------------------------------------------------------------------------
-  # OPTIONS
-  # ----------------------------------------------------------------------------
-  options.ft.maintenance = {
-    enable = lib.mkEnableOption "the 'ft' maintenance CLI";
-    
+  options.ft.system.maintenance = {
+    enable = lib.mkEnableOption "System maintenance CLI (nh and ft commands)";
+
     flakeDir = lib.mkOption {
       type = lib.types.str;
+      default = "/home/joe/git/ft-home"; # Default to current flake directory
       description = "The absolute path to your NixOS flake directory.";
-      example = "/home/username/git/nixos-config";
+      example = "/home/username/git/my-nixos-config";
     };
   };
 
-  # ----------------------------------------------------------------------------
-  # CONFIG
-  # ----------------------------------------------------------------------------
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ ftScript ];
+    # Add the custom scripts and tools to the system path
+    environment.systemPackages = [
+      pkgs.lix
+      pkgs.nh
+      pkgs.nvd
+      pkgs.nix-output-monitor # For enhanced Nix build output
+      pkgs.nixfmt-rfc-style
+      pkgs.findutils
+      pkgs.delta
+      pkgs.git
+      nhTestScript
+      nhUpdateScript
+      nhSyncScript
+      ftScript
+    ];
 
+    # Set NH_FLAKE environment variable for nh commands
     environment.sessionVariables = {
       NH_FLAKE = cfg.flakeDir;
+    };
+
+    # Define shell aliases for convenience
+    environment.shellAliases = {
+      try = "nh-test";
+      up = "nh-update";
+      down = "nh-sync";
+      cl = "nh clean all";
+      fmt = "nixfmt"; # Direct nixfmt alias for quick formatting
     };
   };
 }
