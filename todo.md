@@ -18,8 +18,10 @@
 - [x] Create `nixos/modules/system/virt.nix` for virtualization (e.g., QEMU/KVM) setup.
 - [x] Compare `nixos-config/modules/system/podman.nix` and `ft-home/nixos/modules/system/podman-system.nix`. Consolidate and enhance the Podman system module, potentially including NVIDIA container toolkit integration as an option.
 - [x] Compare `modules/system/nh.nix` to `nixos/modules/system/maintnenace.nix` for `nh` CLI tool configuration and prompt the user about desired functionality.
-- [ ] Evaluate apps installed across all nix files in nixos-config and add items to the todo list to add these functions to ft-home.
-
+- [ ] Evaluate apps installed across all nix files in nixos-config and compare to the ones available in ft-home. add items to todo.md to add any missing ones. group into modules as necessary.
+- [ ] Create `nixos/modules/services/sddm.nix` to configure the SDDM display manager.
+- [ ] Create `nixos/modules/system/cockpit.nix` for web-based system administration.
+- [ ] Create `nixos/modules/themes/catppuccin.nix` for system-wide Catppuccin theme integration.
 
 ## Areas for Improvement
 - [ ] Consolidate similar modules (e.g., `nvidia.nix` and `amd.nix` if they share common structures) by creating a more generic `gpu.nix` module with conditional logic.
