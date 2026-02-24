@@ -36,12 +36,14 @@ in
   # --- THE IMPLEMENTATION (Config) ---
   config = {
 
+
     # 1. ENABLE YUBIKEY / U2F AUTHENTICATION
     security.pam.u2f = {
       enable = true;
       settings = {
         cue = true; # Tells you to tap the key
         interactive = true;
+        control = "sufficient";
         authFile = pkgs.writeText "u2f_keys" ''
         admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN
       '';
@@ -61,11 +63,10 @@ in
         admin = {
           isNormalUser = true;
           extraGroups = commonGroups ++ [ "wheel" ]; # 'wheel' = sudo access
-          # Password disabled; YubiKey is the only way in
           initialPassword = lib.mkDefault "snp"; 
-          openssh.authorizedKeys.keys = [ 
-            "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINTWBO+wJvD/8Dili8rdo9fNvNLxYnzTZxv90Y2AK0WfAAAADXNzaDpmYXN0dHJhY2s= ssh:fasttrack"
-          ];
+          #openssh.authorizedKeys.keys = [ 
+           # "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINTWBO+wJvD/8Dili8rdo9fNvNLxYnzTZxv90Y2AK0WfAAAADXNzaDpmYXN0dHJhY2s= ssh:fasttrack"
+          #];
           shell = pkgs.zsh;
         };
       }

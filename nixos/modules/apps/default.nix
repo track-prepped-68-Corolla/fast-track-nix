@@ -45,7 +45,7 @@
 
       # Text Editors (Basic system-wide)
       micro            # A modern and intuitive terminal-based text editor
-      neovim           # A Vim-fork focused on extensibility and usability
+      #neovim           # A Vim-fork focused on extensibility and usability
     ];
   };
 }

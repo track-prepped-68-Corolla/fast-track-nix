@@ -74,5 +74,17 @@
     # WHAT IT WILL DO:
     # - Install Steam, Proton, and performance tweaks.
     # - ./gaming.nix
+    
+    # --------------------------------------------------------------------------
+    # 5. IDE & EDITOR (LazyVim)
+    # --------------------------------------------------------------------------
+    # Path: ./lazyvim.nix
+    #
+    # WHAT IT WILL DO:
+    # - Install Neovim and core system dependencies (ripgrep, fd, gcc).
+    # - Provision LSPs and formatters for Python, Go, Rust, C/C++, Web, XML, and Nix.
+    # - Create a mutable, out-of-store symlink to your LazyVim Lua dotfiles.
+    # - Configured to toggle on/off via `ft.lazyvim.enable`.
+    ./lazyvim.nix
   ];
 }
