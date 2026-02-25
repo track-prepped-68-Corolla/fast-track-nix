@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # SYSTEM CONTAINER MODULE (The Engine)
@@ -38,11 +43,11 @@ in
   # ----------------------------------------------------------------------------
   # This block only executes if the switch above is set to 'true'.
   config = lib.mkIf cfg.enable {
-    
+
     # --- The Core Engine ---
     virtualisation.podman = {
       enable = true;
-      
+
       # "Docker Compatibility Mode"
       # This creates a symlink at /run/docker.sock pointing to podman.sock.
       # WHY? Many tools (VS Code, old scripts, third-party apps) look for Docker.
@@ -63,9 +68,9 @@ in
     # We install these here so they are available to all users (including root).
     environment.systemPackages = with pkgs; [
       podman-compose # The standard tool for running multi-container apps (docker-compose)
-      distrobox      # The "Escape Hatch" (allows running Ubuntu/Arch/Fedora inside NixOS)
+      distrobox # The "Escape Hatch" (allows running Ubuntu/Arch/Fedora inside NixOS)
     ];
-    
+
     # --- Kernel Tweaks ---
     # By default, Linux prevents non-root users from binding to "low" ports (<1024).
     # We lower this limit to port 80.

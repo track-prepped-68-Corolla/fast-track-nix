@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # SEARXNG CONTAINER MODULE
@@ -89,7 +94,7 @@ in
 
         extraOptions = [
           "--network=${networkName}" # Connect to the custom network
-          "--dns=1.1.1.1"           # Use a reliable DNS resolver within the container
+          "--dns=1.1.1.1" # Use a reliable DNS resolver within the container
         ];
       };
     };

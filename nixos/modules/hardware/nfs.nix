@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.ft.nfs;
@@ -26,17 +31,20 @@ in
     boot.supportedFilesystems = [ "nfs" ];
 
     # mapAttrs' lets us pick the key (mountPoint) manually
-    fileSystems = lib.mapAttrs' (name: value: lib.nameValuePair value.mountPoint {
-      device = value.remotePath;
-      fsType = "nfs";
-      options = [
-        "x-systemd.automount"
-        "noauto"
-        "x-systemd.idle-timeout=600"
-        "nfsvers=4.1"
-        "soft"
-        "intr"
-      ];
-    }) cfg.mounts;
+    fileSystems = lib.mapAttrs' (
+      name: value:
+      lib.nameValuePair value.mountPoint {
+        device = value.remotePath;
+        fsType = "nfs";
+        options = [
+          "x-systemd.automount"
+          "noauto"
+          "x-systemd.idle-timeout=600"
+          "nfsvers=4.1"
+          "soft"
+          "intr"
+        ];
+      }
+    ) cfg.mounts;
   };
 }

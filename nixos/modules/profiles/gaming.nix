@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # UNIVERSAL GAMING PROFILE MODULE
@@ -39,7 +44,11 @@ in
 
     # The GPU vendor for hardware optimizations (e.g., "amd", "nvidia", "intel").
     gpuVendor = lib.mkOption {
-      type = lib.types.enum [ "amd" "intel" "nvidia" ];
+      type = lib.types.enum [
+        "amd"
+        "intel"
+        "nvidia"
+      ];
       default = "amd";
       description = "GPU vendor for hardware optimizations (amd, intel, nvidia).";
     };
@@ -52,11 +61,11 @@ in
 
     # Essential gaming utilities and launchers.
     environment.systemPackages = with pkgs; [
-      mangohud           # In-game overlay for performance metrics
-      protonup-qt        # GUI for managing Proton versions
-      steamtinkerlaunch  # Utility for configuring Steam games
-      goverlay           # GUI for MangoHud and ReplaySorcery
-      heroic             # Launcher for Epic Games Store and GOG
+      mangohud # In-game overlay for performance metrics
+      protonup-qt # GUI for managing Proton versions
+      steamtinkerlaunch # Utility for configuring Steam games
+      goverlay # GUI for MangoHud and ReplaySorcery
+      heroic # Launcher for Epic Games Store and GOG
     ];
 
     # 2. Steam Client Configuration

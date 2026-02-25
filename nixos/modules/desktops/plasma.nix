@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # KDE PLASMA DESKTOP MODULE
@@ -27,11 +32,11 @@ in
     # 3. Install common KDE-specific system packages
     # These are applications that are typically part of a full KDE experience.
     environment.systemPackages = with pkgs; [
-      kdePackages.kate           # Advanced text editor
-      kdePackages.kcalc          # Calculator
-      kdePackages.spectacle      # Screenshot tool
+      kdePackages.kate # Advanced text editor
+      kdePackages.kcalc # Calculator
+      kdePackages.spectacle # Screenshot tool
       kdePackages.partitionmanager # Disk partitioning tool
-      kdePackages.krdc           # Remote desktop client
+      kdePackages.krdc # Remote desktop client
     ];
 
     # 4. Exclude unnecessary Plasma packages

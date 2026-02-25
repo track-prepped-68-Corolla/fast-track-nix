@@ -65,7 +65,7 @@
     # - Configures container aliases (docker -> podman).
     # - This is OPT-IN via 'ft.containers.enable = true'.
     #./podman-user.nix
-    
+
     # --------------------------------------------------------------------------
     # 4. GAMING (Coming Soon...)
     # --------------------------------------------------------------------------
@@ -74,7 +74,7 @@
     # WHAT IT WILL DO:
     # - Install Steam, Proton, and performance tweaks.
     # - ./gaming.nix
-    
+
     # --------------------------------------------------------------------------
     # 5. IDE & EDITOR (LazyVim)
     # --------------------------------------------------------------------------

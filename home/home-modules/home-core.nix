@@ -19,6 +19,6 @@
   # Enable generic Linux support (useful if using non-NixOS Linux)
   targets.genericLinux.enable = true;
 
-  #force programs to put their dotfiles in an orderly fashion 
+  #force programs to put their dotfiles in an orderly fashion
   xdg.enable = true;
 }

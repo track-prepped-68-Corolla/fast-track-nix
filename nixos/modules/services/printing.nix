@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # PRINTING SERVICE MODULE
@@ -49,12 +54,14 @@ in
       cups-pdf.enable = cfg.enableVirtualPdfPrinter;
 
       # Add specified extra drivers.
-      drivers = cfg.extraDrivers ++ (with pkgs; [
-        # Common drivers often useful even if not explicitly listed
-        # gutenprint
-        # hplip
-        # brlaser
-      ]);
+      drivers =
+        cfg.extraDrivers
+        ++ (with pkgs; [
+          # Common drivers often useful even if not explicitly listed
+          # gutenprint
+          # hplip
+          # brlaser
+        ]);
     };
 
     # 2. Enable Avahi for Network Printer Discovery

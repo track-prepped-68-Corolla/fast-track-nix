@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # TAILSCALE VPN CLIENT MODULE
@@ -25,7 +30,10 @@ in
     # Whether this client should act as a routing feature (e.g., an exit node).
     # Set to "client" for typical usage, "server" if it will be an exit node.
     useRoutingFeatures = lib.mkOption {
-      type = lib.types.enum [ "client" "server" ];
+      type = lib.types.enum [
+        "client"
+        "server"
+      ];
       default = "client";
       description = "Tailscale routing features (client or server/exit node).";
     };

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # YUBIKEY INTEGRATION MODULE
@@ -43,15 +48,15 @@ in
     # 1. Install YubiKey Management Tools
     # These packages provide utilities for configuring and managing your YubiKey.
     environment.systemPackages = with pkgs; [
-      yubikey-manager     # GUI and CLI tool for YubiKey management
-      yubico-piv-tool     # PIV (Personal Identity Verification) tool
-      pam_u2f             # PAM module for U2F/FIDO2 authentication
+      yubikey-manager # GUI and CLI tool for YubiKey management
+      yubico-piv-tool # PIV (Personal Identity Verification) tool
+      pam_u2f # PAM module for U2F/FIDO2 authentication
     ];
 
     # 2. Enable PCSC Daemon for Smart Card Communication
     # Pcscd is necessary for the system to communicate with the YubiKey as a smart card.
     services.pcscd.enable = true;
-    
+
     # 3. Udev Rules for YubiKey
     # These udev rules ensure that the YubiKey is properly recognized and permissions are set.
     services.udev.packages = [ pkgs.yubikey-personalization ];
@@ -59,18 +64,18 @@ in
     # 4. PAM (Pluggable Authentication Modules) Configuration
     # This configures various system services to use YubiKey for authentication.
     security.pam.services = {
-      login.u2fAuth = true;          # For console login
-      sudo.u2fAuth = true;           # For sudo authentication
-      sddm.u2fAuth = true;           # For SDDM display manager
+      login.u2fAuth = true; # For console login
+      sudo.u2fAuth = true; # For sudo authentication
+      sddm.u2fAuth = true; # For SDDM display manager
       cosmic-greeter.u2fAuth = true; # For COSMIC greeter
-      cosmic-lock.u2fAuth = true;    # For COSMIC lock screen
+      cosmic-lock.u2fAuth = true; # For COSMIC lock screen
     };
 
     # 5. U2F PAM Module Settings
     # Global settings for the pam_u2f module.
     security.pam.u2f.settings = {
-      cue = true;           # Show a prompt to touch the YubiKey
-      interactive = true;   # Allow interactive prompts
+      cue = true; # Show a prompt to touch the YubiKey
+      interactive = true; # Allow interactive prompts
       control = "sufficient"; # If YubiKey auth succeeds, no further modules are checked.
       authfile = pkgs.writeText "u2f-mapping" cfg.u2fMapping; # Use the configured U2F mapping
     };

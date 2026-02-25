@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # 'cfg' is a shortcut for accessing the configuration options we define below.
@@ -16,7 +21,10 @@ in
       enable = lib.mkEnableOption "Prime Offloading (Hybrid Graphics)";
 
       primaryGpuVendor = lib.mkOption {
-        type = lib.types.enum [ "amd" "intel" ];
+        type = lib.types.enum [
+          "amd"
+          "intel"
+        ];
         default = "amd";
         description = "The vendor of the GPU connected to your display (usually the iGPU).";
       };
@@ -44,9 +52,9 @@ in
     # --------------------------------------------------------------------------
     # 1. Video Drivers
     # --------------------------------------------------------------------------
-    
-    # This loads the proprietary Nvidia kernel modules. 
-    # Note: We do NOT list 'amdgpu' or 'intel' here; NixOS loads those automatically 
+
+    # This loads the proprietary Nvidia kernel modules.
+    # Note: We do NOT list 'amdgpu' or 'intel' here; NixOS loads those automatically
     # when it detects the hardware. Adding them here can actually cause conflicts.
     services.xserver.videoDrivers = [ "nvidia" ];
 
@@ -54,7 +62,7 @@ in
     # 2. Hardware Configuration
     # --------------------------------------------------------------------------
     hardware.nvidia = {
-      
+
       # MODESETTING
       # Required for Wayland compositors (like Gamescope/GNOME/KDE) to function.
       # Without this, you will likely get a black screen.
@@ -79,7 +87,7 @@ in
 
       # POWER MANAGEMENT
       powerManagement = {
-        # Standard power management (suspend/resume fixes). 
+        # Standard power management (suspend/resume fixes).
         # Usually 'false' unless you have specific suspend issues.
         enable = false;
 
@@ -87,7 +95,7 @@ in
         # This is critical for laptops or hybrid setups.
         # It allows the Nvidia card to completely power down (sleep) when not in use.
         # If set to false, the Nvidia card acts as a space heater even when idle.
-        finegrained = true; 
+        finegrained = true;
       };
     };
 
@@ -105,7 +113,7 @@ in
     # --------------------------------------------------------------------------
     # This section bridges the two cards only if 'ft.nvidia.prime.enable' is true.
     hardware.nvidia.prime = lib.mkIf cfg.prime.enable {
-      
+
       # OFFLOAD MODE
       # This configuration sets the iGPU (or primary card) as the default renderer.
       # Heavy tasks are sent to the Nvidia card only when requested via 'nvidia-offload'.

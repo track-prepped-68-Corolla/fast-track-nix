@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # JELLYFIN CONTAINER MODULE
@@ -90,23 +95,27 @@ in
       volumes = [
         "${mediaBaseDir}:/media" # Mount your media library
         "jellyfin-config:/config" # Persistent configuration
-        "jellyfin-cache:/cache"   # Persistent cache
+        "jellyfin-cache:/cache" # Persistent cache
       ];
 
       # Environment variables for NVIDIA hardware acceleration (if applicable)
       # Note: For AMD (VAAPI), this section might not be strictly necessary
       # as device mounting often handles it.
-      environment = lib.mkIf (cfg.enableHardwareAcceleration && pkgs.stdenv.isLinux) {
-        # Set NVIDIA_VISIBLE_DEVICES if using NVIDIA GPU
-        NVIDIA_VISIBLE_DEVICES = "all";
-      } // {};
+      environment =
+        lib.mkIf (cfg.enableHardwareAcceleration && pkgs.stdenv.isLinux) {
+          # Set NVIDIA_VISIBLE_DEVICES if using NVIDIA GPU
+          NVIDIA_VISIBLE_DEVICES = "all";
+        }
+        // { };
 
       # Mount GPU devices for hardware acceleration.
-      extraOptions = lib.mkIf cfg.enableHardwareAcceleration [
-        "--device=/dev/dri/renderD128:/dev/dri/renderD128"
-        "--device=/dev/dri/card1:/dev/dri/card0" # Adjust card number as needed
-        "--device=/dev/kfd:/dev/kfd" # For ROCm (AMD GPU compute)
-      ] // [];
+      extraOptions =
+        lib.mkIf cfg.enableHardwareAcceleration [
+          "--device=/dev/dri/renderD128:/dev/dri/renderD128"
+          "--device=/dev/dri/card1:/dev/dri/card0" # Adjust card number as needed
+          "--device=/dev/kfd:/dev/kfd" # For ROCm (AMD GPU compute)
+        ]
+        // [ ];
 
       # User and group for the container processes.
       user = "${toString puid}:${toString pgid}";

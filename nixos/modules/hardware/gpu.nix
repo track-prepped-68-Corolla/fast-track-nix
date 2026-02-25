@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # UNIVERSAL GPU MODULE
@@ -24,7 +29,11 @@ in
 
     # Primary GPU vendor (e.g., "nvidia", "amd", "intel").
     vendor = lib.mkOption {
-      type = lib.types.enum [ "nvidia" "amd" "intel" ];
+      type = lib.types.enum [
+        "nvidia"
+        "amd"
+        "intel"
+      ];
       default = "amd";
       description = "Primary GPU vendor (nvidia, amd, or intel).";
     };
@@ -46,7 +55,10 @@ in
       };
       # Choose NVIDIA driver package (e.g., "stable", "beta").
       driverPackage = lib.mkOption {
-        type = lib.types.enum [ "stable" "beta" ];
+        type = lib.types.enum [
+          "stable"
+          "beta"
+        ];
         default = "beta";
         description = "NVIDIA driver package to use (stable or beta).";
       };
@@ -99,13 +111,16 @@ in
     # --------------------------------------------------------------------------
     # NVIDIA Configuration
     # --------------------------------------------------------------------------
-    services.xserver.videoDrivers = lib.mkIf isNvidia [
-      "nvidia"
-    ] ++ lib.mkIf isAmd [
-      "amdgpu"
-    ] ++ lib.mkIf isIntel [
-      "intel"
-    ];
+    services.xserver.videoDrivers =
+      lib.mkIf isNvidia [
+        "nvidia"
+      ]
+      ++ lib.mkIf isAmd [
+        "amdgpu"
+      ]
+      ++ lib.mkIf isIntel [
+        "intel"
+      ];
 
     hardware.nvidia = lib.mkIf isNvidia {
       modesetting.enable = true;
@@ -115,9 +130,11 @@ in
         enable = cfg.nvidia.enablePowerManagement;
         finegrained = cfg.nvidia.finegrainedPowerManagement;
       };
-      package = if cfg.nvidia.driverPackage == "beta"
-                then config.boot.kernelPackages.nvidiaPackages.beta
-                else config.boot.kernelPackages.nvidiaPackages.stable;
+      package =
+        if cfg.nvidia.driverPackage == "beta" then
+          config.boot.kernelPackages.nvidiaPackages.beta
+        else
+          config.boot.kernelPackages.nvidiaPackages.stable;
     };
 
     # --------------------------------------------------------------------------
@@ -151,7 +168,7 @@ in
     hardware.opengl.dri.driver = lib.mkIf isIntel "i965"; # For Intel
 
     # Ensure the main user is in the 'render' and 'video' groups for GPU access.
-    users.users.${config.mainuser or "joe"}.extraGroups = 
+    users.users.${config.mainuser or "joe"}.extraGroups =
       lib.mkIf cfg.enable [
         "render"
         "video"

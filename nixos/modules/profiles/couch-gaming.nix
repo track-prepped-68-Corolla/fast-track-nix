@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.ft.couch-gaming;
@@ -22,7 +27,11 @@ in
     };
 
     gpuVendor = lib.mkOption {
-      type = lib.types.enum [ "amd" "intel" "nvidia" ];
+      type = lib.types.enum [
+        "amd"
+        "intel"
+        "nvidia"
+      ];
       default = "amd";
       description = "The vendor of the GPU driving the display (affects kernel optimizations).";
     };
@@ -38,11 +47,11 @@ in
     # --------------------------------------------------------------------------
     jovian.steam = {
       enable = true;
-      
+
       # AUTO START
       # Bypasses the login manager and boots directly into Steam Big Picture.
       autoStart = true;
-      
+
       # USER CONFIGURATION
       # Dynamically sets the user and desktop environment based on your options.
       user = cfg.user;
@@ -58,13 +67,13 @@ in
     # --------------------------------------------------------------------------
     # 3. Hardware Optimization Logic
     # --------------------------------------------------------------------------
-    # Jovian provides specific kernel parameters and Mesa optimizations 
+    # Jovian provides specific kernel parameters and Mesa optimizations
     # for AMD hardware to match the Steam Deck's performance profile.
-    
+
     # Enable AMD optimizations ONLY if the vendor is set to 'amd'
     jovian.hardware.has.amd.gpu = (cfg.gpuVendor == "amd");
 
-    # (Future-proofing: If Jovian adds specific flags for Intel/Nvidia, 
+    # (Future-proofing: If Jovian adds specific flags for Intel/Nvidia,
     # we can add the logic here easily using 'cfg.gpuVendor')
   };
 }

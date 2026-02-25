@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # STYLIX THEME MODULE (The Paintbrush)
@@ -40,11 +45,11 @@ in
     wallpaper = lib.mkOption {
       type = lib.types.path;
       description = "Path to your wallpaper image.";
-      
+
       # Default: A nice minimal mountain landscape
       default = pkgs.fetchurl {
         url = "https://raw.githubusercontent.com/dharmx/walls/main/minimal/01.jpg";
-        sha256 = "sha256-42fG5tO/vK8n1uE6e12e1f2f/1+1+1+1+1+1+1+1+1+1"; 
+        sha256 = "sha256-42fG5tO/vK8n1uE6e12e1f2f/1+1+1+1+1+1+1+1+1+1";
       };
     };
   };
@@ -58,9 +63,9 @@ in
     stylix = {
       # Activate the engine
       enable = true;
-      
+
       # --- A. THE IMAGE ---
-      # Stylix will use this image to generate a color palette (if we didn't 
+      # Stylix will use this image to generate a color palette (if we didn't
       # specify a scheme) and set it as the background for:
       # 1. The Desktop
       # 2. The Login Screen (Display Manager)
@@ -68,7 +73,7 @@ in
       image = cfg.wallpaper;
 
       # --- B. THE COLORS ---
-      # We explicitly choose "Catppuccin Mocha". 
+      # We explicitly choose "Catppuccin Mocha".
       # This overrides the auto-generated colors from the wallpaper, ensuring
       # we always get that specific, consistent dark-pastel look.
       base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
@@ -83,7 +88,7 @@ in
       };
 
       # --- D. THE FONTS ---
-      # Fonts are critical for a "professional" feel. 
+      # Fonts are critical for a "professional" feel.
       # We define the hierarchy here, and Stylix injects it into every app.
       fonts = {
         # 1. Monospace (The most important one)
@@ -109,7 +114,7 @@ in
           package = pkgs.charter;
           name = "Charter";
         };
-        
+
         # 4. Emojis
         # Ensures colorful emojis appear everywhere instead of empty boxes.
         emoji = {
@@ -120,9 +125,9 @@ in
         # 5. Font Sizes
         sizes = {
           applications = 12; # Standard UI text size
-          terminal = 12;     # Terminal text size
-          desktop = 10;      # Desktop icons / widgets
-          popups = 10;       # Tooltips and notifications
+          terminal = 12; # Terminal text size
+          desktop = 10; # Desktop icons / widgets
+          popups = 10; # Tooltips and notifications
         };
       };
 
@@ -131,9 +136,9 @@ in
       # This lets the wallpaper bleed through slightly, creating depth.
       opacity = {
         applications = 1.0; # Keep web browsers/docs solid (readability)
-        terminal = 0.90;    # Transparent terminal
-        popups = 0.90;      # Transparent menus
-        desktop = 1.0;      # Solid desktop background
+        terminal = 0.90; # Transparent terminal
+        popups = 0.90; # Transparent menus
+        desktop = 1.0; # Solid desktop background
       };
 
       # --- F. TARGETS ---
@@ -141,7 +146,7 @@ in
       targets = {
         # Theme GTK apps (Nautilus, etc.) to match our colors
         gtk.enable = true;
-        
+
         # Theme the Linux kernel console (TTY) so even the boot logs match!
         console.enable = true;
       };

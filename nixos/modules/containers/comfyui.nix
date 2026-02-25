@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # COMPFYUI CONTAINER MODULE
@@ -140,7 +145,10 @@ in
 
     # Type of GPU backend to use: "rocm" for AMD GPUs, "ubuntu" for a generic setup.
     gpuBackend = lib.mkOption {
-      type = lib.types.enum [ "rocm" "ubuntu" ];
+      type = lib.types.enum [
+        "rocm"
+        "ubuntu"
+      ];
       default = "ubuntu";
       description = "Choose 'rocm' for AMD GPUs (like Strix Halo) or 'ubuntu' for generic/CPU.";
     };
@@ -170,47 +178,51 @@ in
       "d ${dataDir} 0775 root users -"
     ];
 
-    virtualisation.oci-containers.containers.comfyui = lib.mkIf (cfg.gpuBackend == "ubuntu") {
-      image = "ubuntu:24.04"; # A general-purpose Ubuntu image
-      autoStart = true;
-      ports = [ "${toString cfg.port}:8188" ];
-      volumes = [
-        "${dataDir}:/opt/ComfyUI"
-        "${startScript}:/start.sh"
-      ];
-      cmd = [
-        "/bin/bash"
-        "/start.sh"
-      ];
-      extraOptions = [
-        "--cap-add=SYS_PTRACE"
-        "--security-opt=seccomp=unconfined"
-        "--ipc=host"
-      ];
-    } // lib.mkIf (cfg.gpuBackend == "rocm") {
-      image = "docker.io/rocm/pytorch:latest"; # ROCm optimized PyTorch image
-      autoStart = true;
-      ports = [ "${toString cfg.port}:8188" ];
-      volumes = [
-        "${dataDir}:/workspace"
-        "${startRocmScript}:/start.sh"
-      ];
-      cmd = [
-        "/bin/bash"
-        "/start.sh"
-      ];
-      environment = lib.mkIf (cfg.rocmGfxVersion != null) {
-        HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
-      } // {};
-      extraOptions = [
-        "--device=/dev/kfd"
-        "--device=/dev/dri"
-        "--group-add=video"
-        "--group-add=render"
-        "--ipc=host"
-        "--security-opt=seccomp=unconfined"
-        "--cap-add=SYS_PTRACE"
-      ];
-    };
+    virtualisation.oci-containers.containers.comfyui =
+      lib.mkIf (cfg.gpuBackend == "ubuntu") {
+        image = "ubuntu:24.04"; # A general-purpose Ubuntu image
+        autoStart = true;
+        ports = [ "${toString cfg.port}:8188" ];
+        volumes = [
+          "${dataDir}:/opt/ComfyUI"
+          "${startScript}:/start.sh"
+        ];
+        cmd = [
+          "/bin/bash"
+          "/start.sh"
+        ];
+        extraOptions = [
+          "--cap-add=SYS_PTRACE"
+          "--security-opt=seccomp=unconfined"
+          "--ipc=host"
+        ];
+      }
+      // lib.mkIf (cfg.gpuBackend == "rocm") {
+        image = "docker.io/rocm/pytorch:latest"; # ROCm optimized PyTorch image
+        autoStart = true;
+        ports = [ "${toString cfg.port}:8188" ];
+        volumes = [
+          "${dataDir}:/workspace"
+          "${startRocmScript}:/start.sh"
+        ];
+        cmd = [
+          "/bin/bash"
+          "/start.sh"
+        ];
+        environment =
+          lib.mkIf (cfg.rocmGfxVersion != null) {
+            HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
+          }
+          // { };
+        extraOptions = [
+          "--device=/dev/kfd"
+          "--device=/dev/dri"
+          "--group-add=video"
+          "--group-add=render"
+          "--ipc=host"
+          "--security-opt=seccomp=unconfined"
+          "--cap-add=SYS_PTRACE"
+        ];
+      };
   };
 }

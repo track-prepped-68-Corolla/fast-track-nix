@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # AI CONTAINER MODULE
@@ -82,10 +87,11 @@ in
     virtualisation.podman.enable = true;
 
     # Allow access to necessary ports through the firewall
-    networking.firewall.allowedTCPPorts = 
-      [ cfg.backendPort ] 
-      ++ lib.optionals cfg.enableFrontend [ cfg.frontendPort ]
-      ++ lib.optionals cfg.enableComfyUI [ cfg.comfyui.port ];
+    networking.firewall.allowedTCPPorts = [
+      cfg.backendPort
+    ]
+    ++ lib.optionals cfg.enableFrontend [ cfg.frontendPort ]
+    ++ lib.optionals cfg.enableComfyUI [ cfg.comfyui.port ];
 
     virtualisation.oci-containers.containers = {
       llama-cpp = {

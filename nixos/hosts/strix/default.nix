@@ -1,4 +1,9 @@
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 
 {
   # -------------------------------------------------------------------------
@@ -9,7 +14,7 @@
   #
   #  WHERE IS THE REST?
   #  You might notice this file is very short! That is intentional.
-  #  
+  #
   #  1. The Boring Stuff (Bootloader, Timezone, Locale, Nix Settings, StateVersion)
   #     is handled automatically by 'modules/system/core.nix'.
   #     We moved it there so you don't have to copy-paste it for every laptop.
@@ -31,14 +36,13 @@
 
   mainuser = "joe"; # This identifies who Home Manager should focus on
 
-  superUsers = [ 
+  superUsers = [
     "joe"
   ];
 
   # --- IDENTITY ---
   # The name of this machine on your network.
   networking.hostName = "strix";
-
 
   # -------------------------------------------------------------------------
   #  CAPABILITIES & FEATURES
@@ -55,14 +59,14 @@
   # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
   ft.profiles.gaming = {
     enable = true;
-    user = "yourusername";      # Change this to your actual Linux username
-    gpuVendor = "amd";          # Set to "amd", "nvidia", or "intel"
-    desktopEnvironment = "cosmic"; 
-    enableLeanbackUI = false;   # Keeps the normal desktop boot flow
+    user = "yourusername"; # Change this to your actual Linux username
+    gpuVendor = "amd"; # Set to "amd", "nvidia", or "intel"
+    desktopEnvironment = "cosmic";
+    enableLeanbackUI = false; # Keeps the normal desktop boot flow
   };
 
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
-  
+
   # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
   ft.system.podman.enable = true;
 

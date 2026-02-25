@@ -4,6 +4,7 @@
   inputs = {
     # --- Core Dependencies ---
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nix-cachyos.url = "github:xddxdd/nix-cachyos-kernel/release";
 
@@ -25,30 +26,30 @@
     cosmic-manager.url = "github:HeitorAugustoLN/cosmic-manager";
     cosmic-manager.inputs.nixpkgs.follows = "nixpkgs";
     cosmic-manager.inputs.home-manager.follows = "home-manager";
-    
+
     jovian-nixos.url = "github:jovian-experiments/jovian-nixos";
     jovian-nixos.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs =
+    { self, nixpkgs, ... }@inputs:
     let
       # --- CONFIGURATION VARIABLES ---
-      
+
       # 1. HOSTNAMES
-      # To add a new machine, just add its name here and create 
+      # To add a new machine, just add its name here and create
       # the folder: ./hosts/<name>/default.nix
-      systems = [ 
-        "strix" 
+      systems = [
+        "strix"
         "talos"
-        "rog"
         "t14"
         "spec"
-        "proto"         
+        "proto"
       ];
-      
+
       # --- LIBRARY IMPORTS ---
       lib = nixpkgs.lib;
-      
+
       # This allows us to access 'inputs' (like nix-cachyos) inside any module
       # without manually importing them again.
       specialArgs = { inherit inputs; };
@@ -62,12 +63,13 @@
       #
       # We use 'lib.genAttrs' to AUTOMATE this.
       # It loops over the 'systems' list above and generates a config for each one.
-      
-      nixosConfigurations = lib.genAttrs systems (host: 
+
+      nixosConfigurations = lib.genAttrs systems (
+        host:
         lib.nixosSystem {
           inherit specialArgs;
           modules = [
-            # 1. The Core Aggregator 
+            # 1. The Core Aggregator
             # This imports all the common "plumbing" (Home Manager, Stylix, Sops)
             ./nixos/modules/default.nix
 

@@ -28,7 +28,7 @@
   programs.git = {
     enable = true;
     userName = "admin";
-    userEmail = "admin@fasttrack.os"; 
+    userEmail = "admin@fasttrack.os";
     delta.enable = true; # Use the aesthetic diff tool from our terminal module
   };
 
@@ -36,9 +36,9 @@
   # 3. FEATURE FLAGS
   # ----------------------------------------------------------------------------
   # Turn on the features we want for this specific user.
-  
+
   # Enable the Container Stack (Podman, Lazydocker, Distrobox)
   #ft.containers.enable = true;
-  
+
   # (Terminal is enabled by default via the Hub)
 }

@@ -14,25 +14,25 @@
 
   # --- User Information ---
   home.username = "joe";
-  
-  # 2. Your configuration block
-#  sops = {
-#    age.keyFile = "/home/joe/.config/sops/age/keys.txt";
-#    defaultSopsFile = ../../../secrets.yaml; # Verify this path relative to this .nix file!
-#    defaultSopsFormat = "yaml";
 
-#    secrets = {
-#    };
-#  };
+  # 2. Your configuration block
+  #  sops = {
+  #    age.keyFile = "/home/joe/.config/sops/age/keys.txt";
+  #    defaultSopsFile = ../../../secrets.yaml; # Verify this path relative to this .nix file!
+  #    defaultSopsFormat = "yaml";
+
+  #    secrets = {
+  #    };
+  #  };
 
   # --- Configuration Files ---
   # Distrobox configuration
-#  xdg.configFile."distrobox/distrobox.conf".text = ''
-    # Mount the Nix Store so your host's CLI tools work inside the container
-#    container_additional_volumes="/nix/store:/nix/store:ro /etc/profiles/per-user:/etc/profiles/per-user:ro"
-#  '';
+  #  xdg.configFile."distrobox/distrobox.conf".text = ''
+  # Mount the Nix Store so your host's CLI tools work inside the container
+  #    container_additional_volumes="/nix/store:/nix/store:ro /etc/profiles/per-user:/etc/profiles/per-user:ro"
+  #  '';
 
-# --- Module Toggles ---
+  # --- Module Toggles ---
   # Turn on the LazyVim environment
   ft.lazyvim.enable = true;
 
@@ -49,7 +49,6 @@
     htop
     micro
     yazi
-    
 
     # DESKTOP APPS
     brave
@@ -65,10 +64,14 @@
     nixfmt
 
     # CREATIVE & OFFICE
-    krita
-    openscad
-    freecad
-    blender
+    #krita
+    #openscad
+    #freecad
+    #blender
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.krita
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.openscad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.freecad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.blender
     libreoffice
 
     # GAMING

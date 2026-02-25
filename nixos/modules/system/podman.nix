@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # PODMAN SYSTEM MODULE
@@ -51,7 +56,7 @@ in
     # Install common Podman-related tools for all users.
     environment.systemPackages = with pkgs; [
       podman-compose # Docker Compose equivalent for Podman
-      distrobox      # Tool for creating and managing containerized dev environments
+      distrobox # Tool for creating and managing containerized dev environments
     ];
 
     # 5. Global Socket Configuration
