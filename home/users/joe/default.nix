@@ -20,7 +20,7 @@
   #    age.keyFile = "/home/joe/.config/sops/age/keys.txt";
   #    defaultSopsFile = ../../../secrets.yaml; # Verify this path relative to this .nix file!
   #    defaultSopsFormat = "yaml";
-
+  #
   #    secrets = {
   #    };
   #  };

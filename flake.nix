@@ -76,6 +76,15 @@
             # 2. The Host Specific Config
             # This dynamically imports the folder matching the hostname
             ./nixos/hosts/${host}/default.nix
+
+            # 3. Flake Overlays (NEW)
+            # We inject the NUR overlay here so pkgs.nur is available system-wide
+            (
+              { inputs, ... }:
+              {
+                nixpkgs.overlays = [ inputs.nur.overlays.default ];
+              }
+            )
           ];
         }
       );
