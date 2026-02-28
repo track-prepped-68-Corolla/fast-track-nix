@@ -85,7 +85,7 @@ in
             "32768"
             "-ngl"
             "99"
-            "---flash-attn"
+            "--flash-attn"
             "on"
             "--no-mmap"
           ];
