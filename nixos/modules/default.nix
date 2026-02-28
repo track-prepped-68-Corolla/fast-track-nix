@@ -24,8 +24,9 @@
     # The "Logic": Generates user accounts based on variables.
     ./system/user.nix
 
-    # podman
-    ./system/podman.nix
+    # oci containers
+    ./system/podman-system.nix
+    ./containers/ai.nix
 
     # The desktop environment and display manager. turn it on by adding with ft.desktop.cosmic.enable = true;
     ./system/cosmic.nix

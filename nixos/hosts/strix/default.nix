@@ -68,7 +68,11 @@
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
 
   # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
-  ft.system.podman.enable = true;
+  # ft.system.podman.enable = true;
+
+  ft.containers.enable = true;
+
+  ft.containers.ai.enable = true;
 
   ft.system.maintenance.enable = true;
 }
