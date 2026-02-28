@@ -85,7 +85,8 @@ in
             "32768"
             "-ngl"
             "99"
-            "-fa"
+            "---flash-attn"
+            "on"
             "--no-mmap"
           ];
           extraOptions = [
