@@ -87,8 +87,6 @@ in
             "99"
             "-fa"
             "--no-mmap"
-            "-fit"
-            "off"
           ];
           extraOptions = [
             "--network=host"
