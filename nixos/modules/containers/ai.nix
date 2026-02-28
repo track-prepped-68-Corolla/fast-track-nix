@@ -85,7 +85,10 @@ in
             "32768"
             "-ngl"
             "99"
+            "-fa"
             "--no-mmap"
+            "-fit"
+            "off"
           ];
           extraOptions = [
             "--network=host"
