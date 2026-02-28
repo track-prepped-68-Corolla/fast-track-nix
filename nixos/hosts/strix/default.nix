@@ -44,6 +44,10 @@
   # The name of this machine on your network.
   networking.hostName = "strix";
 
+  boot.kernelParams = [
+    "amdgpu.gttsize=98304" # This allows the GPU to use up to 96GB of your 128GB
+  ];
+
   # -------------------------------------------------------------------------
   #  CAPABILITIES & FEATURES
   # -------------------------------------------------------------------------
