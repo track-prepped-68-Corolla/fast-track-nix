@@ -59,7 +59,7 @@
   # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
   ft.profiles.gaming = {
     enable = true;
-    user = "yourusername"; # Change this to your actual Linux username
+    user = "joe"; # Change this to your actual Linux username
     gpuVendor = "amd"; # Set to "amd", "nvidia", or "intel"
     desktopEnvironment = "cosmic";
     enableLeanbackUI = false; # Keeps the normal desktop boot flow
