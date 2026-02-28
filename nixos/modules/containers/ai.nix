@@ -81,7 +81,7 @@ in
             "0.0.0.0"
             "--port"
             "${toString cfg.backendPort}"
-            "-ctx-size"
+            "--ctx-size"
             "32768"
             "--n-gpu-layers"
             "99"
