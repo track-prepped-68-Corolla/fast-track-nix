@@ -82,7 +82,7 @@ in
             "--port"
             "${toString cfg.backendPort}"
             "-c"
-            "131072"
+            "32768"
             "-ngl"
             "99"
             "--no-mmap"
