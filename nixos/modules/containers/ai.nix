@@ -88,6 +88,9 @@ in
             "--flash-attn"
             "on"
             "--no-mmap"
+            "--no-kv-offload"
+            "-fit"
+            "off"
           ];
           extraOptions = [
             "--network=host"
