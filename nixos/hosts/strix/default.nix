@@ -76,7 +76,7 @@
 
   ft.containers.enable = true;
 
-  ft.containers.ai.enable = true;
+  ft.containers.ollama.enable = true;
 
   ft.system.maintenance.enable = true;
 }

@@ -26,7 +26,8 @@
 
     # oci containers
     ./system/podman-system.nix
-    ./containers/ai.nix
+
+    ./containers/ollama.nix
 
     # The desktop environment and display manager. turn it on by adding with ft.desktop.cosmic.enable = true;
     ./system/cosmic.nix
