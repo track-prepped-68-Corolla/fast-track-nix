@@ -1,0 +1,14 @@
+{
+  "providers": [
+    {
+      "id": "ollama",
+      "name": "Local Ollama",
+      "api_key": "ollama",
+      "base_url": "http://localhost:11434/v1",
+      "models": [
+        "qwen3-coder-abliterated"
+      ]
+    }
+  ],
+  "default_model": "ollama/qwen3-coder-abliterated"
+}
