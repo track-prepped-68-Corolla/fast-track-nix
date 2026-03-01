@@ -6,7 +6,6 @@
 }:
 
 let
-
   dotfilePath = "/home/joe/git/ft-home/home/dotfiles/crush/crush.json";
 in
 {
