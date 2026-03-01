@@ -82,7 +82,7 @@ in
       searxng = {
         image = "docker.io/searxng/searxng:latest";
         autoStart = true;
-        ports = [ "${toString cfg.port}:6080" ]; # Expose SearXNG to the host network
+        ports = [ "${toString cfg.port}:8080" ]; # Expose SearXNG to the host network
 
         # Inject environment variables from the sops secret file.
         #environmentFiles = [ config.sops.secrets."searxng_env".path ];
