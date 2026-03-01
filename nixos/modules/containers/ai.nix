@@ -85,13 +85,12 @@ in
             "32768"
             "--n-gpu-layers"
             "99"
-            "--threads"
-            "16"
             "--flash-attn"
-            "on" # Fixed: Explicitly set to 'on'
+            "on"
             "--no-mmap"
-            "--no-kv-offload"
-            "--mlock" # Switched to mlock to stabilize the unified memory pool
+            # --mlock removed for now to prevent pinning conflicts
+            "-fit"
+            "off" # Explicitly disable the auto-fitting that caused the crash
             "--verbose"
           ];
           extraOptions = [
