@@ -6,14 +6,12 @@
 }:
 
 let
-  # Using your confirmed working pattern
+  # No interpolation, pure string.
   crushConfigPath = "/home/joe/git/ft-home/home/dotfiles/crush";
 in
 {
-  home.packages = [
-    pkgs.nur.repos.charmbracelet.crush
-  ];
+  home.packages = [ pkgs.nur.repos.charmbracelet.crush ];
 
-  # Symlink the entire directory
+  # Pattern: Link the folder, exactly like your nvim setup
   xdg.configFile."crush".source = config.lib.file.mkOutOfStoreSymlink crushConfigPath;
 }
