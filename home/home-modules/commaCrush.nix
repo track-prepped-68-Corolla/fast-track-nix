@@ -8,7 +8,7 @@
 let
   # The path to your actual config file inside your monorepo.
   # Using an absolute string is required for flakes to avoid read-only store copies.
-  dotfilePath = "${config.home.homeDirectory}/ft-home/home/dotfiles/config/crush/crush.json";
+  dotfilePath = "${config.home.homeDirectory}/ft-home/home/dotfiles";
 in
 {
   home.packages = [
