@@ -88,11 +88,10 @@ in
             "--threads"
             "16"
             "--flash-attn"
+            "on" # Fixed: Explicitly set to 'on'
             "--no-mmap"
             "--no-kv-offload"
-            "--no-mlock"
-            "-fit"
-            "off"
+            "--mlock" # Switched to mlock to stabilize the unified memory pool
             "--verbose"
           ];
           extraOptions = [
