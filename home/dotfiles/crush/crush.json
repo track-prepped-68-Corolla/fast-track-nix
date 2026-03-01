@@ -1,6 +1,8 @@
 {
   "providers": {
     "ollama": {
+      "type": "openai",
+      "name": "Ollama",
       "base_url": "http://localhost:11434/v1",
       "api_key": "ollama",
       "models": [
@@ -8,5 +10,15 @@
       ]
     }
   },
-  "default_model": "ollama/huihui_ai/qwen3-coder-abliterated:latest"
+  "default_model": "ollama/huihui_ai/qwen3-coder-abliterated:latest",
+  "mcp_servers": [
+    {
+      "name": "searxng",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "env": {
+        "BASE_URL": "http://localhost:6080"
+      }
+    }
+  ]
 }
