@@ -6,14 +6,19 @@
 }:
 
 let
-  # The nvim-style pattern, but using the home variable to break Flake shadowing
-  crushConfigPath = "${config.home.homeDirectory}/git/ft-home/home/dotfiles/crush";
+  # The path you confirmed exists in your git repo
+  crushConfigPath = "/home/joe/git/ft-home/home/dotfiles/crush";
 in
 {
   home.packages = [
     pkgs.nur.repos.charmbracelet.crush
   ];
 
-  # Force the directory symlink
+  # This is the exact pattern that works for your nvim
   xdg.configFile."crush".source = config.lib.file.mkOutOfStoreSymlink crushConfigPath;
+
+  # Force the parent directory to exist just in case
+  home.activation.checkCrush = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    mkdir -p ${config.home.homeDirectory}/.config
+  '';
 }
