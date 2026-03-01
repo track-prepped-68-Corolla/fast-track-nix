@@ -6,12 +6,14 @@
 }:
 
 let
-  dotfilePath = "/home/joe/git/ft-home/home/dotfiles/crush/crush.json";
+  # Using your confirmed working pattern
+  crushConfigPath = "/home/joe/git/ft-home/home/dotfiles/crush";
 in
 {
   home.packages = [
     pkgs.nur.repos.charmbracelet.crush
   ];
 
-  xdg.configFile."crush/crush.json".source = config.lib.file.mkOutOfStoreSymlink dotfilePath;
+  # Symlink the entire directory
+  xdg.configFile."crush".source = config.lib.file.mkOutOfStoreSymlink crushConfigPath;
 }
