@@ -41,9 +41,9 @@ in
     # Define a sops secret for SearXNG environment variables. This is crucial
     # for managing sensitive data (like API keys) securely.
     # The container will be restarted if the secret changes.
-    sops.secrets."searxng_env" = {
-      restartUnits = [ "podman-searxng.service" ];
-    };
+    #sops.secrets."searxng_env" = {
+    #  restartUnits = [ "podman-searxng.service" ];
+    #};
 
     # --- Network Initialization ---
     # A systemd service to create a dedicated Podman network for SearXNG and Redis.
@@ -85,11 +85,12 @@ in
         ports = [ "${toString cfg.port}:6080" ]; # Expose SearXNG to the host network
 
         # Inject environment variables from the sops secret file.
-        environmentFiles = [ config.sops.secrets."searxng_env".path ];
+        #environmentFiles = [ config.sops.secrets."searxng_env".path ];
 
         environment = {
           SEARXNG_BASE_URL = "http://localhost:${toString cfg.port}/";
           SEARXNG_REDIS_URL = "redis://searxng-redis:6379/0"; # Connect to Redis container
+          SEARXNG_SECRET = "temporarily-unsafe-secret-for-testing";
         };
 
         extraOptions = [

@@ -78,5 +78,9 @@
 
   ft.containers.ollama.enable = true;
 
+  ft.containers.talos.enable = true;
+
+  ft.containers.searxng.enable = true;
+
   ft.system.maintenance.enable = true;
 }
