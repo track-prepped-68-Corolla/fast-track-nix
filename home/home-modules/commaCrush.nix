@@ -7,7 +7,7 @@
 
 let
 
-  crushConfig = "${config.home.homeDirectory}/ft-home/home/dotfiles/crush/crush.json";
+  crushConfig = "${config.home.homeDirectory}/git/ft-home/home/dotfiles/crush/crush.json";
 in
 {
   home.packages = [
