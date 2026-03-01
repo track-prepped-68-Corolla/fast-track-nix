@@ -4,9 +4,9 @@
       "base_url": "http://localhost:11434/v1",
       "api_key": "ollama",
       "models": [
-        "qwen3-coder-abliterated"
+        "huihui_ai/qwen3-coder-abliterated:latest"
       ]
     }
   },
-  "default_model": "ollama/qwen3-coder-abliterated"
+  "default_model": "ollama/huihui_ai/qwen3-coder-abliterated:latest"
 }
