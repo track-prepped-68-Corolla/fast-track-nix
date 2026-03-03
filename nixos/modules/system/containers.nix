@@ -40,7 +40,7 @@ in
         # Komodo Core Container
         komodo = {
           image = "ghcr.io/mbecker20/komodo:latest";
-          ports = [ "8120:8120" ];
+          ports = [ "9120:9120" ];
           volumes = [
             "/var/lib/komodo/config.toml:/config.toml"
             "komodo_data:/data"
@@ -89,6 +89,7 @@ in
     networking.firewall = {
       enable = true;
       allowedTCPPorts = [
+        9120
         8120
         8121
       ];
