@@ -44,10 +44,6 @@
   # The name of this machine on your network.
   networking.hostName = "strix";
 
-  boot.kernelParams = [
-    "amdgpu.gttsize=98304" # This allows the GPU to use up to 96GB of your 128GB
-  ];
-
   # -------------------------------------------------------------------------
   #  CAPABILITIES & FEATURES
   # -------------------------------------------------------------------------
@@ -65,22 +61,13 @@
     enable = true;
     user = "joe"; # Change this to your actual Linux username
     gpuVendor = "amd"; # Set to "amd", "nvidia", or "intel"
-    desktopEnvironment = "cosmic";
     enableLeanbackUI = false; # Keeps the normal desktop boot flow
+    desktopEnvironment = "cosmic"; # Tells Jovian to use cosmic as the DE
   };
 
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
 
-  # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
-  # ft.system.podman.enable = true;
+  ft.containers.enable = true; # Enable container backend and management
 
-  ft.containers.enable = true;
-
-  ft.containers.ollama.enable = true;
-
-  ft.containers.talos.enable = true;
-
-  ft.containers.searxng.enable = true;
-
-  ft.system.maintenance.enable = true;
+  ft.system.maintenance.enable = true; # Enable system maintenance script
 }

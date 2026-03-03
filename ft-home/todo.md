@@ -1,4 +1,0 @@
-- [x] Identify task
-- [x] Analyze requirements
-- [x] Evaluate module
-- [ ] Verify results
