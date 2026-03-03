@@ -59,14 +59,14 @@ in
           volumes = [
             "/var/run/docker.sock:/var/run/docker.sock:ro"
           ];
-          # Force root execution inside the container to access the socket
-          user = "0:0";
           environment = {
             TZ = config.time.timeZone;
           };
-          # Adds a security label that allows the container to talk to the socket on NixOS
           extraOptions = [
-            "--security-opt=label=disable"
+            "--name=periphery"
+            "--privileged" # Gives the container hardware/socket access
+            "--user=0" # Ensures it runs as root inside the container
+            "--security-opt=label=disable" # Bypasses SELinux/AppArmor restrictions
           ];
         };
       };
