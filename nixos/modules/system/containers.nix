@@ -56,7 +56,10 @@ in
           image = "ghcr.io/mbecker20/periphery:latest";
           ports = [ "8121:8120" ];
           volumes = [ "/run/podman/podman.sock:/var/run/docker.sock:ro" ];
-          environment.TZ = config.time.timeZone;
+          environment = {
+            TZ = config.time.timeZone;
+            PERIPHERY_PASSKEY = "default-passkey-changeme";
+          };
           extraOptions = [
             "--name=periphery"
             "--privileged"
