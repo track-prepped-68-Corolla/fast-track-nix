@@ -17,11 +17,12 @@ in
   # --- Apply the Configuration ---
   config = lib.mkIf cfg.enable {
 
-    # --- 1. System Packages ---
+    # --- 1. System Packages (All of them!) ---
     environment.systemPackages = with pkgs; [
       docker-compose
       distrobox
       podman-compose
+      curl
     ];
 
     # --- 2. Container Engine (Podman) Setup ---
@@ -40,16 +41,22 @@ in
         # Komodo Core Container
         komodo = {
           image = "ghcr.io/mbecker20/komodo:latest";
-          ports = [ "9120:9120" ];
+          # Host 8120 -> Internal 9120 (Komodo's default internal port)
+          ports = [ "8120:9120" ];
           volumes = [
-            "/var/lib/komodo/config.toml:/config.toml"
-            "komodo_data:/data"
+            "/var/lib/komodo/config.toml:/config/config.toml"
+            "/var/lib/komodo/data:/data"
           ];
           environment = {
             TZ = config.time.timeZone;
+            KOMODO_CONFIG_PATH = "/config/config.toml";
+            KOMODO_DATABASE_URI = "sqlite:///data/komodo.db";
           };
-          # Ensure it restarts if the empty config file causes an initial hiccup
-          extraOptions = [ "--label=io.containers.autoupdate=registry" ];
+          # Ensure it restarts & relabels the data volume for permissions
+          extraOptions = [
+            "--label=io.containers.autoupdate=registry"
+            "--mount=type=bind,source=/var/lib/komodo/data,target=/data,relabel=shared"
+          ];
         };
 
         # Komodo Periphery Container
@@ -57,7 +64,6 @@ in
           image = "ghcr.io/mbecker20/periphery:latest";
           ports = [ "8121:8120" ];
           volumes = [
-            # Link directly to the Podman socket location on NixOS
             "/run/podman/podman.sock:/var/run/docker.sock:ro"
           ];
           environment = {
@@ -73,25 +79,29 @@ in
       };
     };
 
-    # --- 4. System File Setup (Correctly Indented) ---
-    # This ensures the folders and files exist so Podman doesn't create directories where files should be.
+    # --- 4. System File Setup ---
+    # We set these to root:root 0775 so Podman (system level) has zero friction
     systemd.tmpfiles.rules = [
-      "d /var/lib/komodo 0755 ${config.mainuser} users -"
-      "f /var/lib/komodo/config.toml 0644 ${config.mainuser} users -"
+      "d /var/lib/komodo 0775 root root -"
+      "d /var/lib/komodo/data 0775 root root -"
+      "f /var/lib/komodo/config.toml 0664 root root -"
     ];
 
     # --- 5. User Permissions ---
     users.users.${config.mainuser} = {
-      extraGroups = [ "podman" ];
+      extraGroups = [
+        "podman"
+        "docker"
+      ];
     };
 
     # --- 6. Firewall Rules ---
     networking.firewall = {
       enable = true;
       allowedTCPPorts = [
-        9120
         8120
         8121
+        9120
       ];
     };
   };
