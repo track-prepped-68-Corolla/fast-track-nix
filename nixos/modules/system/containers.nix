@@ -57,16 +57,17 @@ in
           image = "ghcr.io/mbecker20/periphery:latest";
           ports = [ "8121:8120" ];
           volumes = [
-            "/var/run/docker.sock:/var/run/docker.sock:ro"
+            # Link directly to the Podman socket location on NixOS
+            "/run/podman/podman.sock:/var/run/docker.sock:ro"
           ];
           environment = {
             TZ = config.time.timeZone;
           };
           extraOptions = [
             "--name=periphery"
-            "--privileged" # Gives the container hardware/socket access
-            "--user=0" # Ensures it runs as root inside the container
-            "--security-opt=label=disable" # Bypasses SELinux/AppArmor restrictions
+            "--privileged"
+            "--user=0"
+            "--security-opt=label=disable"
           ];
         };
       };
