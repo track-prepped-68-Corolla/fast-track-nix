@@ -69,7 +69,7 @@ in
           ];
           environment = {
             TZ = config.time.timeZone;
-            PERIPHERY_PASSKEY = "default-passkey-changeme";
+            PERIPHERY_PASSKEY = "";
           };
           extraOptions = [ "--network=host" ];
         };
