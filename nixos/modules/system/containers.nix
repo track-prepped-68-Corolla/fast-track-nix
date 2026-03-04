@@ -65,7 +65,7 @@ in
             "/run/podman/podman.sock:/var/run/docker.sock"
             # The exact same path on host and container for stack parity
             "/etc/komodo:/etc/komodo"
-            "/var/lib/komodo/:/config/"
+            "/var/lib/komodo/periphery.toml:/config/config.toml"
           ];
           environment = {
             TZ = config.time.timeZone;
