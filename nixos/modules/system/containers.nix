@@ -42,8 +42,10 @@ in
         komodo = {
           image = "ghcr.io/mbecker20/komodo:latest";
           ports = [ "8120:9120" ];
-          volumes = [ "/var/lib/komodo/config.toml:/config/config.toml" ];
-          # This tells NixOS to start the DB service first
+          volumes = [
+            "/var/lib/komodo/config.toml:/config/config.toml"
+            "/var/lib/komodo/stacks:/etc/komodo/stacks"
+          ];
           dependsOn = [ "komodo-db" ];
           environment = {
             TZ = config.time.timeZone;

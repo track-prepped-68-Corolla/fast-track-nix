@@ -83,8 +83,8 @@
     fastfetch
     cpufetch
     # Modern Core
-    #kitty
-    #neovim
+    kitty
+    neovim
     bat
     eza
     btop

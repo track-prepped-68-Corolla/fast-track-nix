@@ -86,7 +86,5 @@
     # - Create a mutable, out-of-store symlink to your LazyVim Lua dotfiles.
     # - Configured to toggle on/off via `ft.lazyvim.enable`.
     ./lazyvim.nix
-
-    ./commaCrush.nix
   ];
 }
