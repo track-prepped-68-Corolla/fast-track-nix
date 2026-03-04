@@ -59,19 +59,6 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
-          # Force the entrypoint to be the binary + our flags
-          entrypoint = "/usr/local/bin/periphery";
-          cmd = [
-            "--passkeys"
-            "default-passkey-changeme"
-            "--port"
-            "8121"
-            "--stack-dir"
-            "/etc/komodo/stacks"
-            "--repo-dir"
-
-            "/etc/komodo/repos"
-          ];
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
             "/etc/komodo:/etc/komodo"
@@ -79,6 +66,17 @@ in
           extraOptions = [
             "--network=host"
             "--privileged"
+            # We override the command at the end of the podman run string
+            "--"
+            "periphery"
+            "--port"
+            "8121"
+            "--passkeys"
+            "default-passkey-changeme"
+            "--stack-dir"
+            "/etc/komodo/stacks"
+            "--repo-dir"
+            "/etc/komodo/repos"
           ];
         };
       };
