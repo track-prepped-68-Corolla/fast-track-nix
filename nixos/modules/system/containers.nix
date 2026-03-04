@@ -59,12 +59,12 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
-          # Remove entrypoint/cmd for now to see if Env works
           environment = {
+            # Note the plural and the prefix - this is what the backend looks for
             PASSKEYS = "default-passkey-changeme";
-            KOMODO_PASSKEYS = "default-passkey-changeme";
-            PORT = "8121"; # Move it off 8120 to avoid Core conflict
+            PORT = "8121";
             STACK_DIR = "/etc/komodo/stacks";
+            REPO_DIR = "/etc/komodo/repos";
           };
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
