@@ -59,23 +59,16 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
-
-          # We removed cmd and entrypoint to fix the 'null' type error.
-          # The container will use its internal default ("periphery").
-
-          environment = {
-            # Trying the most common environment variable keys for this image
-            PASSKEY = "default-passkey-changeme";
-            PASSKEYS = "default-passkey-changeme";
-            PORT = "8121";
-            STACK_DIR = "/etc/komodo/stacks";
-          };
-
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
             "/etc/komodo:/etc/komodo"
+            # Map our host TOML to the container's expected config path
+            "/var/lib/komodo/periphery.toml:/config/config.toml"
           ];
-
+          environment = {
+            # We'll keep this as a hint to the binary
+            KOMODO_CONFIG_PATH = "/config/config.toml";
+          };
           extraOptions = [
             "--network=host"
             "--privileged"
