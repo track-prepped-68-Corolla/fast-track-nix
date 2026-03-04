@@ -59,6 +59,13 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
+          # Remove entrypoint/cmd for now to see if Env works
+          environment = {
+            PASSKEYS = "default-passkey-changeme";
+            KOMODO_PASSKEYS = "default-passkey-changeme";
+            PORT = "8121"; # Move it off 8120 to avoid Core conflict
+            STACK_DIR = "/etc/komodo/stacks";
+          };
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
             "/etc/komodo:/etc/komodo"
@@ -66,17 +73,6 @@ in
           extraOptions = [
             "--network=host"
             "--privileged"
-            # We override the command at the end of the podman run string
-            "--"
-            "periphery"
-            "--port"
-            "8121"
-            "--passkeys"
-            "default-passkey-changeme"
-            "--stack-dir"
-            "/etc/komodo/stacks"
-            "--repo-dir"
-            "/etc/komodo/repos"
           ];
         };
       };
