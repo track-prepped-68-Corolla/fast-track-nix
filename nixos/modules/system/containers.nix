@@ -59,9 +59,9 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
-          # This forces the binary to start with these specific flags
+          # Force the entrypoint to be the binary + our flags
+          entrypoint = "/usr/local/bin/periphery";
           cmd = [
-            "periphery"
             "--passkeys"
             "default-passkey-changeme"
             "--stack-dir"
