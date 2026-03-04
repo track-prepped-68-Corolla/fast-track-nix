@@ -85,6 +85,7 @@ in
       8120
       8121
       9120
+      27017
     ];
     users.users.${config.mainuser}.extraGroups = [
       "podman"
