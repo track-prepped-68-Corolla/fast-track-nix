@@ -45,6 +45,8 @@ in
           volumes = [
             "/var/lib/komodo/config.toml:/config/config.toml"
             "/var/lib/komodo/stacks:/etc/komodo/stacks"
+            "/var/lib/komodo/repos:/repo-cache"
+            "/var/lib/komodo/syncs:/syncs"
           ];
           dependsOn = [ "komodo-db" ];
           environment = {
@@ -54,20 +56,21 @@ in
           extraOptions = [ "--network=host" ];
         };
 
+        # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
           ports = [ "8121:8120" ];
-          volumes = [ "/run/podman/podman.sock:/var/run/docker.sock:ro" ];
+          volumes = [
+            # The podman socket so Periphery can command the host
+            "/run/podman/podman.sock:/var/run/docker.sock"
+            # The exact same path on host and container for stack parity
+            "/etc/komodo:/etc/komodo"
+          ];
           environment = {
             TZ = config.time.timeZone;
             PERIPHERY_PASSKEY = "default-passkey-changeme";
           };
-          extraOptions = [
-            "--name=periphery"
-            "--privileged"
-            "--user=0"
-            "--security-opt=label=disable"
-          ];
+          extraOptions = [ "--network=host" ];
         };
       };
     };
