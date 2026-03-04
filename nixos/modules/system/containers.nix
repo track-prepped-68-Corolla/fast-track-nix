@@ -64,9 +64,12 @@ in
           cmd = [
             "--passkeys"
             "default-passkey-changeme"
+            "--port"
+            "8121"
             "--stack-dir"
             "/etc/komodo/stacks"
             "--repo-dir"
+
             "/etc/komodo/repos"
           ];
           volumes = [
