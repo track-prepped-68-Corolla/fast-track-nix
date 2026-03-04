@@ -59,19 +59,24 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
-          ports = [ "8121:8120" ];
-          volumes = [
-            # The podman socket so Periphery can command the host
-            "/run/podman/podman.sock:/var/run/docker.sock"
-            # The exact same path on host and container for stack parity
-            "/etc/komodo:/etc/komodo"
-            "/var/lib/komodo/periphery.toml:/config/config.toml"
+          # This forces the binary to start with these specific flags
+          cmd = [
+            "periphery"
+            "--passkeys"
+            "default-passkey-changeme"
+            "--stack-dir"
+            "/etc/komodo/stacks"
+            "--repo-dir"
+            "/etc/komodo/repos"
           ];
-          environment = {
-            TZ = config.time.timeZone;
-            PERIPHERY_PASSKEY = "";
-          };
-          extraOptions = [ "--network=host" ];
+          volumes = [
+            "/run/podman/podman.sock:/var/run/docker.sock"
+            "/etc/komodo:/etc/komodo"
+          ];
+          extraOptions = [
+            "--network=host"
+            "--privileged"
+          ];
         };
       };
     };
