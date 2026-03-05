@@ -59,16 +59,13 @@ in
         # --- Periphery ---
         periphery = {
           image = "ghcr.io/mbecker20/periphery:latest";
+          environment = {
+            PERIPHERY_PASSKEYS = "default-passkey-changeme";
+          };
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
             "/etc/komodo:/etc/komodo"
-            # Map our host TOML to the container's expected config path
-            "/var/lib/komodo/periphery.toml:/config/config.toml"
           ];
-          environment = {
-            # We'll keep this as a hint to the binary
-            KOMODO_CONFIG_PATH = "/config/config.toml";
-          };
           extraOptions = [
             "--network=host"
             "--privileged"
