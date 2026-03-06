@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 ################################################################################
 # TERMINAL & SHELL MODULE
@@ -92,7 +92,6 @@
     fd
     ripgrep
     dust
-    starship
     # Workflow
     yazi
     lazygit
@@ -105,39 +104,26 @@
   ];
 
   # ----------------------------------------------------------------------------
-  # 6. TMUX (Vim Integration)
+  # STARSHIP (Linked for easy editing)
   # ----------------------------------------------------------------------------
-  programs.tmux = {
+  programs.starship = {
     enable = true;
-    mouse = true;
-    historyLimit = 50000;
-    baseIndex = 1;
-    plugins = with pkgs; [
-      { plugin = tmuxPlugins.vim-tmux-navigator; }
-      {
-        plugin = tmuxPlugins.catppuccin;
-        extraConfig = "set -g @catppuccin_flavour 'mocha'";
-      }
-    ];
-    extraConfig = ''
-      set -g default-terminal "screen-256color"
-      bind -n M-H previous-window
-      bind -n M-L next-window
-    '';
+    enableZshIntegration = true;
+    # Disable the built-in settings so it doesn't conflict with our symlink
+    # settings = {};
   };
 
+  home.file.".config/starship.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/dotfiles/starship.toml";
+
   # ----------------------------------------------------------------------------
-  # 7. SHELL INTEGRATIONS
+  # SHELL INTEGRATIONS
   # ----------------------------------------------------------------------------
   programs.zoxide = {
     enable = true;
     enableZshIntegration = true;
   };
   programs.fzf = {
-    enable = true;
-    enableZshIntegration = true;
-  };
-  programs.starship = {
     enable = true;
     enableZshIntegration = true;
   };
