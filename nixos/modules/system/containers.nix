@@ -75,8 +75,7 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d /opt/containers/komodo 0775 root root -"
-      "d /opt/containers/komodo/data 0775 root root -"
+      "d /opt/containers 0775 root root -"
       "f /opt/containers/komodo/config.toml 0664 root root -"
     ];
 
