@@ -34,7 +34,7 @@ in
         # --- MongoDB ---
         komodo-db = {
           image = "mongo:latest";
-          volumes = [ "/var/lib/komodo/mongodb:/data/db" ];
+          volumes = [ "/opt/containers/komodo/mongodb:/data/db" ];
           extraOptions = [ "--network=host" ];
         };
 
@@ -43,10 +43,10 @@ in
           image = "ghcr.io/mbecker20/komodo:latest";
           ports = [ "8120:9120" ];
           volumes = [
-            "/var/lib/komodo/config.toml:/config/config.toml"
-            "/var/lib/komodo/stacks:/etc/komodo/stacks"
-            "/var/lib/komodo/repos:/repo-cache"
-            "/var/lib/komodo/syncs:/syncs"
+            "/opt/containers/komodo/config.toml:/config/config.toml"
+            "/opt/containers/komodo/stacks:/etc/komodo/stacks"
+            "/opt/containers/komodo/repos:/repo-cache"
+            "/opt/containers/komodo/syncs:/syncs"
           ];
           dependsOn = [ "komodo-db" ];
           environment = {
@@ -64,7 +64,7 @@ in
           };
           volumes = [
             "/run/podman/podman.sock:/var/run/docker.sock"
-            "/etc/komodo:/etc/komodo"
+            "/opt/containers/komodo:/etc/komodo"
           ];
           extraOptions = [
             "--network=host"
@@ -75,9 +75,9 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d /var/lib/komodo 0775 root root -"
-      "d /var/lib/komodo/data 0775 root root -"
-      "f /var/lib/komodo/config.toml 0664 root root -"
+      "d /opt/containers/komodo 0775 root root -"
+      "d /opt/containers/komodo/data 0775 root root -"
+      "f /opt/containers/komodo/config.toml 0664 root root -"
     ];
 
     networking.firewall.allowedTCPPorts = [
