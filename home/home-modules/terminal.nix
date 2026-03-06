@@ -114,7 +114,7 @@
   };
 
   home.file.".config/starship.toml".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/dotfiles/starship.toml";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/dotfiles/starship/starship.toml";
 
   # ----------------------------------------------------------------------------
   # SHELL INTEGRATIONS
