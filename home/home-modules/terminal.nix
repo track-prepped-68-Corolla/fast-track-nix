@@ -83,6 +83,7 @@
     fastfetch
     cpufetch
     # Modern Core
+    ghostty
     kitty
     neovim
     bat
@@ -91,6 +92,7 @@
     fd
     ripgrep
     dust
+    starship
     # Workflow
     yazi
     lazygit
