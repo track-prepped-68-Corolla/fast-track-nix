@@ -53,5 +53,9 @@
       micro # A modern and intuitive terminal-based text editor
       #neovim           # A Vim-fork focused on extensibility and usability
     ];
+
+    services.tailscale.enable = true;
+
+    services.tailscale.extraUpFlags = [ "--operator=${config.mainuser}" ];
   };
 }
