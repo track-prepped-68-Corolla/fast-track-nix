@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 ################################################################################
 # TERMINAL & SHELL MODULE
@@ -34,13 +39,10 @@
   # ----------------------------------------------------------------------------
   # 3. THE SHELL: Zsh
   # ----------------------------------------------------------------------------
-  programs.zsh = {
-    enable = true;
-  };
+  programs.zsh.enable = true;
 
-  home.file = {
-    ".zshrc".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
+  home.file.".zshrc" = lib.mkForce {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
   };
 
   # ----------------------------------------------------------------------------
