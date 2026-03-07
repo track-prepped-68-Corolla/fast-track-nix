@@ -27,6 +27,8 @@
     # oci containers
     ./system/containers.nix
 
+    ./apps/default.nix
+
     # The desktop environment and display manager. turn it on by adding with ft.desktop.cosmic.enable = true;
     ./system/cosmic.nix
 
