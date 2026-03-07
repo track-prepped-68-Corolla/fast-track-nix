@@ -36,32 +36,11 @@
   # ----------------------------------------------------------------------------
   programs.zsh = {
     enable = true;
-    enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    historySubstringSearch = {
-      enable = true;
-    };
+  };
 
-    shellAliases = {
-      # Redirect 'vim' to our customized nvim
-      vim = "nvim";
-      vi = "nvim";
-      edit = "nvim";
-
-      # Modern Core
-      ls = "eza --icons --group-directories-first";
-      ll = "eza -l --icons --group-directories-first";
-      cat = "bat";
-      top = "btop";
-      cd = "z";
-
-      # Shortcuts
-      lg = "lazygit";
-      ra = "yazi";
-      fetch = "fastfetch";
-      internet = "browsh";
-    };
+  home.file = {
+    ".zshrc".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
   };
 
   # ----------------------------------------------------------------------------

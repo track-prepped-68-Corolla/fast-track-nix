@@ -2,14 +2,23 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
 # --- LAYOUT ---
-format = "$directory$git_branch$git_status$python$nodejs$rust$golang$lua$cmd_duration$character"
+format = """
+$git_branch$git_status$python$nodejs$rust$golang$lua$cmd_duration
+$username$directory$character"""
 
 palette = "catppuccin_mocha"
 
 # --- MODULES ---
 
+[username]
+show_always = true
+style_user = "bold mauve" # Using the palette name directly
+style_root = "bold red"
+format = "[$user]($style) "
+disabled = false
+
 [directory]
-style = "bold fg:lavender"
+style = "bold lavender"
 truncation_length = 5
 truncation_symbol = "…/"
 home_symbol = "󱂵 ~"
@@ -18,44 +27,41 @@ use_os_path_sep = true
 truncate_to_repo = true
 
 [character]
-success_symbol = "[❯](bold fg:teal)"
-error_symbol = "[❯](bold fg:red)"
+success_symbol = "[❯](bold teal)"
+error_symbol = "[❯](bold red)"
 
 [git_branch]
 symbol = "󰊢 "
-style = "bold fg:mauve"
+style = "bold mauve"
 
 [git_status]
-style = "bold fg:red"
+style = "bold red"
 format = '([\[$all_status$ahead_behind\]]($style) )'
 
-[fill]
-symbol = " "
-
 [cmd_duration]
-min_time = 2_000
-style = "fg:yellow"
+min_time = 2000
+style = "yellow"
 format = "󱎫 [$duration]($style) "
 
 [python]
 symbol = "󱔎 "
-style = "fg:teal"
+style = "teal"
 
 [nodejs]
 symbol = "󰎙 "
-style = "fg:green"
+style = "green"
 
 [rust]
 symbol = "󱘗 "
-style = "fg:maroon"
+style = "maroon"
 
 [golang]
 symbol = "󰟓 "
-style = "fg:sapphire"
+style = "sapphire"
 
 [lua]
 symbol = "󰢱 "
-style = "fg:blue"
+style = "blue"
 
 # --- THE CATPPUCCIN MOCHA PALETTE ---
 [palettes.catppuccin_mocha]
