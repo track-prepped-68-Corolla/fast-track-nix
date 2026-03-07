@@ -1,1 +1,1 @@
-/nix/store/g1ca3hxrz2qlrxcwx5hnayf3q59a6l99-home-manager-files/.zshrc
+fastfetch --logo nixos --structure Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:Display:DE:WM:Terminal:CPU:GPU:Memory:Break:Colors
