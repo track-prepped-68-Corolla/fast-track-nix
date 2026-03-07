@@ -22,7 +22,7 @@
       # System Utilities and Tools
       nixos-generators # Tool for generating various NixOS artifacts
       direnv # Environment switcher for shell
-      tailscale
+      #tailscale
       sops # Secrets management (used with sops-nix)
       wget # Network downloader
       curl # Transfer data from or to a server
@@ -54,7 +54,7 @@
       #neovim           # A Vim-fork focused on extensibility and usability
     ];
 
-    #services.tailscale.enable = true;
+    services.tailscale.enable = true;
 
     #services.tailscale.extraUpFlags = [ "--operator=${config.mainuser}" ];
   };
