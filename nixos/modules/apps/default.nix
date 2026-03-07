@@ -54,8 +54,8 @@
       #neovim           # A Vim-fork focused on extensibility and usability
     ];
 
-    services.tailscale.enable = true;
+    #services.tailscale.enable = true;
 
-    services.tailscale.extraUpFlags = [ "--operator=${config.mainuser}" ];
+    #services.tailscale.extraUpFlags = [ "--operator=${config.mainuser}" ];
   };
 }
