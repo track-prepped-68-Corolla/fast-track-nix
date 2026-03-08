@@ -53,6 +53,7 @@
     # DESKTOP APPS
     brave
     kitty
+    vesktop
     signal-desktop
     slack
     localsend
