@@ -27,8 +27,7 @@
       wget # Network downloader
       curl # Transfer data from or to a server
       unzip # Decompress zip archives
-      htop # Interactive process viewer
-      btop # Modern, htop-like resource monitor
+      bottom # Interactive process viewer
       duf # Disk Usage/Free Utility
       tldr # Simplified man pages
       perl # Practical Extraction and Report Language
