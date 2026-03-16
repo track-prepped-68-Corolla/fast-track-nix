@@ -18,7 +18,7 @@ let
     map = ''
       header "Updating Collator Map"
       COLLATOR_FILE="$FLAKE_DIR/collator.nix"
-      
+
       if [ -f "$COLLATOR_FILE" ]; then
         FILES=$(nix-instantiate --eval --json -E "(import $COLLATOR_FILE { lib = import <nixpkgs/lib>; }).imports" 2>/dev/null | jq -r '.[]') || {
           error "Map generation failed. Check syntax!"
@@ -50,10 +50,10 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    
+
     # Injecting the logic into the core framework
     ft.system.maintenance.commands = {
-      
+
       fmt = ''
         ${helpers.format}
         success "Code formatted."
@@ -101,7 +101,7 @@ in
         nvd diff /run/current-system ./result
         header "Source Code Changes (Delta)"
         git diff --cached | delta --side-by-side
-        
+
         echo ""
         read -p "Apply and commit? [y/N]: " choice
         if [[ "$choice" =~ ^[yY]$ ]]; then
@@ -135,13 +135,13 @@ in
 
       push = ''
         header "Pushing to Remote"
-        
+
         # 1. Check for uncommitted changes
         if [[ -n $(git status --porcelain) ]]; then
           error "You have uncommitted changes. Run 'ft gen' or commit manually first."
           exit 1
         fi
-        
+
         # 2. Pre-Push Security Gate
         echo -e "''${BLUE}Running pre-push secret scan...''${RESET}"
         # We pipe output to /dev/null to keep the terminal clean unless it fails
@@ -150,7 +150,7 @@ in
           echo "Run 'ft scan' to see the detailed security report."
           exit 1
         fi
-        
+
         # 3. Safe to push
         git push
         success "Pushed to remote securely."
@@ -164,19 +164,19 @@ in
     };
 
     scan = ''
-        header "Scanning for Secrets (TruffleHog)"
-        
-        # We scan the local git history. The --fail flag ensures the command 
-        # throws an exit code of 1 if any secrets are found.
-        if ${pkgs.trufflehog}/bin/trufflehog git file://"$FLAKE_DIR" --fail; then
-          success "Repository is clean. No leaked secrets found."
-        else
-          error "TruffleHog detected potential secrets!"
-          echo "Please remove the compromised data from your git history."
-          exit 1
-        fi
-      '';
-    
+      header "Scanning for Secrets (TruffleHog)"
+
+      # We scan the local git history. The --fail flag ensures the command 
+      # throws an exit code of 1 if any secrets are found.
+      if ${pkgs.trufflehog}/bin/trufflehog git file://"$FLAKE_DIR" --fail; then
+        success "Repository is clean. No leaked secrets found."
+      else
+        error "TruffleHog detected potential secrets!"
+        echo "Please remove the compromised data from your git history."
+        exit 1
+      fi
+    '';
+
     # Optional: Keep your aliases if you prefer short commands in addition to the ft wrapper
     environment.shellAliases = {
       try = "ft test";

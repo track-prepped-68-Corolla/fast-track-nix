@@ -36,7 +36,7 @@ let
     text = ''
       set -e
       FLAKE_DIR="${cfg.flakeDir}"
-      
+
       if [[ ! -d "$FLAKE_DIR" ]]; then
         echo -e "\n\033[1;31m:: Error: Flake directory $FLAKE_DIR not found. ::\033[0m"
         exit 1
@@ -67,7 +67,7 @@ in
 {
   options.ft.system.maintenance = {
     enable = lib.mkEnableOption "Pluggable ft maintenance CLI";
-    
+
     flakeDir = lib.mkOption {
       type = lib.types.str;
       default = "/home/joe/git/ft-home";

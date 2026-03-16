@@ -35,7 +35,7 @@ in
       # will permanently break and you will have to fix this file manually.
       # =====================================================================
       # MULLET_START_9f8b7c6d5e4a3b2c1
-        cowsay
+      cowsay
       # MULLET_END_9f8b7c6d5e4a3b2c1
     ];
 

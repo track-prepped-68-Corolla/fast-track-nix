@@ -85,11 +85,14 @@ let
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" pull --rebase --autostash
 
     echo "---Incoming Changes (Delta) ---"
-    ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff HEAD@{1}..HEAD | ${pkgs.delta}/bin/delta
+    ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff HEAD@{1}..HEAD | ${pkgs.delta}/bin/delta --side-by-side
 
     echo "---Building and Switching ---"
     ${pkgs.nh}/bin/nh os switch "$FLAKE_DIR" --ask
     echo "System updated!"
+
+    echo "--- Package Version Changes ---"
+    ${pkgs.nvd}/bin/nvd diff /run/current-system "$FLAKE_DIR"#nixosConfigurations.$(hostname).config.system.build.toplevel
   '';
 
   # --- The 'ft' Application CLI ---
