@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # NFS CLIENT MODULE
@@ -59,17 +64,18 @@ in
     # are similar to those found in `/etc/fstab`.
     fileSystems = lib.mapAttrs' (
       name: value: # `name` is the attribute key, `value` is the submodule { remotePath, mountPoint }
-      lib.nameValuePair "${value.mountPoint}" { # The mount point is the key for the fileSystem entry
+      lib.nameValuePair "${value.mountPoint}" {
+        # The mount point is the key for the fileSystem entry
         device = "${value.remotePath}";
         fsType = "nfs";
         options = [
-          "x-systemd.automount"      # Automount when accessed, managed by systemd
-          "noauto"                   # Do not mount automatically at boot
+          "x-systemd.automount" # Automount when accessed, managed by systemd
+          "noauto" # Do not mount automatically at boot
           "x-systemd.idle-timeout=600" # Unmount after 600 seconds of inactivity
-          "nfsvers=4.1"              # Specify NFS protocol version 4.1
-          "soft"                     # Soft mount (requests timeout)
-          "intr"                     # Allow interrupts for hung operations
-          "_netdev"                  # Require network to be up before mounting
+          "nfsvers=4.1" # Specify NFS protocol version 4.1
+          "soft" # Soft mount (requests timeout)
+          "intr" # Allow interrupts for hung operations
+          "_netdev" # Require network to be up before mounting
         ];
       }
     ) cfg.mounts;

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # COSMIC DESKTOP ENVIRONMENT MODULE
@@ -19,13 +24,13 @@ in
   config = lib.mkIf cfg.enable {
     # 1. Enable the COSMIC Desktop Manager
     services.desktopManager.cosmic.enable = lib.mkDefault true;
-    
+
     # 2. Enable the COSMIC Greeter (display manager)
     services.displayManager.cosmic-greeter.enable = lib.mkDefault true;
 
     # 3. Enable System76 Scheduler for performance optimization
     services.system76-scheduler.enable = lib.mkDefault true;
-    
+
     # 4. Ensure graphics hardware is enabled for the desktop environment
     hardware.graphics.enable = lib.mkDefault true;
   };

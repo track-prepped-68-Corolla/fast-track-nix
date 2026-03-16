@@ -1,4 +1,9 @@
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 
 {
   # -------------------------------------------------------------------------
@@ -9,7 +14,7 @@
   #
   #  WHERE IS THE REST?
   #  You might notice this file is very short! That is intentional.
-  #  
+  #
   #  1. The Boring Stuff (Bootloader, Timezone, Locale, Nix Settings, StateVersion)
   #     is handled automatically by 'modules/system/core.nix'.
   #     We moved it there so you don't have to copy-paste it for every laptop.
@@ -33,7 +38,6 @@
   # The name of this machine on your network.
   networking.hostName = "talos";
 
-
   # -------------------------------------------------------------------------
   #  CAPABILITIES & FEATURES
   # -------------------------------------------------------------------------
@@ -47,11 +51,11 @@
   # -------------------------------------------------------------------------
 
   # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
-#ft.gaming.enable = true;
+  #ft.gaming.enable = true;
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
   # NVIDIA Drivers: Uncomment to enable proprietary NVIDIA drivers (required for RTX cards)
   #ft.drivers.nvidia.enable = true;
-  
+
   # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
   #ft.virtualisation.podman.enable = true;
 }

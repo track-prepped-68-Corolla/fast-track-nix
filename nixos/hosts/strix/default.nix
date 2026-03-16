@@ -1,4 +1,9 @@
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 
 {
   # -------------------------------------------------------------------------
@@ -9,7 +14,7 @@
   #
   #  WHERE IS THE REST?
   #  You might notice this file is very short! That is intentional.
-  #  
+  #
   #  1. The Boring Stuff (Bootloader, Timezone, Locale, Nix Settings, StateVersion)
   #     is handled automatically by 'modules/system/core.nix'.
   #     We moved it there so you don't have to copy-paste it for every laptop.
@@ -29,10 +34,15 @@
     ./hardware-configuration.nix
   ];
 
+  mainuser = "joe"; # This identifies who Home Manager should focus on
+
+  superUsers = [
+    "joe"
+  ];
+
   # --- IDENTITY ---
   # The name of this machine on your network.
   networking.hostName = "strix";
-
 
   # -------------------------------------------------------------------------
   #  CAPABILITIES & FEATURES
@@ -47,11 +57,17 @@
   # -------------------------------------------------------------------------
 
   # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
-#ft.gaming.enable = true;
+  ft.profiles.gaming = {
+    enable = true;
+    user = "joe"; # Change this to your actual Linux username
+    gpuVendor = "amd"; # Set to "amd", "nvidia", or "intel"
+    enableLeanbackUI = false; # Keeps the normal desktop boot flow
+    desktopEnvironment = "cosmic"; # Tells Jovian to use cosmic as the DE
+  };
+
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
-  # NVIDIA Drivers: Uncomment to enable proprietary NVIDIA drivers (required for RTX cards)
-  #ft.drivers.nvidia.enable = true;
-  
-  # Virtualization (Podman): Uncomment to enable containers and Docker compatibility
-  #ft.virtualisation.podman.enable = true;
+
+  ft.containers.enable = true; # Enable container backend and management
+
+  ft.system.maintenance.enable = true; # Enable system maintenance script
 }

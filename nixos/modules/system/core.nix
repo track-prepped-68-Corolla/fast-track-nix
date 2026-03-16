@@ -6,7 +6,7 @@
   # -------------------------------------------------------------------------
   #
   #  This file sets the baseline configuration for EVERY machine you build.
-  #  
+  #
   #  The Goal:
   #  1. Keep host files clean (only unique hardware/features go there).
   #  2. Ensure consistent settings across your fleet (same timezone, same locale).
@@ -17,14 +17,14 @@
   # -------------------------------------------------------------------------
 
   # --- 1. SYSTEM IDENTITY (The Birthday) ---
-  system.stateVersion = "24.05"; 
+  system.stateVersion = "24.05";
 
   # --- 2. BOOTLOADER (GRUB) ---
   boot.loader.grub = {
     enable = lib.mkDefault true;
     device = "nodev";
     efiSupport = true;
-    useOSProber = lib.mkDefault true; 
+    useOSProber = lib.mkDefault true;
   };
   boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
 
@@ -51,7 +51,10 @@
 
   # --- 5. NIX SETTINGS ---
   # Enable the modern "Flakes" command line tools.
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
   nix.settings.auto-optimise-store = true;
   nixpkgs.config.allowUnfree = true;
 
@@ -61,15 +64,15 @@
 
   # --- 7. CORE PACKAGES ---
   # Tools that should be present on ANY system, even a headless server.
-  programs.zsh.enable = true; #zsh is the default shell in fsat track
+  programs.zsh.enable = true; # zsh is the default shell in fsat track
 
   environment.systemPackages = with pkgs; [
-    nano          # Text Editor (Emergency backup if NeoVim breaks)
-    git           # Version Control
-    curl          # Download tool
-    wget          # Download tool
-    htop          # Process Viewer
-    tmux          # Terminal multiplexer
-    home-manager 
+    nano # Text Editor (Emergency backup if NeoVim breaks)
+    git # Version Control
+    curl # Download tool
+    wget # Download tool
+    htop # Process Viewer
+    tmux # Terminal multiplexer
+    home-manager
   ];
 }

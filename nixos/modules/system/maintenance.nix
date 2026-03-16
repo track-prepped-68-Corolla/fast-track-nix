@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # SYSTEM MAINTENANCE MODULE
@@ -13,10 +18,10 @@ let
   cfg = config.ft.system.maintenance;
 
   # --- Format Command ---
-  # Formats all .nix files within the flake directory using nixfmt-rfc-style.
+  # Formats all .nix files within the flake directory using nixfmt.
   formatCmd = ''
-    echo "--- ✨ Formatting ---"
-    ${pkgs.findutils}/bin/find "$FLAKE_DIR" -name "*.nix" -exec ${pkgs.nixfmt-rfc-style}/bin/nixfmt {} +
+    echo "---Formatting ---"
+    ${pkgs.findutils}/bin/find "$FLAKE_DIR" -name "*.nix" -exec ${pkgs.nixfmt}/bin/nixfmt {} +
   '';
 
   # --- Script 1: nh-test (Dry Run / Temporary Switch) ---
@@ -27,15 +32,15 @@ let
 
     ${formatCmd}
 
-    echo "--- 🛠️  Staging ---"
+    echo "---Staging ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" add .
 
-    echo "--- 📄 Source Code Changes (Delta) ---"
+    echo "---Source Code Changes (Delta) ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff --cached | ${pkgs.delta}/bin/delta
 
-    echo "--- 🧪 Running Test ---"
+    echo "---Running Test ---"
     ${pkgs.nh}/bin/nh os test "$FLAKE_DIR" --ask
-    echo "✅ Test complete. Reboot to revert." 
+    echo "Test complete. Reboot to revert." 
   '';
 
   # --- Script 2: nh-update (Commit & Switch) ---
@@ -46,45 +51,45 @@ let
 
     ${formatCmd}
 
-    echo "--- 🛠️  Staging ---"
+    echo "---Staging ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" add .
 
-    echo "--- 🔍 Previewing Build ---"
+    echo "---Previewing Build ---"
     ${pkgs.nh}/bin/nh os test "$FLAKE_DIR" --dry
 
     echo ""
-    echo "--- 📄 Source Code Changes (Delta) ---"
+    echo "---Source Code Changes (Delta) ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff --cached | ${pkgs.delta}/bin/delta
 
     echo ""
     read -p "Apply and commit? [y/N]: " choice
     if [[ "$choice" =~ ^[yY]$ ]]; then
-      echo "--- 🚀 Switching ---"
+      echo "---Switching ---"
       ${pkgs.nh}/bin/nh os switch "$FLAKE_DIR"
 
-      echo "--- 💾 Committing ---"
+      echo "---Committing ---"
       read -p "Commit message: " msg
       ${pkgs.git}/bin/git -C "$FLAKE_DIR" commit -m "$msg"
-      echo "✅ Update Complete!"
+      echo "Update Complete!"
     else
-      echo "🛑 Cancelled."
+      echo "Cancelled."
     fi
-  '' ;
+  '';
 
   # --- Script 3: nh-sync (Pull & Switch) ---
   # Pulls latest changes from Git, applies them, and switches the system.
   nhSyncScript = pkgs.writeShellScriptBin "nh-sync" ''
     set -e
     FLAKE_DIR="${cfg.flakeDir}"
-    echo "--- ⬇️  Pulling updates ---"
+    echo "---Pulling updates ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" pull --rebase --autostash
 
-    echo "--- 📄 Incoming Changes (Delta) ---"
+    echo "---Incoming Changes (Delta) ---"
     ${pkgs.git}/bin/git -C "$FLAKE_DIR" diff HEAD@{1}..HEAD | ${pkgs.delta}/bin/delta
 
-    echo "--- 🚀 Building and Switching ---"
+    echo "---Building and Switching ---"
     ${pkgs.nh}/bin/nh os switch "$FLAKE_DIR" --ask
-    echo "✅ System updated!"
+    echo "System updated!"
   '';
 
   # --- The 'ft' Application CLI ---
@@ -95,10 +100,10 @@ let
       git
       lix
       nh
-      nixfmt-rfc-style
+      nixfmt
       delta
       findutils
-      nvd # For 'nvd diff' if desired, not used directly in current scripts
+      nvd
     ];
     text = ''
       set -e
@@ -111,19 +116,51 @@ let
       RESET=$(tput sgr0)
 
       header()  { echo -e "\n''${BOLD}''${BLUE}:: $1 ::''${RESET}"; }
-      success() { echo -e "\n''${BOLD}''${GREEN}✅ $1''${RESET}"; }
-      error()   { echo -e "\n''${BOLD}''${RED}❌ $1''${RESET}"; }
+      success() { echo -e "\n''${BOLD}''${GREEN} $1''${RESET}"; }
+      error()   { echo -e "\n''${BOLD}''${RED} $1''${RESET}"; }
 
       case "$1" in
-        fmt)                     ${formatCmd} ; success "Code formatted." ;;
-        check)                   ${formatCmd} ; header "🛡️  Checking Flake Validity" ; lix flake check "$FLAKE_DIR" --show-trace ; success "Flake is valid." ;;
-        test)                    ${nhTestScript}/bin/nh-test ;;
-        upd|update)              header "🔄 Updating Flake Inputs (flake.lock)" ; lix flake update --flake "$FLAKE_DIR" ; success "Flake inputs updated." ;;
-        gen|switch|generate)     ${nhUpdateScript}/bin/nh-update ;;
-        pull)                    ${nhSyncScript}/bin/nh-sync ;;
-        push)                    header "⬆️  Pushing to Remote" ; if [[ -n $(git -C "$FLAKE_DIR" status --porcelain) ]]; then error "You have uncommitted changes. Run 'ft gen' or commit manually first." ; exit 1 ; fi ; git -C "$FLAKE_DIR" push ; success "Pushed to remote." ;;
-        clean)                   nh clean all ; success "Nix store cleaned." ;;
-        *)                       echo "Usage: ft {fmt|check|test|upd|gen|pull|push|clean}" ; exit 1 ;;
+        fmt)
+          ${formatCmd}
+          success "Code formatted."
+          ;;
+        check)
+          ${formatCmd}
+          header "Checking Flake Validity"
+          nix flake check "$FLAKE_DIR" --show-trace
+          success "Flake is valid."
+          ;;
+        test)
+          ${nhTestScript}/bin/nh-test
+          ;;
+        upd|update)
+          header "Updating Flake Inputs (flake.lock)"
+          nix flake update --flake "$FLAKE_DIR"
+          success "Flake inputs updated."
+          ;;
+        gen|switch|generate)
+          ${nhUpdateScript}/bin/nh-update
+          ;;
+        pull)
+          ${nhSyncScript}/bin/nh-sync
+          ;;
+        push)
+          header "⬆Pushing to Remote"
+          if [[ -n $(git -C "$FLAKE_DIR" status --porcelain) ]]; then
+            error "You have uncommitted changes. Run 'ft gen' or commit manually first."
+            exit 1
+          fi
+          git -C "$FLAKE_DIR" push
+          success "Pushed to remote."
+          ;;
+        clean)
+          nh clean all
+          success "Nix store cleaned."
+          ;;
+        *)
+          echo "Usage: ft {fmt|check|test|upd|gen|pull|push|clean}"
+          exit 1
+          ;;
       esac
     '';
   };
@@ -135,20 +172,19 @@ in
 
     flakeDir = lib.mkOption {
       type = lib.types.str;
-      default = "/home/joe/git/ft-home"; # Default to current flake directory
+      default = "/home/joe/git/ft-home";
       description = "The absolute path to your NixOS flake directory.";
       example = "/home/username/git/my-nixos-config";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # Add the custom scripts and tools to the system path
     environment.systemPackages = [
       pkgs.lix
       pkgs.nh
       pkgs.nvd
-      pkgs.nix-output-monitor # For enhanced Nix build output
-      pkgs.nixfmt-rfc-style
+      pkgs.nix-output-monitor
+      pkgs.nixfmt
       pkgs.findutils
       pkgs.delta
       pkgs.git
@@ -158,18 +194,16 @@ in
       ftScript
     ];
 
-    # Set NH_FLAKE environment variable for nh commands
     environment.sessionVariables = {
       NH_FLAKE = cfg.flakeDir;
     };
 
-    # Define shell aliases for convenience
     environment.shellAliases = {
       try = "nh-test";
       up = "nh-update";
       down = "nh-sync";
       cl = "nh clean all";
-      fmt = "nixfmt"; # Direct nixfmt alias for quick formatting
+      fmt = "nixfmt";
     };
   };
 }

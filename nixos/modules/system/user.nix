@@ -1,13 +1,21 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 
 let
   # --- CONSTANTS ---
   # These groups are applied to every user created by this module.
   commonGroups = [
     "networkmanager" # Manage Wifi/Ethernet
-    "podman"         # Run containers without root
-    "lp" "scanner"   # Printing and scanning
-    "video" "render" # Hardware acceleration (GPU)
+    "podman" # Run containers without root
+    "lp"
+    "scanner" # Printing and scanning
+    "video"
+    "render" # Hardware acceleration (GPU)
   ];
 in
 {
@@ -42,9 +50,10 @@ in
       settings = {
         cue = true; # Tells you to tap the key
         interactive = true;
+        control = "sufficient";
         authFile = pkgs.writeText "u2f_keys" ''
-        admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN
-      '';
+          admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN
+        '';
       };
     };
 
@@ -54,18 +63,17 @@ in
     };
 
     users.users = lib.mkMerge [
-      
+
       # 1. THE PERMANENT ADMIN (Safety Net)
       # This user is hardcoded. It is always present on every system you build.
       {
         admin = {
           isNormalUser = true;
           extraGroups = commonGroups ++ [ "wheel" ]; # 'wheel' = sudo access
-          # Password disabled; YubiKey is the only way in
-          initialPassword = lib.mkDefault "snp"; 
-          openssh.authorizedKeys.keys = [ 
-            "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINTWBO+wJvD/8Dili8rdo9fNvNLxYnzTZxv90Y2AK0WfAAAADXNzaDpmYXN0dHJhY2s= ssh:fasttrack"
-          ];
+          initialPassword = lib.mkDefault "snp";
+          #openssh.authorizedKeys.keys = [
+          # "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINTWBO+wJvD/8Dili8rdo9fNvNLxYnzTZxv90Y2AK0WfAAAADXNzaDpmYXN0dHJhY2s= ssh:fasttrack"
+          #];
           shell = pkgs.zsh;
         };
       }
@@ -94,15 +102,16 @@ in
     # --------------------------------------------------------------------------
     # This logic takes every user defined above and attempts to import their
     # specific Home Manager configuration file.
-    
-    home-manager.users = lib.genAttrs 
-      (lib.unique ([ config.mainuser ] ++ config.superUsers ++ config.normalUsers)) 
-      (user: 
-        # CRITICAL: This assumes your folder structure is standard.
-        # nixos/modules/users.nix -> ../../ -> PROJECT ROOT -> users/
-        # If this path is wrong, the build will FAIL (which is good for debugging).
-        import ../../../home/users/${user}/default.nix
-      );
+
+    home-manager.users =
+      lib.genAttrs (lib.unique ([ config.mainuser ] ++ config.superUsers ++ config.normalUsers))
+        (
+          user:
+          # CRITICAL: This assumes your folder structure is standard.
+          # nixos/modules/users.nix -> ../../ -> PROJECT ROOT -> users/
+          # If this path is wrong, the build will FAIL (which is good for debugging).
+          import ../../../home/users/${user}/default.nix
+        );
 
     # --------------------------------------------------------------------------
     # 3. GLOBAL ARGUMENTS
@@ -110,7 +119,7 @@ in
     # Pass 'inputs' (from flake.nix) to Home Manager.
     # This lets your user configs use inputs.nix-cachyos, inputs.stylix, etc.
     home-manager.extraSpecialArgs = { inherit inputs; };
-    
+
     # Ensure Home Manager uses the system's package set to save disk space
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
