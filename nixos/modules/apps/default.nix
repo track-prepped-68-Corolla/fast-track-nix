@@ -30,7 +30,6 @@
       bottom # Interactive process viewer
       duf # Disk Usage/Free Utility
       tldr # Simplified man pages
-      yazi
       perl # Practical Extraction and Report Language
       nodejs # JavaScript runtime
 
