@@ -32,6 +32,7 @@
       tldr # Simplified man pages
       perl # Practical Extraction and Report Language
       nodejs # JavaScript runtime
+      obsidian
 
       # File System and Search Tools
       ripgrep # Super-fast grep alternative
