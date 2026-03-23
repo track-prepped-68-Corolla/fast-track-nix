@@ -34,6 +34,7 @@
       nodejs # JavaScript runtime
       obsidian
       just
+      trufflehog
 
       # File System and Search Tools
       ripgrep # Super-fast grep alternative
