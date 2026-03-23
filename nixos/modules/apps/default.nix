@@ -33,6 +33,7 @@
       perl # Practical Extraction and Report Language
       nodejs # JavaScript runtime
       obsidian
+      just
 
       # File System and Search Tools
       ripgrep # Super-fast grep alternative
