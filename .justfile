@@ -57,6 +57,9 @@ switch: check
     
     read -p "Apply and commit? [y/N]: " choice
     if [[ "$choice" =~ ^[yY]$ ]]; then
+      # Capture current generation BEFORE building
+      OLD_GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
+      
       # Build and switch
       nh os switch 
       
@@ -64,13 +67,17 @@ switch: check
       GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
       NVD_DIFF=$(nvd --color never diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2))
       
-      # ONLY commit and clean up if there are actual changes
+      # Handle Git Commits (Triggers on ANY text change)
       if ! git diff --cached --quiet; then
           echo ""
           read -p "Commit message: " msg
           git commit -m "$msg" -m "Generation: $GEN" -m "$NVD_DIFF"
-          
-          # Drop the absolute oldest generation (keeping at least a few for safety)
+      else
+          echo ":: No source changes detected. Skipping git commit. ::"
+      fi
+      
+      # Handle Generation Cleanup (Triggers ONLY if Nix built a new system)
+      if [ "$GEN" -gt "$OLD_GEN" ]; then
           GEN_COUNT=$(ls -d1v /nix/var/nix/profiles/system-*-link | wc -l)
           if [ "$GEN_COUNT" -gt 3 ]; then
               OLDEST_LINK=$(ls -d1v /nix/var/nix/profiles/system-*-link | head -n 1)
@@ -79,7 +86,7 @@ switch: check
               sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations "$OLDEST_GEN"
           fi
       else
-          echo ":: No source changes detected. Skipping git commit and cleanup. ::"
+          echo ":: System generation did not change. Skipping cleanup. ::"
       fi
       
       echo ":: Update Complete! Now running Generation $GEN ::"
