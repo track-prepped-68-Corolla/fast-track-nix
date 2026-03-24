@@ -69,10 +69,10 @@
     #openscad
     #freecad
     #blender
-    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.krita
-    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.openscad
-    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.freecad
-    inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.blender
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.krita
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.openscad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.freecad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.blender
     libreoffice
 
     # GAMING
