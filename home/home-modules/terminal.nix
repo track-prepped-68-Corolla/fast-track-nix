@@ -42,7 +42,7 @@
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    initExtra = "source ${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
+    initContent = "source ${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
   };
 
   # ----------------------------------------------------------------------------
