@@ -37,7 +37,7 @@
     # profiles
     ./profiles/gaming.nix
 
-    ./system/maintenance.nix
+    ./system/just.nix
 
     # --- 2. EXTERNAL MODULES (From Flake Inputs) ---
     # These bring in tools from the internet that we defined in flake.nix.

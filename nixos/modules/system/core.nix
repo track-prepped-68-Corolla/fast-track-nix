@@ -84,6 +84,14 @@
       htop # Process Viewer
       tmux # Terminal multiplexer
       home-manager
+      lix
+      nh
+      nvd
+      nix-output-monitor
+      nixfmt
+      findutils
+      delta
+      git
     ];
   };
 }

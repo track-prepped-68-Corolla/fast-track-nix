@@ -69,5 +69,5 @@
 
   ft.containers.enable = true; # Enable container backend and management
 
-  ft.system.maintenance.enable = true; # Enable system maintenance script
+  ft.cli.enable = true; # Enable system maintenance script
 }
