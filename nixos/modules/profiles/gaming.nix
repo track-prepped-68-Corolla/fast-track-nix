@@ -84,7 +84,7 @@ in
       enable = true; # Always enable Jovian for optimizations
       autoStart = cfg.enableLeanbackUI; # Auto-start Steam Big Picture if leanback UI is enabled
       user = cfg.user;
-      desktopSession = cfg.desktopEnvironment;
+      desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
     };
 
     # 4. Decky Loader (for Steam Deck UI plugins)

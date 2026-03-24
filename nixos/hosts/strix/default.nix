@@ -62,7 +62,7 @@
     user = "joe"; # Change this to your actual Linux username
     gpuVendor = "amd"; # Set to "amd", "nvidia", or "intel"
     enableLeanbackUI = false; # Keeps the normal desktop boot flow
-    desktopEnvironment = "cosmic"; # Tells Jovian to use cosmic as the DE
+    #desktopEnvironment = "cosmic"; # Tells Jovian to use cosmic as the DE
   };
 
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
