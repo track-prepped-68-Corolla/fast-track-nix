@@ -122,3 +122,20 @@ push:
 # --- 5. Full Sync ---
 
 sync: pull push
+
+# --- 6. Emergency Recovery ---
+
+# Rollback to the immediate previous generation
+rollback:
+    #!/usr/bin/env bash
+    echo ":: Current Generation ::"
+    readlink /nix/var/nix/profiles/system | cut -d'-' -f2
+    
+    echo ":: Rolling back to previous generation ::"
+    sudo nix-env --profile /nix/var/nix/profiles/system --rollback
+    
+    echo ":: Activating rolled-back system ::"
+    sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+    
+    echo ":: Rollback Complete! ::"
+    echo ":: Note: Your Git repo is still ahead. You may want to 'git reset' or fix the code. ::"
