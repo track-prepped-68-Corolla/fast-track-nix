@@ -35,7 +35,6 @@
       obsidian
       just
       trufflehog
-      cowsay
 
       # File System and Search Tools
       ripgrep # Super-fast grep alternative
