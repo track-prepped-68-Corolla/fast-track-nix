@@ -1,12 +1,15 @@
 # ~/.config/nixos/justfile
 
+# Suppress all command echoing globally for a cleaner terminal
+set quiet := true
+
 # Import project-specific modules (Commented out until files exist)
 # !include modules/ai/justfile
 # !include modules/nas/justfile
 # !include user/projects/justfile
 
 default:
-    @just --list
+    just --list
 
 alias r  := switch
 alias t  := test
@@ -16,21 +19,21 @@ alias s  := sync
 
 # --- 1. Maintenance & Checks ---
 
-@fmt:
+fmt:
     echo ":: Formatting ::"
     find . -name "*.nix" -exec nixfmt {} +
 
-@check: fmt
+check: fmt
     echo ":: Scanning for leaked secrets ::"
-    trufflehog git file://. --since-commit HEAD --fail
+    trufflehog git file://. --since-commit HEAD --fail 2>/dev/null
 
-@clean:
+clean:
     echo ":: Cleaning Nix Store ::"
     nh clean all
 
 # --- 2. Testing ---
 
-@test: check
+test: check
     #!/usr/bin/env bash
     echo ":: Staging & Diffs ::"
     git add .
@@ -42,7 +45,7 @@ alias s  := sync
 
 # --- 3. Core Workflow ---
 
-@switch: check
+switch: check
     #!/usr/bin/env bash
     set -e
     echo ":: Previewing Build ::"
@@ -86,7 +89,7 @@ alias s  := sync
 
 # --- 4. Remote Syncing ---
 
-@pull:
+pull:
     echo ":: Pulling Updates ::"
     git pull --rebase --autostash
     
@@ -99,7 +102,7 @@ alias s  := sync
     echo ":: System Package Changes ::"
     nvd diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2)
 
-@push:
+push:
     #!/usr/bin/env bash
     if [[ -n $(git status --porcelain) ]]; then
       echo ":: Error: Uncommitted changes. Run 'just switch' or commit manually first. ::"
@@ -110,4 +113,4 @@ alias s  := sync
 
 # --- 5. Full Sync ---
 
-@sync: pull push
+sync: pull push
