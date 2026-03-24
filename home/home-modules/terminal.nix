@@ -41,6 +41,7 @@
   # ----------------------------------------------------------------------------
   programs.zsh = {
     enable = true;
+    dotDir = "${config.xdg.configHome}/zsh";
     enableCompletion = true;
     initContent = "source ${config.home.homeDirectory}/git/ft-home/home/dotfiles/zsh/.zshrc";
   };
