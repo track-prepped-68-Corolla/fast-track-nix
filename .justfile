@@ -64,21 +64,22 @@ switch: check
       GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
       NVD_DIFF=$(nvd --color never diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2))
       
+      # ONLY commit and clean up if there are actual changes
       if ! git diff --cached --quiet; then
           echo ""
           read -p "Commit message: " msg
           git commit -m "$msg" -m "Generation: $GEN" -m "$NVD_DIFF"
+          
+          # Drop the absolute oldest generation (keeping at least a few for safety)
+          GEN_COUNT=$(ls -d1v /nix/var/nix/profiles/system-*-link | wc -l)
+          if [ "$GEN_COUNT" -gt 3 ]; then
+              OLDEST_LINK=$(ls -d1v /nix/var/nix/profiles/system-*-link | head -n 1)
+              OLDEST_GEN=$(basename "$OLDEST_LINK" | cut -d'-' -f2)
+              echo ":: Dropping oldest generation ($OLDEST_GEN) ::"
+              sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations "$OLDEST_GEN"
+          fi
       else
-          echo ":: No source changes detected. Skipping git commit. ::"
-      fi
-      
-      # Drop the absolute oldest generation (keeping at least a few for safety)
-      GEN_COUNT=$(ls -d1v /nix/var/nix/profiles/system-*-link | wc -l)
-      if [ "$GEN_COUNT" -gt 3 ]; then
-          OLDEST_LINK=$(ls -d1v /nix/var/nix/profiles/system-*-link | head -n 1)
-          OLDEST_GEN=$(basename "$OLDEST_LINK" | cut -d'-' -f2)
-          echo ":: Dropping oldest generation ($OLDEST_GEN) ::"
-          sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations "$OLDEST_GEN"
+          echo ":: No source changes detected. Skipping git commit and cleanup. ::"
       fi
       
       echo ":: Update Complete! Now running Generation $GEN ::"
