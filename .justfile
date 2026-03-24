@@ -61,9 +61,13 @@ alias s  := sync
       GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
       NVD_DIFF=$(nvd --color never diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2))
       
-      echo ""
-      read -p "Commit message: " msg
-      git commit -m "$msg" -m "Generation: $GEN" -m "$NVD_DIFF"
+      if ! git diff --cached --quiet; then
+          echo ""
+          read -p "Commit message: " msg
+          git commit -m "$msg" -m "Generation: $GEN" -m "$NVD_DIFF"
+      else
+          echo ":: No source changes detected. Skipping git commit. ::"
+      fi
       
       # Drop the absolute oldest generation (keeping at least a few for safety)
       GEN_COUNT=$(ls -d1v /nix/var/nix/profiles/system-*-link | wc -l)
