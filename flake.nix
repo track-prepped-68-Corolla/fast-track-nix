@@ -15,12 +15,15 @@
     stylix.url = "github:nix-community/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # --- Extras & Desktops ---
+    # --- Extras ---
     nur.url = "github:nix-community/NUR";
     nur.inputs.nixpkgs.follows = "nixpkgs";
 
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    nix-index-database.url = "github:nix-community/nix-index-database";
+    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
 
     # Note: These are Home Manager modules (User Desktop Configs)
     cosmic-manager.url = "github:HeitorAugustoLN/cosmic-manager";
@@ -77,7 +80,10 @@
             # This dynamically imports the folder matching the hostname
             ./nixos/hosts/${host}/default.nix
 
-            # 3. Flake Overlays (NEW)
+            # 3. Import the nix-index module
+            inputs.nix-index-database.nixosModules.nix-index
+
+            # 4. Flake Overlays
             # We inject the NUR overlay here so pkgs.nur is available system-wide
             (
               { inputs, ... }:

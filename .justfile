@@ -3,10 +3,8 @@
 # Suppress all command echoing globally for a cleaner terminal
 set quiet := true
 
-# Import project-specific modules (Commented out until files exist)
-# !include modules/ai/justfile
-# !include modules/nas/justfile
-# !include user/projects/justfile
+
+import "~/git/ft-home/nixos/modules/apps/mullet"
 
 default:
     just --list
