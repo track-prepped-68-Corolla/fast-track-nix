@@ -70,4 +70,6 @@
   ft.containers.enable = true; # Enable container backend and management
 
   ft.cli.enable = true; # Enable system maintenance script
+
+  ft.mullet.enable = true; # Enable the imperative mullet for package management
 }
