@@ -59,7 +59,7 @@ switch: check
       OLD_GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
       
       # Build and switch
-      nh os switch 
+      nh os switch .
       
       # Extract new generation and diff packages
       GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)

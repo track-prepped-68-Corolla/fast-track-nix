@@ -32,6 +32,8 @@
     # The desktop environment and display manager. turn it on by adding with ft.desktop.cosmic.enable = true;
     ./system/cosmic.nix
 
+    ./system/keepass.nix
+
     ./hardware/vm.nix
 
     # profiles
