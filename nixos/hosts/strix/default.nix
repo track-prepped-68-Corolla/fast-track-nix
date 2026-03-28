@@ -71,5 +71,7 @@
 
   ft.cli.enable = true; # Enable system maintenance script
 
+  ft.keepass.enable = true;
+
   ft.mullet.enable = true; # Enable the imperative mullet for package management
 }
