@@ -1,0 +1,9 @@
+- [ ] wire up all flake inputs
+- [ ] create code to send flake outputs to magic folder functions
+- [ ] create magic folder function for hosts
+- [ ] create magic folder function for homes
+- [ ] purge modules and bring back mvp
+- [ ] create magic collator file for host modules
+- [ ] create magic collator file for home modules
+- [ ] create a home module for magic mkoutofstoresymlink folder functions
+- [ ] bring in just scripts and modify as needed
