@@ -2,15 +2,9 @@
 
 let
   # --- CONSTANTS ---
-  # These groups are applied to every user created by this module.
-  commonGroups = [
-    "networkmanager" # Manage Wifi/Ethernet
-    "podman" # Run containers without root
-    "lp"
-    "scanner" # Printing and scanning
-    "video"
-    "render" # Hardware acceleration (GPU)
-  ];
+  commonGroups = [ "video" "render" "lp" "scanner" ]
+    ++ lib.optional config.networking.networkmanager.enable "networkmanager"
+    ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
   # --- THE API (Options) ---

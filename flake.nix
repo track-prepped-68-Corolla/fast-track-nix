@@ -31,27 +31,8 @@
       url = "github:jovian-experiments/jovian-nixos";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    haumea = {
-      url = "github:nix-community/haumea/v0.2.2";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = inputs@{ self, ... }: 
-    with inputs; {
-    
-    # 1. Maps ./hosts/* to nixosConfigurations.*
-    nixosConfigurations = haumea.lib.load {
-      src = ./hosts;
-      inputs = { inherit inputs; };
-    };
-
-    # 2. Maps ./homes/* to homeConfigurations.*
-    homeConfigurations = haumea.lib.load {
-      src = ./homes;
-      inputs = { inherit inputs; };
-    };
-
-  };
+  outputs = inputs: import ./lib/generator.nix inputs;
+  
 }

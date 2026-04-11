@@ -1,41 +1,19 @@
-# ./hosts/strix.nix
-{ inputs, ... }:
+{ lib, pkgs, ... }:
 
-inputs.nixpkgs.lib.nixosSystem {
-  system = "x86_64-linux"; # Adjust if this is an ARM machine
+{
+  # Global settings that apply to ALL hosts
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   
-  # Pass flake inputs down to the modules
-  specialArgs = { inherit inputs; }; 
+  # This value determines the NixOS release from which the default
+  # settings for stateful data, like file locations and database versions
+  # on your system were taken. It‘s perfectly fine and recommended to leave
+  # this value at the release version of the first install of this system.
+  system.stateVersion = "24.11"; 
 
-  modules = [
-    # 1. The hardware scan for this specific machine
-    ./hardware-configuration.nix
-
-    # 2. The Haumea Aggregator (Automatically loads core.nix, user.nix, features, etc.)
-    ../system/default.nix 
-
-    # 3. Your specific host configuration (Inline module)
-    ({ config, lib, pkgs, ... }: {
-      
-      networking.hostName = "strix";
-      
-      # Assuming you define these custom options in another file like user.nix
-      mainuser = "joe"; 
-      superUsers = [ "joe" ];
-
-      # --- FEATURE TOGGLES ---
-      ft.profiles.gaming = {
-        enable = true;
-        user = "joe";
-        gpuVendor = "amd";
-        enableLeanbackUI = false;
-      };
-
-      ft.desktop.cosmic.enable = true;
-      ft.containers.enable = true;
-      ft.cli.enable = true;
-      ft.keepass.enable = true;
-      ft.mullet.enable = true;
-    })
-  ];
+  # Core packages needed on every machine
+  environment.systemPackages = with pkgs; [ 
+    git 
+    vim 
+    curl 
+    wget ];
 }
