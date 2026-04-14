@@ -4,7 +4,8 @@
 set quiet := true
 
 
-import "~/git/ft-home/nixos/modules/apps/mullet"
+import "./mullet.just"
+import "./store.just"
 
 default:
     just --list
@@ -27,15 +28,16 @@ check: fmt
 
 clean:
     echo ":: Cleaning Nix Store ::"
-    nh clean all
+    nh clean all --keep 5
 
 # --- 2. Testing ---
 
 test: check
     #!/usr/bin/env bash
+    just _check-reqs
     echo ":: Staging & Diffs ::"
-    git add .
-    git diff --cached | delta --side-by-side
+    just _stage
+    just _diff-src
     
     echo ":: Running Test ::"
     nh os test . --ask
@@ -46,24 +48,26 @@ test: check
 switch: check
     #!/usr/bin/env bash
     set -e
+    just _check-reqs
+
     echo ":: Previewing Build ::"
-    git add .
+    just _stage
     nh os test . --dry
     
     echo ":: Source Code Changes ::"
-    git diff --cached | delta --side-by-side
+    just _diff-src
     
     read -p "Apply and commit? [y/N]: " choice
     if [[ "$choice" =~ ^[yY]$ ]]; then
       # Capture current generation BEFORE building
-      OLD_GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
+      OLD_GEN=$(just _current-gen)
       
       # Build and switch
       nh os switch .
       
       # Extract new generation and diff packages
-      GEN=$(readlink /nix/var/nix/profiles/system | cut -d'-' -f2)
-      NVD_DIFF=$(nvd --color never diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2))
+      GEN=$(just _current-gen)
+      NVD_DIFF=$(nvd --color never diff $(just _last-two-gens))
       
       # Handle Git Commits (Triggers on ANY text change)
       if ! git diff --cached --quiet; then
@@ -76,13 +80,7 @@ switch: check
       
       # Handle Generation Cleanup (Triggers ONLY if Nix built a new system)
       if [ "$GEN" -gt "$OLD_GEN" ]; then
-          GEN_COUNT=$(ls -d1v /nix/var/nix/profiles/system-*-link | wc -l)
-          if [ "$GEN_COUNT" -gt 3 ]; then
-              OLDEST_LINK=$(ls -d1v /nix/var/nix/profiles/system-*-link | head -n 1)
-              OLDEST_GEN=$(basename "$OLDEST_LINK" | cut -d'-' -f2)
-              echo ":: Dropping oldest generation ($OLDEST_GEN) ::"
-              sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations "$OLDEST_GEN"
-          fi
+          just clean
       else
           echo ":: System generation did not change. Skipping cleanup. ::"
       fi
@@ -106,7 +104,7 @@ pull:
     nh os switch . --ask
     
     echo ":: System Package Changes ::"
-    nvd diff $(ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2)
+    nvd diff $(just _last-two-gens)
 
 push:
     #!/usr/bin/env bash
@@ -127,7 +125,7 @@ sync: pull push
 rollback:
     #!/usr/bin/env bash
     echo ":: Current Generation ::"
-    readlink /nix/var/nix/profiles/system | cut -d'-' -f2
+    just _current-gen
     
     echo ":: Rolling back to previous generation ::"
     sudo nix-env --profile /nix/var/nix/profiles/system --rollback
@@ -137,3 +135,23 @@ rollback:
     
     echo ":: Rollback Complete! ::"
     echo ":: Note: Your Git repo is still ahead. You may want to 'git reset' or fix the code. ::"
+
+# --- 7. Internal Helpers (DRY) ---
+
+_check-reqs:
+    #!/usr/bin/env bash
+    for cmd in nh nvd delta; do
+      if ! command -v $cmd &> /dev/null; then echo "Error: $cmd is not installed."; exit 1; fi
+    done
+
+_stage:
+    git add .
+
+_diff-src:
+    git diff --cached | delta --side-by-side
+
+_current-gen:
+    @readlink /nix/var/nix/profiles/system | cut -d'-' -f2
+
+_last-two-gens:
+    @ls -d1v /nix/var/nix/profiles/system-*-link | tail -n 2

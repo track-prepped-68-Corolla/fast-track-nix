@@ -27,6 +27,12 @@ in
       default = [ ];
       description = "Standard users with no administrative privileges.";
     };
+
+    u2fMappings = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Raw U2F auth mappings (user:key1,key2...).";
+    };
   };
 
   # --- THE IMPLEMENTATION (Config) ---
@@ -38,10 +44,12 @@ in
       settings = {
         cue = true; # Tells you to tap the key
         interactive = true;
-        control = "sufficient";
-        authFile = pkgs.writeText "u2f_keys" ''
-          admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN
-        '';
+        control = "sufficient"; 
+        # Use a path that can be managed by sops-nix later
+        authFile = let
+          defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
+        in 
+          pkgs.writeText "u2f_keys" (defaultAdmin + "\n" + config.u2fMappings);
       };
     };
 
@@ -67,9 +75,10 @@ in
       }
 
       # 2. EXTRA SUPER USERS
-      # This loop creates any user listed in 'superUsers'.
-      # We filter out 'admin' to prevent the system from crashing if you list it twice.
-      (lib.genAttrs (lib.filter (u: u != "admin") config.superUsers) (user: {
+      # Combines 'mainuser' and 'superUsers', filtering out the safety 'admin'.
+      (lib.genAttrs (lib.filter (u: u != "admin") (
+        lib.unique ([ config.mainuser ] ++ config.superUsers)
+      )) (user: {
         isNormalUser = true;
         extraGroups = commonGroups ++ [ "wheel" ];
         initialPassword = lib.mkDefault "changeme";

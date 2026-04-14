@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs, # <--- 1. Catch 'inputs' passed from specialArgs in flake.nix
   ...
 }:
 
@@ -18,6 +19,13 @@ let
   cfg = config.ft.profiles.gaming;
 in
 {
+  # --- 2. THE FIX: Explicitly import the upstream flake module ---
+  # Nix's module system automatically deduplicates, so if two different 
+  # profiles import this same Jovian module, it will only load once.
+  imports = [
+    inputs.jovian-nixos.nixosModules.default
+  ];
+
   options.ft.profiles.gaming = {
     enable = lib.mkEnableOption "Universal Gaming Profile";
 

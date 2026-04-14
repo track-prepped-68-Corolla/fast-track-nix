@@ -11,7 +11,7 @@ let
   flakeDir = config.ft.flakeDir;
 
   ftWrapper = pkgs.writeShellScriptBin "ft" ''
-    exec ${pkgs.just}/bin/just --justfile "${flakeDir}/.justfile" --working-directory "${flakeDir}" "$@"
+    exec ${pkgs.just}/bin/just --justfile "${flakeDir}/scripts/ft.just" --working-directory "${flakeDir}" "$@"
   '';
 
 in

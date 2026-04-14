@@ -1,19 +1,30 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, config, ... }:
 
 {
-  # Global settings that apply to ALL hosts
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  system.stateVersion = "24.11"; 
+  # --- 1. DECLARE THE OPTION HERE ---
+  options.ft = {
+    flakeDir = lib.mkOption {
+      type = lib.types.str;
+      description = "The absolute path to the root of the dotfiles flake.";
+    };
+  };
 
-  # Core packages needed on every machine
-  environment.systemPackages = with pkgs; [ 
-    git 
-    vim 
-    curl 
-    wget ];
+  # --- 2. SET THE VALUES HERE ---
+  config = {
+    # Set the value for the option we just declared above
+    ft.flakeDir = "/home/joe/git/HM-refactor";
+
+    # Global settings that apply to ALL hosts
+    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    
+    system.stateVersion = "24.11"; 
+
+    # Core packages needed on every machine
+    environment.systemPackages = with pkgs; [ 
+      git 
+      neovim 
+      curl 
+      wget 
+    ];
+  };
 }
