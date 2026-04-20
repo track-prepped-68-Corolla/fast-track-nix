@@ -25,6 +25,10 @@
   users.mutableUsers = true;
 
   # --- FEATURE TOGGLES ---
+  ft.boot.limine.enable = true;
+  ft.security.sops.enable = true;
+  ft.security.sops.useTPM = true;
+
   ft.desktop.cosmic.enable = true;
 
   ft.cli.enable = true;

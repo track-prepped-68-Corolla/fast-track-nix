@@ -27,8 +27,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
         
-    Lanzaboote = {
-      url = "github:nix-community/lanzaboote";
+    nixos-facter = {
+      url = "github:numtide/nixos-facter";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
