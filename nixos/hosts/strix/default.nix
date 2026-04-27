@@ -70,6 +70,8 @@
 
   ft.desktop.cosmic.enable = true; # Enable the Cosmic Desktop Environment
 
+  ft.rclone.enable = true;
+
   ft.containers.enable = true; # Enable container backend and management
 
   ft.cli.enable = true; # Enable system maintenance script
