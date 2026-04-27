@@ -56,6 +56,9 @@
   #  3. If you want to disable something, just set it to 'false' (or delete it).
   # -------------------------------------------------------------------------
 
+  programs.nix-index-database.comma.enable = true;
+  programs.nix-index.enable = true;
+
   # Gaming: Uncomment to enable Steam, Gamemode, Lutris, and MangoHud
   ft.profiles.gaming = {
     enable = true;
