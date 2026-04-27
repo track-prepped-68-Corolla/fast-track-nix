@@ -1,3 +1,4 @@
 cowsay
 intiface-central
 atkinson-hyperlegible
+obsidian-export
