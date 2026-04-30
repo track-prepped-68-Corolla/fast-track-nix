@@ -36,6 +36,9 @@
   # Turn on the LazyVim environment
   ft.lazyvim.enable = true;
 
+  ft.theme.enable = true;
+  ft.cosmic.enable = true;
+
   # --- Environment Variables ---
   home.sessionVariables = {
     EDITOR = "nvim";
