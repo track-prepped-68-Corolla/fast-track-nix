@@ -52,7 +52,7 @@ in
         mono = {
           name = lib.mkOption {
             type = lib.types.str;
-            default = "Atkinson Hyperlegible Mono Nerd Font";
+            default = "AtkynsonMono Nerd Font Mono";
           };
           package = lib.mkOption {
             type = lib.types.package;
