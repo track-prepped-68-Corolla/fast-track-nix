@@ -1,5 +1,6 @@
-cowsay
 intiface-central
 atkinson-hyperlegible
 obsidian-export
 rclone
+obsidian
+cowsay
