@@ -4,3 +4,4 @@ obsidian-export
 rclone
 obsidian
 cowsay
+presenterm
