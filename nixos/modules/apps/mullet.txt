@@ -6,3 +6,4 @@ obsidian
 cowsay
 presenterm
 slidev-cli
+marp-cli
