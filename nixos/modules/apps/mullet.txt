@@ -7,3 +7,4 @@ cowsay
 presenterm
 slidev-cli
 marp-cli
+firefox
