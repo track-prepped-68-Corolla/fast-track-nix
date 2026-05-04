@@ -15,3 +15,4 @@ tealdeer
 fd
 comma
 imagemagick
+inkscape
