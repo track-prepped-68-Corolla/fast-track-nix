@@ -8,3 +8,9 @@ presenterm
 slidev-cli
 marp-cli
 firefox
+atuin
+navi
+tmux
+tealdeer
+fd
+comma
