@@ -18,3 +18,4 @@ imagemagick
 inkscape
 poppler
 pdftk
+pdfarranger
