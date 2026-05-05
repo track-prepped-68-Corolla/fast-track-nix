@@ -19,3 +19,4 @@ inkscape
 poppler
 pdftk
 pdfarranger
+flameshot
