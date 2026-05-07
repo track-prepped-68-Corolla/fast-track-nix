@@ -1,5 +1,5 @@
 {
-  description = "Fast Track Nix - A Scalable, Beginner-Friendly Config";
+  description = "Fast Track Nix - A Scalable, Beginner-Friendly Config Framework";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -11,22 +11,27 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
+    darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-        
+
     Disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-        
+
     Nixos-anywhere = {
       url = "github:nix-community/nixos-anywhere";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-        
+
     nixos-facter = {
       url = "github:numtide/nixos-facter";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -53,6 +58,14 @@
     };
   };
 
-  outputs = inputs: import ./lib/generator.nix inputs;
-  
+  outputs = inputs: {
+    # Export your generator as a callable library function
+    lib = {
+      # Takes the external flake's inputs (consumerInputs)
+      mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
+    };
+
+    # (Optional) Export custom nixos/home-manager modules if your framework provides them
+    # nixosModules.default = import ./modules/nixos;
+  };
 }

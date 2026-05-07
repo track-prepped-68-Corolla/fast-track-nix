@@ -1,39 +1,88 @@
-inputs@{ nixpkgs, home-manager, ... }:
+inputs@{ nixpkgs, home-manager, darwin ? null, self, ... }:
 let
   inherit (nixpkgs) lib;
 
-  # --- 1. NIXOS DISCOVERY ---
-  hostsDir = ../hosts;
-  hostDirs = if builtins.pathExists hostsDir 
-             then lib.attrNames (lib.filterAttrs (_: t: t == "directory") (builtins.readDir hostsDir))
-             else [];
+  # Helper function to get a list of subdirectories in a given path
+  getDirs = path:
+    if builtins.pathExists path 
+    then lib.attrNames (lib.filterAttrs (_: t: t == "directory") (builtins.readDir path))
+    else [];
 
-  mkHost = name: lib.nixosSystem {
-    # System is usually defined inside the host's configuration.nix via nixpkgs.hostPlatform
+  # ==========================================
+  # 1. HOSTS DISCOVERY (Subdirectory Routing)
+  # Expected structure: hosts/<architecture>/<hostname>
+  # ==========================================
+  hostsDir = self + "/hosts";
+  hostSystems = getDirs hostsDir;
+
+  # Build a flat list of all hosts across all system directories
+  hostList = lib.flatten (map (system:
+    let sysDir = hostsDir + "/${system}";
+    in map (name: {
+      inherit name system;
+      path = sysDir + "/${name}";
+      isDarwin = lib.strings.hasSuffix "darwin" system;
+    }) (getDirs sysDir)
+  ) hostSystems);
+
+  # Separate them into NixOS and macOS lists
+  nixosHosts = builtins.filter (x: !x.isDarwin) hostList;
+  darwinHosts = builtins.filter (x: x.isDarwin) hostList;
+
+  # Function to generate a NixOS system
+  mkNixosHost = host: lib.nameValuePair host.name (lib.nixosSystem {
     specialArgs = { inherit inputs; };
-    modules = [
-      (hostsDir + "/${name}")
+    modules = [ 
+      host.path 
+      { nixpkgs.hostPlatform = lib.mkDefault host.system; } 
     ];
-  };
+  });
 
-  # --- 2. HOME MANAGER DISCOVERY ---
-  homesDir = ../homes;
-  homeDirs = if builtins.pathExists homesDir 
-             then lib.attrNames (lib.filterAttrs (_: t: t == "directory") (builtins.readDir homesDir))
-             else [];
+  # Function to generate a macOS system
+  mkDarwinHost = host: 
+    assert lib.assertMsg (darwin != null) "The 'darwin' input is missing, but a macOS host (${host.name}) was discovered!";
+    lib.nameValuePair host.name (darwin.lib.darwinSystem {
+      specialArgs = { inherit inputs; };
+      modules = [ 
+        host.path 
+        { nixpkgs.hostPlatform = lib.mkDefault host.system; }
+      ];
+  });
 
-  mkHome = name: home-manager.lib.homeManagerConfiguration {
-    # It's better to instantiate pkgs based on a system defined per-home, 
-    # but defaulting to x86_64-linux here is okay if they only use one architecture.
-    pkgs = nixpkgs.legacyPackages."x86_64-linux";
-    extraSpecialArgs = { inherit inputs; };
-    modules = [
-      (homesDir + "/${name}")
-    ];
-  };
+  # ==========================================
+  # 2. HOME MANAGER DISCOVERY (Architecture Matrix)
+  # Expected structure: homes/<username>
+  # ==========================================
+  homesDir = self + "/homes";
+  homeUsers = getDirs homesDir;
+
+  # Define the architectures your framework supports for dotfiles
+  supportedSystems = [
+    "x86_64-linux"
+    "aarch64-linux"
+    "x86_64-darwin"
+    "aarch64-darwin"
+  ];
+
+  # Create a matrix of every user paired with every supported system
+  homeMatrix = lib.flatten (map (user: 
+    map (system: { inherit user system; }) supportedSystems
+  ) homeUsers);
+
+  # Function to generate a Home Manager configuration for a specific system
+  mkHome = { user, system }: 
+    lib.nameValuePair "${user}@${system}" (home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.${system};
+      extraSpecialArgs = { inherit inputs; };
+      modules = [
+        (homesDir + "/${user}")
+      ];
+    });
 
 in
 {
-  nixosConfigurations = lib.genAttrs hostDirs mkHost;
-  homeConfigurations  = lib.genAttrs homeDirs mkHome;
+  # Construct the final flake outputs
+  nixosConfigurations = builtins.listToAttrs (map mkNixosHost nixosHosts);
+  darwinConfigurations = builtins.listToAttrs (map mkDarwinHost darwinHosts);
+  homeConfigurations  = builtins.listToAttrs (map mkHome homeMatrix);
 }
