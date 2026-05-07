@@ -15,6 +15,8 @@
   # Turn on the LazyVim environment
   ft.lazyvim.enable = true;
 
+  ft.catppuccin.enable
+
   # --- Environment Variables ---
   home.sessionVariables = {
     EDITOR = "nvim";
