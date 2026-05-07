@@ -56,13 +56,9 @@ let
   homesDir = self + "/homes";
   homeUsers = getDirs homesDir;
 
-  # Define the architectures your framework supports for dotfiles
-  supportedSystems = [
-    "x86_64-linux"
-    "aarch64-linux"
-    "x86_64-darwin"
-    "aarch64-darwin"
-  ];
+  # Derive supported systems from declared hosts — no phantom configs for systems
+  # that don't exist in the consumer's hosts/ tree
+  supportedSystems = lib.unique (map (h: h.system) hostList);
 
   # Create a matrix of every user paired with every supported system
   homeMatrix = lib.flatten (map (user: 
