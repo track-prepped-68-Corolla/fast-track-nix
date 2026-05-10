@@ -63,10 +63,13 @@
     };
   };
 
-  outputs = inputs: {
-    lib = {
-      mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
-    };
+  outputs = ftHomeInputs: {
+    lib.mkFlake = consumerInputs:
+      import ./lib/generator.nix {
+        inputs  = ftHomeInputs // consumerInputs;
+        ftNixos = ftHomeInputs.self.nixosModules.default;
+        ftHome  = ftHomeInputs.self.homeManagerModules.default;
+      };
 
     nixosModules.default       = import ./modules/nixos;
     homeManagerModules.default = import ./modules/home;
