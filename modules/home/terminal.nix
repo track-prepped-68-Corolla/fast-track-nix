@@ -31,7 +31,7 @@
     enable = true;
     dotDir = "${config.xdg.configHome}/zsh";
     enableCompletion = true;
-    initContent = "source ${config.ft.repoPath}/homes/${config.home.username}/dotfiles/zsh/.zshrc";
+    initContent = "source ${config.ft.dotfiles.path}/zsh/.zshrc";
   };
 
   home.packages = with pkgs; [
@@ -71,12 +71,10 @@
   };
 
   home.file.".config/starship.toml".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${config.ft.repoPath}/homes/${config.home.username}/dotfiles/starship/starship.toml";
+    config.lib.file.mkOutOfStoreSymlink "${config.ft.dotfiles.path}/starship/starship.toml";
 
   home.file.".config/ghostty/config".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${config.ft.repoPath}/homes/${config.home.username}/dotfiles/ghostty/config";
+    config.lib.file.mkOutOfStoreSymlink "${config.ft.dotfiles.path}/ghostty/config";
 
   programs.zoxide = {
     enable = true;

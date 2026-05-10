@@ -7,7 +7,6 @@
 
 let
   cfg = config.ft.lazyvim;
-  nvimConfigPath = "${config.ft.repoPath}/homes/${config.home.username}/dotfiles/nvim";
 in
 {
   options.ft.lazyvim = {
@@ -50,7 +49,7 @@ in
     ];
 
     xdg.configFile."nvim".source =
-      config.lib.file.mkOutOfStoreSymlink nvimConfigPath;
+      config.lib.file.mkOutOfStoreSymlink "${config.ft.dotfiles.path}/nvim";
 
     home.sessionVariables = {
       EDITOR = "nvim";
