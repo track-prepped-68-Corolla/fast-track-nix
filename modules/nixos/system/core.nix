@@ -17,9 +17,9 @@
   # -------------------------------------------------------------------------
 
   options = {
-    ft.flakeDir = lib.mkOption {
+    ft.repoPath = lib.mkOption {
       type = lib.types.str;
-      default = "";
+      default = "/nix/ft-home";
       description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
     };
   };

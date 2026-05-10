@@ -4,15 +4,7 @@ let
   prefixLen = builtins.stringLength config.ft.dotfiles.path + 1;
 in
 {
-  options.ft.dotfiles = {
-    enable = lib.mkEnableOption "dotfiles symlinking";
-
-    path = lib.mkOption {
-      type = lib.types.str;
-      default = "${config.ft.repoPath}/homes/${config.home.username}/dotfiles";
-      description = "Absolute path to this user's dotfiles directory.";
-    };
-  };
+  options.ft.dotfiles.enable = lib.mkEnableOption "dotfiles symlinking";
 
   config = lib.mkIf config.ft.dotfiles.enable {
     home.file = builtins.listToAttrs (map (file:

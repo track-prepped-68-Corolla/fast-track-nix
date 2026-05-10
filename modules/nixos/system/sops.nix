@@ -21,8 +21,8 @@
     security.tpm2.enable = lib.mkIf config.ft.security.sops.useTPM true;
 
     sops = {
-      # Leverages ft.flakeDir defined in core.nix
-      defaultSopsFile = "${config.ft.flakeDir}/secrets/secrets.yaml";
+      # Leverages ft.repoPath defined in core.nix
+      defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
       validateSopsFiles = false;
 
       # Automatically use the machine's SSH key for decryption
