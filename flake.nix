@@ -64,13 +64,11 @@
   };
 
   outputs = inputs: {
-    # Export your generator as a callable library function
     lib = {
-      # Takes the external flake's inputs (consumerInputs)
       mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
     };
 
-    # (Optional) Export custom nixos/home-manager modules if your framework provides them
-    # nixosModules.default = import ./modules/nixos;
+    nixosModules.default       = import ./modules/nixos;
+    homeManagerModules.default = import ./modules/home;
   };
 }

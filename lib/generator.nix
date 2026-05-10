@@ -32,9 +32,10 @@ let
   # Function to generate a NixOS system
   mkNixosHost = host: lib.nameValuePair host.name (lib.nixosSystem {
     specialArgs = { inherit inputs; };
-    modules = [ 
-      host.path 
-      { nixpkgs.hostPlatform = lib.mkDefault host.system; } 
+    modules = [
+      ../modules/nixos          # ft-home's NixOS modules (auto-included)
+      host.path
+      { nixpkgs.hostPlatform = lib.mkDefault host.system; }
     ];
   });
 
@@ -43,8 +44,9 @@ let
     assert lib.assertMsg (darwin != null) "The 'darwin' input is missing, but a macOS host (${host.name}) was discovered!";
     lib.nameValuePair host.name (darwin.lib.darwinSystem {
       specialArgs = { inherit inputs; };
-      modules = [ 
-        host.path 
+      modules = [
+        ../modules/nixos          # ft-home's NixOS modules (auto-included)
+        host.path
         { nixpkgs.hostPlatform = lib.mkDefault host.system; }
       ];
   });
@@ -71,6 +73,7 @@ let
       pkgs = nixpkgs.legacyPackages.${system};
       extraSpecialArgs = { inherit inputs; };
       modules = [
+        ../modules/home           # ft-home's home-manager modules (auto-included)
         (homesDir + "/${user}")
       ];
     });
