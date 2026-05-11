@@ -58,6 +58,8 @@ let
 
   supportedSystems = lib.unique (map (h: h.system) hostList);
 
+  # Cross-product: every user paired with every discovered host arch so
+  # home configs are available on all systems the consumer runs.
   homeMatrix = lib.flatten (map (user:
     map (system: { inherit user system; }) supportedSystems
   ) homeUsers);
