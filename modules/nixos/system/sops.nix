@@ -1,6 +1,7 @@
 { lib, config, inputs, pkgs, ... }:
 
 {
+  # Import the NixOS module from the flake input
   imports = [ inputs.sops-nix.nixosModules.sops ];
 
   options.ft.security.sops = {
@@ -20,10 +21,16 @@
     security.tpm2.enable = lib.mkIf config.ft.security.sops.useTPM true;
 
     sops = {
-      defaultSopsFile = "${config.ft.flakeDir}/secrets/secrets.yaml";
+      # Leverages ft.repoPath defined in core.nix
+      defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
       validateSopsFiles = false;
+
+      # Automatically use the machine's SSH key for decryption
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+
+      # For hardware tokens — identity file contains the stubs (public references)
       age.keyFile = lib.mkIf (config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey) "/var/lib/sops-nix/key.txt";
+
       gnupg.sshKeyPaths = [ ];
     };
   };

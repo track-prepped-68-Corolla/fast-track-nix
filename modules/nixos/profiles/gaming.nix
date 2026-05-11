@@ -29,7 +29,7 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = "joe";
+      default = config.mainuser;
       description = "The username for the gaming session.";
     };
 
