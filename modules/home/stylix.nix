@@ -21,7 +21,8 @@ in
 
       wallpaper = lib.mkOption {
         type    = lib.types.either lib.types.path lib.types.str;
-        description = "Path to the primary desktop wallpaper. Set this in homes/<username>/default.nix.";
+        default = "${config.ft.repoPath}/homes/${config.home.username}/wallpapers/default.jpg";
+        description = "Path to the primary desktop wallpaper.";
       };
 
       schemePath = lib.mkOption {
