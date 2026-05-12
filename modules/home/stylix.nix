@@ -17,7 +17,9 @@ in
 
   options = {
     ft.theme = {
-      enable = lib.mkEnableOption "unified system theming via Stylix";
+      enable = lib.mkEnableOption "unified system theming via Stylix" // {
+        description = "Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.";
+      };
 
       wallpaper = lib.mkOption {
         type    = lib.types.either lib.types.path lib.types.str;
@@ -57,7 +59,9 @@ in
       };
     };
 
-    ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic";
+    ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic" // {
+      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.desktop.cosmic.enable` when running the COSMIC desktop environment.";
+    };
   };
 
   config = lib.mkMerge [

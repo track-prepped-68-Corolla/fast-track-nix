@@ -1,12 +1,19 @@
-{ pkgs, lib, config, inputs, ...}:
+{ pkgs, lib, config, inputs, ... }:
 
 let
-  commonGroups = [ "video" "render" "lp" "scanner" ]
+  cfg = config.ft.users;
+  commonGroups =
+    [ "video" "render" "lp" "scanner" ]
     ++ lib.optional config.networking.networkmanager.enable "networkmanager"
     ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
   options = {
+    ft.users.enable = lib.mkEnableOption "user management" // {
+      default = true;
+      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership. Also configures PAM U2F for login and sudo; append additional key mappings via `u2fMappings`.";
+    };
+
     mainuser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
@@ -32,7 +39,7 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     security.pam.u2f = {
       enable = true;
       settings = {
@@ -43,7 +50,7 @@ in
           let
             defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
           in
-            pkgs.writeText "u2f_keys" (defaultAdmin + "\n" + config.u2fMappings);
+          pkgs.writeText "u2f_keys" (defaultAdmin + "\n" + config.u2fMappings);
       };
     };
 
@@ -61,14 +68,14 @@ in
           shell = pkgs.zsh;
         };
       }
-      (lib.genAttrs (lib.filter (u: u != "admin") (
-        lib.unique ([ config.mainuser ] ++ config.superUsers)
-      )) (user: {
-        isNormalUser = true;
-        extraGroups = commonGroups ++ [ "wheel" ];
-        initialPassword = lib.mkDefault "changeme";
-        shell = pkgs.zsh;
-      }))
+      (lib.genAttrs
+        (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
+        (user: {
+          isNormalUser = true;
+          extraGroups = commonGroups ++ [ "wheel" ];
+          initialPassword = lib.mkDefault "changeme";
+          shell = pkgs.zsh;
+        }))
       (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (user: {
         isNormalUser = true;
         extraGroups = commonGroups;

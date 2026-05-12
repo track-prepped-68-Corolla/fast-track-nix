@@ -7,11 +7,6 @@
 
 ################################################################################
 # NFS CLIENT MODULE
-# ------------------------------------------------------------------------------
-# This module provides a flexible way to configure NFS (Network File System)
-# client mounts. It ensures necessary NFS utilities are installed, RPCBIND
-# is enabled, and dynamically creates `fileSystems` entries based on user
-# defined mounts.
 ################################################################################
 
 let
@@ -19,7 +14,9 @@ let
 in
 {
   options.ft.services.nfs = {
-    enable = lib.mkEnableOption "NFS Client mount management";
+    enable = lib.mkEnableOption "NFS Client mount management" // {
+      description = "Configures NFS client mounts declared under `ft.services.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.";
+    };
 
     mounts = lib.mkOption {
       type = lib.types.attrsOf (

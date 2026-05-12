@@ -7,11 +7,6 @@
 
 ################################################################################
 # VIRTUALIZATION MODULE
-# ------------------------------------------------------------------------------
-# This module provides a comprehensive setup for various virtualization
-# technologies, including Libvirt (KVM/QEMU), Incus (LXD fork), and VMware
-# workstation. It aims to offer a unified configuration for managing virtual
-# machines and containers on NixOS.
 ################################################################################
 
 let
@@ -19,7 +14,9 @@ let
 in
 {
   options.ft.system.virt = {
-    enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)";
+    enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)" // {
+      description = "Enables libvirtd/KVM with virt-manager and adds `mainuser` to the libvirtd group. Optionally enable `ft.system.virt.enableVmwareHost` for VMware Workstation, `ft.system.virt.enableIncus` for Incus containers, and `ft.system.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
+    };
 
     enableVmwareHost = lib.mkOption {
       type = lib.types.bool;

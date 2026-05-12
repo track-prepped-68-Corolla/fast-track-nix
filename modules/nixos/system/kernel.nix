@@ -1,7 +1,9 @@
 { lib, config, pkgs, inputs, ... }:
 {
   options.ft.kernel.cachyos = {
-    enable = lib.mkEnableOption "CachyOS optimized kernel";
+    enable = lib.mkEnableOption "CachyOS optimized kernel" // {
+      description = "Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.kernel.cachyos.variant` (default: latest). Available variants: bore, eevdf, bmq, lts, rt-bore, hardened, server, deckify, rc, and LTO editions of each.";
+    };
     variant = lib.mkOption {
       type = lib.types.enum [
         "latest"     "latest-lto"

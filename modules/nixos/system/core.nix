@@ -1,30 +1,25 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
+let
+  cfg = config.ft.system.core;
+in
 {
   # -------------------------------------------------------------------------
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
   # -------------------------------------------------------------------------
-  #
-  #  This file sets the baseline configuration for EVERY machine you build.
-  #
-  #  The Goal:
-  #  1. Keep host files clean (only unique hardware/features go there).
-  #  2. Ensure consistent settings across your fleet (same timezone, same locale).
-  #  3. Enable modern Nix features (Flakes) by default.
-  #
-  #  Note: We use 'lib.mkDefault' for almost everything here.
-  #  This allows you to override these settings in a host file if necessary.
-  # -------------------------------------------------------------------------
 
-  options = {
-    ft.repoPath = lib.mkOption {
-      type = lib.types.str;
-      default = "/nix/ft-home";
-      description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
-    };
+  options.ft.system.core.enable = lib.mkEnableOption "system core baseline" // {
+    default = true;
+    description = "Sets the system-wide baseline every host shares: stateVersion, NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, timezone (America/New_York), locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
   };
 
-  config = {
+  options.ft.repoPath = lib.mkOption {
+    type = lib.types.str;
+    default = "/nix/ft-home";
+    description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
+  };
+
+  config = lib.mkIf cfg.enable {
 
     # --- 1. SYSTEM IDENTITY ---
     system.stateVersion = "24.05";

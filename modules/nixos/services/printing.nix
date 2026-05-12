@@ -7,11 +7,6 @@
 
 ################################################################################
 # PRINTING SERVICE MODULE
-# ------------------------------------------------------------------------------
-# This module enables and configures the Common Unix Printing System (CUPS),
-# providing a robust and network-aware printing solution for NixOS. It includes
-# support for a virtual PDF printer, common printer drivers, and Avahi for
-# network printer discovery.
 ################################################################################
 
 let
@@ -19,7 +14,9 @@ let
 in
 {
   options.ft.services.printing = {
-    enable = lib.mkEnableOption "CUPS printing service";
+    enable = lib.mkEnableOption "CUPS printing service" // {
+      description = "Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.";
+    };
 
     enableVirtualPdfPrinter = lib.mkOption {
       type = lib.types.bool;
