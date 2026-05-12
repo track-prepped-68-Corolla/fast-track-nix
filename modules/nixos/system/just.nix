@@ -14,7 +14,9 @@ let
 in
 {
   options.ft.cli = {
-    enable = lib.mkEnableOption "Fast Track CLI (ft command)";
+    enable = lib.mkEnableOption "Fast Track CLI (ft command)" // {
+      description = "Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Requires `ft.repoPath` to point to your consumer repo root.";
+    };
   };
 
   config = lib.mkIf cfg.enable {

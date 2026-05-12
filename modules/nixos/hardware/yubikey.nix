@@ -10,7 +10,9 @@ let
 in
 {
   options.ft.hardware.yubikey = {
-    enable = lib.mkEnableOption "YubiKey support and PAM integration";
+    enable = lib.mkEnableOption "YubiKey support and PAM integration" // {
+      description = "Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f) and enables PAM U2F authentication for login, sudo, SDDM, cosmic-greeter, and cosmic-lock. Set `ft.hardware.yubikey.u2fMapping` to your key's registration string.";
+    };
 
     u2fMapping = lib.mkOption {
       type = lib.types.str;

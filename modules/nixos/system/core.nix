@@ -7,20 +7,11 @@ in
   # -------------------------------------------------------------------------
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
   # -------------------------------------------------------------------------
-  #
-  #  This file sets the baseline configuration for EVERY machine you build.
-  #
-  #  The Goal:
-  #  1. Keep host files clean (only unique hardware/features go there).
-  #  2. Ensure consistent settings across your fleet (same timezone, same locale).
-  #  3. Enable modern Nix features (Flakes) by default.
-  #
-  #  Note: We use 'lib.mkDefault' for almost everything here.
-  #  This allows you to override these settings in a host file if necessary.
-  # -------------------------------------------------------------------------
 
-  options.ft.system.core.enable =
-    lib.mkEnableOption "system core baseline" // { default = true; };
+  options.ft.system.core.enable = lib.mkEnableOption "system core baseline" // {
+    default = true;
+    description = "Sets the system-wide baseline every host shares: stateVersion, NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, timezone (America/New_York), locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
+  };
 
   options.ft.repoPath = lib.mkOption {
     type = lib.types.str;

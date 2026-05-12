@@ -10,10 +10,14 @@ let
 in
 {
   options.ft.nvidia = {
-    enable = lib.mkEnableOption "Nvidia proprietary drivers (Open Beta)";
+    enable = lib.mkEnableOption "Nvidia proprietary drivers (Open Beta)" // {
+      description = "Configures NVIDIA proprietary Open Beta drivers with modesetting and 32-bit library support. Set `ft.nvidia.prime.enable = true` and provide `primaryBusId`/`nvidiaBusId` to enable hybrid GPU offloading on laptops.";
+    };
 
     prime = {
-      enable = lib.mkEnableOption "Prime Offloading (Hybrid Graphics)";
+      enable = lib.mkEnableOption "Prime Offloading (Hybrid Graphics)" // {
+        description = "Enables NVIDIA PRIME offload mode so the discrete GPU is used on demand while the display stays on the iGPU. Requires `primaryBusId` and `nvidiaBusId` to be set.";
+      };
 
       primaryGpuVendor = lib.mkOption {
         type = lib.types.enum [

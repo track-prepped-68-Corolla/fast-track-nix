@@ -9,7 +9,10 @@ let
 in
 {
   options = {
-    ft.users.enable = lib.mkEnableOption "user management" // { default = true; };
+    ft.users.enable = lib.mkEnableOption "user management" // {
+      default = true;
+      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership. Also configures PAM U2F for login and sudo; append additional key mappings via `u2fMappings`.";
+    };
 
     mainuser = lib.mkOption {
       type = lib.types.str;

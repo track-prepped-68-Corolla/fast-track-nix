@@ -7,10 +7,6 @@
 
 ################################################################################
 # COSMIC DESKTOP ENVIRONMENT MODULE
-# ------------------------------------------------------------------------------
-# This module enables and configures the COSMIC Desktop Environment, including
-# its display manager (cosmic-greeter) and integration with system76-scheduler
-# for optimized performance. It also ensures graphics hardware is enabled.
 ################################################################################
 
 let
@@ -18,7 +14,9 @@ let
 in
 {
   options.ft.desktop.cosmic = {
-    enable = lib.mkEnableOption "COSMIC Desktop Environment";
+    enable = lib.mkEnableOption "COSMIC Desktop Environment" // {
+      description = "Enables the COSMIC desktop environment with cosmic-greeter as the display manager and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
