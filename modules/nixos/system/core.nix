@@ -1,5 +1,8 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
+let
+  cfg = config.ft.system.core;
+in
 {
   # -------------------------------------------------------------------------
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
@@ -16,15 +19,16 @@
   #  This allows you to override these settings in a host file if necessary.
   # -------------------------------------------------------------------------
 
-  options = {
-    ft.repoPath = lib.mkOption {
-      type = lib.types.str;
-      default = "/nix/ft-home";
-      description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
-    };
+  options.ft.system.core.enable =
+    lib.mkEnableOption "system core baseline" // { default = true; };
+
+  options.ft.repoPath = lib.mkOption {
+    type = lib.types.str;
+    default = "/nix/ft-home";
+    description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
 
     # --- 1. SYSTEM IDENTITY ---
     system.stateVersion = "24.05";

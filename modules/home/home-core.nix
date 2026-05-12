@@ -7,7 +7,13 @@
 # Declares the two central path options so no other module needs to.
 ################################################################################
 
+let
+  cfg = config.ft.home.core;
+in
 {
+  options.ft.home.core.enable =
+    lib.mkEnableOption "home manager core settings" // { default = true; };
+
   options.ft.repoPath = lib.mkOption {
     type = lib.types.str;
     default = "/nix/ft-home";
@@ -20,7 +26,7 @@
     description = "Absolute path to this user's dotfiles directory.";
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     programs.home-manager.enable = true;
     home.stateVersion = "24.05";
     home.homeDirectory = "/home/${config.home.username}";
