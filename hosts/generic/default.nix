@@ -9,19 +9,19 @@
     ../../modules/nixos
   ];
 
-  networking.hostName = "strix";
+  networking.hostName = "generic";
 
-  # Now the module handles 'joe' as an admin automatically
-  mainuser = "joe";
+  # Now the module handles 'guest' as an admin automatically
+  mainuser = "guest";
   
-  # Add Joe's specific Yubikey mapping here
+  # Add guest's specific Yubikey mapping here
   u2fMappings = ''
-    joe:your_yubikey_public_key_string_here
+    guest:your_yubikey_public_key_string_here
   '';
 
   # Define the password for your main user.
   # 'initialPassword' allows you to change it later; 'password' would enforce it.
-  users.users.joe.initialPassword = "nixos";
+  users.users.guest.initialPassword = "nixos";
   users.mutableUsers = true;
 
   # --- FEATURE TOGGLES ---

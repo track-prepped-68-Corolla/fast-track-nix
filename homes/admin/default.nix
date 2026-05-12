@@ -1,44 +1,64 @@
-{ config, pkgs, ... }:
-
-################################################################################
-# HOME MANAGER CONFIGURATION ("driver" user)
-# ------------------------------------------------------------------------------
-# The Command Center for the "driver" user.
-#
-# ARCHITECTURE:
-# We import ONLY the 'home-modules' hub.
-# Because the Hub imports 'home-core.nix' and all modules, we don't need
-# to specify anything else here except WHO we are and WHAT we want enabled.
-################################################################################
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
-  # ----------------------------------------------------------------------------
-  # 1. THE PLATFORM IMPORT
-  # ----------------------------------------------------------------------------
+  # --- Imports ---
   imports = [
-    ../../home-modules
+    ../../modules/home
   ];
 
-  # ----------------------------------------------------------------------------
-  # 2. IDENTITY
-  # ----------------------------------------------------------------------------
-  # 'home-core' uses this to automatically set homeDirectory to /home/driver
+  # --- User Information ---
   home.username = "admin";
 
-  programs.git = {
-    enable = true;
-    userName = "admin";
-    userEmail = "admin@fasttrack.os";
-    delta.enable = true; # Use the aesthetic diff tool from our terminal module
+  # --- Repo path (used by terminal, lazyvim, dotfiles modules) ---
+  ft.repoPath = "/etc/nixos";
+
+  # --- Module Toggles ---
+  ft.lazyvim.enable = true;
+  ft.theme.enable = true;
+
+  # --- Environment Variables ---
+  home.sessionVariables = {
+    EDITOR = "nvim";
   };
 
-  # ----------------------------------------------------------------------------
-  # 3. FEATURE FLAGS
-  # ----------------------------------------------------------------------------
-  # Turn on the features we want for this specific user.
+  # --- Packages ---
+  home.packages = with pkgs; [
 
-  # Enable the Container Stack (Podman, Lazydocker, Distrobox)
-  #ft.containers.enable = true;
+    # SYSTEM / CLI TOOLS
+    fastfetch
+    htop
+    micro
+    yazi
 
-  # (Terminal is enabled by default via the Hub)
+    # DESKTOP APPS
+    brave
+    kitty
+    vesktop
+    signal-desktop
+    slack
+    localsend
+
+    # DEVELOPMENT
+    github-desktop
+    vscodium
+    direnv
+    nixfmt
+
+    # CREATIVE & OFFICE
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.krita
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.openscad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.freecad
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.blender
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libreoffice
+
+    # GAMING
+    mangohud
+    heroic
+    discord
+  ];
 }

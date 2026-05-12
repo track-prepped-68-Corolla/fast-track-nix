@@ -1,22 +1,25 @@
-{ config, pkgs, inputs, ...}:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
   # --- Imports ---
   imports = [
-    #these are wrong now. fix!
-    #inputs.sops-nix.homeManagerModules.sops
-    #../../home-modules
+    ../../modules/home
   ];
 
   # --- User Information ---
-  home.username = "joe";
+  home.username = "guest";
+
+  # --- Repo path (used by terminal, lazyvim, dotfiles modules) ---
+  ft.repoPath = "/etc/nixos";
 
   # --- Module Toggles ---
-  # Turn on the LazyVim environment
   ft.lazyvim.enable = true;
-
   ft.theme.enable = true;
-  ft.cosmic.enable = true;
 
   # --- Environment Variables ---
   home.sessionVariables = {
@@ -47,20 +50,15 @@
     nixfmt
 
     # CREATIVE & OFFICE
-    #krita
-    #openscad
-    #freecad
-    #blender
     inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.krita
     inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.openscad
     inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.freecad
     inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.blender
-    libreoffice
+    inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libreoffice
 
     # GAMING
     mangohud
     heroic
-    lutris
     discord
   ];
 }
