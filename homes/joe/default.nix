@@ -15,7 +15,8 @@
   # Turn on the LazyVim environment
   ft.lazyvim.enable = true;
 
-  ft.catppuccin.enable
+  ft.theme.enable = true;
+  ft.cosmic.enable = true;
 
   # --- Environment Variables ---
   home.sessionVariables = {
