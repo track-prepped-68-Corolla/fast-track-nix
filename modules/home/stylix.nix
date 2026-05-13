@@ -23,7 +23,8 @@ in
 
       wallpaper = lib.mkOption {
         type    = lib.types.either lib.types.path lib.types.str;
-        default = "${config.ft.repoPath}/homes/${config.home.username}/wallpapers/default.png";
+        default = ../../homes/guest
+/wallpapers/default.png
         description = "Path to the primary desktop wallpaper.";
       };
 
