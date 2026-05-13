@@ -61,7 +61,7 @@
 
     # Hardware detection — generates facter.json for reproducible hardware config.
     nixos-facter = {
-      url = "github:numtide/nixos-facter";
+      url = "github:numtide/nixos-facter/e43c4459184a39ed6f3aa746a49170ae79d93bcd";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
