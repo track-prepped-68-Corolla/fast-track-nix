@@ -44,7 +44,6 @@ in
       enable = true;
       settings = {
         cue = true;
-        interactive = true;
         control = "sufficient";
         authfile =
           let
