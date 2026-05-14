@@ -46,11 +46,13 @@ in
         cue = true;
         interactive = true;
         control = "sufficient";
-        authFile =
+        authfile =
           let
             defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
           in
-          pkgs.writeText "u2f_keys" (defaultAdmin + "\n" + config.u2fMappings);
+          pkgs.writeText "u2f_keys" (
+            defaultAdmin + lib.optionalString (config.u2fMappings != "") ("\n" + config.u2fMappings)
+          );
       };
     };
 

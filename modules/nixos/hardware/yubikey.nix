@@ -32,19 +32,18 @@ in
 
     services.udev.packages = [ pkgs.yubikey-personalization ];
 
+    # YubiKey is a USB HID device; guarantee the driver loads regardless of
+    # what facter-modules derives from the hardware report.
+    boot.kernelModules = [ "usbhid" ];
+
+    # Feed this host's key mapping into the shared authfile built by user.nix.
+    u2fMappings = cfg.u2fMapping;
+
+    # user.nix owns security.pam.u2f — only add the greeter services here.
     security.pam.services = {
-      login.u2fAuth = true;
-      sudo.u2fAuth = true;
       sddm.u2fAuth = true;
       cosmic-greeter.u2fAuth = true;
       cosmic-lock.u2fAuth = true;
-    };
-
-    security.pam.u2f.settings = {
-      cue = true;
-      interactive = true;
-      control = "sufficient";
-      authfile = pkgs.writeText "u2f-mapping" cfg.u2fMapping;
     };
   };
 }
