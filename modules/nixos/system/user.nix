@@ -44,8 +44,11 @@ in
       enable = true;
       settings = {
         cue = true;
-        interactive = true;
         control = "sufficient";
+        # nouserok: if the user has no entry in the authfile (or the device
+        # is unreachable), skip the challenge and fall through to password.
+        # Prevents lockout when the key is absent or a new user is created.
+        nouserok = true;
         authfile =
           let
             defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";

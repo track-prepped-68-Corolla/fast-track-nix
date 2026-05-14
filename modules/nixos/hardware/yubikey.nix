@@ -39,10 +39,12 @@ in
     # Feed this host's key mapping into the shared authfile built by user.nix.
     u2fMappings = cfg.u2fMapping;
 
-    # user.nix owns security.pam.u2f — only add the greeter services here.
+    # user.nix owns security.pam.u2f — only add the lock screen here.
+    # cosmic-greeter is excluded: the greeter doesn't relay pam_u2f prompts
+    # reliably and a hang there locks the user out completely. cosmic-lock
+    # (the screen locker) is sufficient for DE-level key protection.
     security.pam.services = {
       sddm.u2fAuth = true;
-      cosmic-greeter.u2fAuth = true;
       cosmic-lock.u2fAuth = true;
     };
   };
