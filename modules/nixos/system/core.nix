@@ -3,18 +3,9 @@
 {
   options.ft = {
     repoPath = lib.mkOption {
-      type    = lib.types.str;
-      default = lib.removeSuffix "\n" (
-        let
-          h = config.networking.hostName;
-          f = inputs.self + "/var/${h}/repo-path";
-        in if builtins.pathExists f then builtins.readFile f else ""
-      );
-      description = ''
-        Absolute path to the flake repo on disk.
-        Auto-detected from var/<hostname>/repo-path when that file exists.
-        Set by the bootstrap script; override manually only if needed.
-      '';
+      type        = lib.types.str;
+      default     = "";
+      description = "Absolute path to the flake repo on disk. Set in hosts/<hostname>/default.nix; written to var/local by bootstrap.";
     };
   };
 

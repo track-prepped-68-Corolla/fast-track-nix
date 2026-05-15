@@ -8,10 +8,13 @@
 let
   cfg = config.ft.cli;
 
-  repoPath = config.ft.repoPath;
-
   ftWrapper = pkgs.writeShellScriptBin "ft" ''
-    exec ${pkgs.just}/bin/just --justfile "${repoPath}/scripts/ft.just" --working-directory "${repoPath}" "$@"
+    repo_path="$(cat /var/ft/repo-path 2>/dev/null)"
+    if [ -z "$repo_path" ]; then
+      echo "ft: repo path not set. Ensure ft.repoPath is configured and NixOS has been activated." >&2
+      exit 1
+    fi
+    exec ${pkgs.just}/bin/just --justfile "$repo_path/scripts/ft.just" --working-directory "$repo_path" "$@"
   '';
 
 in
