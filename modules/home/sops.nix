@@ -1,0 +1,16 @@
+{ config, lib, inputs, ... }:
+
+let cfg = config.ft.security.sops;
+in {
+  imports = [ inputs.sops-nix.homeManagerModules.sops ];
+
+  options.ft.security.sops = {
+    enable = lib.mkEnableOption "user-level sops-nix secrets";
+  };
+
+  config = lib.mkIf cfg.enable {
+    sops.age.keyFile = lib.mkDefault "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+    sops.defaultSopsFile = lib.mkDefault
+      "${config.ft.repoPath}/secrets/users/${config.home.username}/secrets.yaml";
+  };
+}

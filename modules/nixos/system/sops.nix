@@ -21,18 +21,12 @@
     security.tpm2.enable = lib.mkIf config.ft.security.sops.useTPM true;
 
     sops = {
-      # Leverages the flakeDir defined in core.nix
-      defaultSopsFile = "${config.ft.flakeDir}/secrets/secrets.yaml";
-      validateSopsFiles = false; # Set to false initially to prevent errors if the file is missing
+      # No defaultSopsFile — callers reference secrets explicitly:
+      #   sops.secrets."my-key".sopsFile = "${config.ft.repoPath}/secrets/hosts/<name>/foo.yaml";
+      validateSopsFiles = false;
 
-      # Automatically use the machine's SSH key for decryption
-      # This allows you to use 'ssh-to-age' to encrypt secrets for this host
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-
-      # For hardware tokens, we point to an identity file containing the stubs (public references).
-      # You must generate these once and save them to this path (e.g., via age-plugin-tpm --generate).
       age.keyFile = lib.mkIf (config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey) "/var/lib/sops-nix/key.txt";
-
       gnupg.sshKeyPaths = [ ];
     };
   };
