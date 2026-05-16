@@ -1,25 +1,21 @@
 { config, lib, inputs, ... }:
 
 {
-  options.ft = {
-    primaryHost = lib.mkOption {
-      type        = lib.types.str;
-      default     = "";
-      description = "Hostname of the machine this home config primarily runs on. Set once in homes/<user>/default.nix. Used by host-facts.nix to read hosts/<hostname>/var/facter.json.";
-    };
-
-    repoPath = lib.mkOption {
-      type        = lib.types.str;
-      default     = "";
-      description = "Absolute path to the flake repo on disk. Set once in homes/<user>/default.nix; written to var/local by bootstrap.";
-    };
+  options.ft.repoPath = lib.mkOption {
+    type        = lib.types.str;
+    default     = "";
+    description = "Absolute path to the flake repo on disk. Auto-read from var/local/repoPath; written by bootstrap.";
   };
 
   config = {
+    ft.repoPath = lib.mkDefault (
+      let f = inputs.self + "/var/local/repoPath";
+      in if builtins.pathExists f then lib.removeSuffix "\n" (builtins.readFile f) else ""
+    );
     programs.home-manager.enable = true;
-    home.stateVersion = lib.mkDefault "24.05";
-    home.homeDirectory = lib.mkDefault "/home/${config.home.username}";
-    targets.genericLinux.enable = lib.mkDefault true;
-    xdg.enable = lib.mkDefault true;
+    home.stateVersion            = lib.mkDefault "24.05";
+    home.homeDirectory           = lib.mkDefault "/home/${config.home.username}";
+    targets.genericLinux.enable  = lib.mkDefault true;
+    xdg.enable                   = lib.mkDefault true;
   };
 }

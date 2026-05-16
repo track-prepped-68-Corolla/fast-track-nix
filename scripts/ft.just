@@ -152,7 +152,7 @@ tailscale-init:
     git diff --cached --quiet || git commit -m "chore: tailscale config"
     echo ":: Tailscale configured for tailnet: $TS_TAILNET ::"
 
-# Scaffold a new host in hosts/<name>/ and create its var/ directory.
+# Scaffold a new host in hosts/<name>/ and write var/local/{hostName,repoPath}.
 add-host hostname:
     #!/usr/bin/env bash
     set -e
@@ -163,7 +163,9 @@ add-host hostname:
       exit 0
     fi
     REPO_PATH="$(git rev-parse --show-toplevel)"
-    printf '%s' "$REPO_PATH" > var/local
+    mkdir -p var/local
+    printf '%s' "$REPO_PATH" > var/local/repoPath
+    printf '%s' "$HOSTNAME"  > var/local/hostName
     mkdir -p "${HOST_DIR}/var"
     cat > "${HOST_DIR}/default.nix" <<EOF
 { lib, ... }:
@@ -176,9 +178,6 @@ add-host hostname:
   networking.hostName = "${HOSTNAME}";
   mainuser = "joe";
 
-  ft.repoPath = "$REPO_PATH";
-
-  ft.runtimeFacts.enable   = true;
   ft.boot.limine.enable    = true;
   ft.security.sops.enable  = true;
   ft.desktop.cosmic.enable = true;
@@ -191,10 +190,10 @@ add-host hostname:
 }
 EOF
     touch "${HOST_DIR}/hardware-configuration.nix"
-    git add "${HOST_DIR}/"
+    git add "var/local/" "${HOST_DIR}/"
     git diff --cached --quiet || git commit -m "bootstrap: scaffold host ${HOSTNAME}"
     echo ":: Host ${HOSTNAME} scaffolded at ${HOST_DIR} ::"
-    echo ":: Next: just facter ${HOSTNAME} <ip>  then  just deploy ${HOSTNAME} <ip> ::"
+    echo ":: Next: just generate-facts ${HOSTNAME} <ip>  then  just deploy ${HOSTNAME} <ip> ::"
 
 # Generate the SSH host key, derive age pubkey, and update .sops.yaml for a new host.
 secrets-init hostname:
@@ -215,7 +214,7 @@ secrets-init hostname:
     echo "Key files are in: ${TMPDIR}/"
 
 # SSH into the target and collect hardware facts into hosts/<host>/var/facter.json.
-facter hostname ip:
+generate-facts hostname ip:
     #!/usr/bin/env bash
     set -e
     HOSTNAME="{{hostname}}"
@@ -250,11 +249,10 @@ deploy hostname ip:
 bootstrap hostname ip:
     #!/usr/bin/env bash
     set -e
-    printf '%s' "$(git rev-parse --show-toplevel)" > var/local
-    just git-init      2>/dev/null || true
+    just git-init                     2>/dev/null || true
     just add-host      "{{hostname}}"
     just secrets-init  "{{hostname}}"
-    just facter        "{{hostname}}" "{{ip}}"
+    just generate-facts "{{hostname}}" "{{ip}}"
     just deploy        "{{hostname}}" "{{ip}}"
     echo ""
     echo ":: Bootstrap complete for {{hostname}} ::"
