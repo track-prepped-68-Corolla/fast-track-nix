@@ -37,6 +37,7 @@ let
   mkNixosHost = host: lib.nameValuePair host.name (lib.nixosSystem {
     specialArgs = { inherit inputs; };
     modules = [
+      ../modules/nixos
       host.path
       { nixpkgs.hostPlatform = lib.mkDefault host.system; }
     ];
@@ -72,6 +73,7 @@ let
       pkgs = nixpkgs.legacyPackages.${system};
       extraSpecialArgs = { inherit inputs; };
       modules = [
+        ../modules/home
         (homesDir + "/${user}")
       ];
     });
