@@ -1,3 +1,33 @@
+# =============================================================================
+# ft-home Generator
+# =============================================================================
+#
+# Called by ft-home.lib.mkFlake with the merged input set
+# (ftHomeInputs // consumerInputs). Consumer keys take precedence, so
+# consumers can shadow any framework input. Critically, inputs.self is
+# the CONSUMER's flake self — all directory scanning uses the consumer
+# repo root, not ft-home's.
+#
+# MACHINE DISCOVERY
+#   Scans inputs.self/machines/<name>/ for directories.
+#   System is read from machines/<name>/var/facter.json (facter.system).
+#   Names whose system ends in "-darwin" produce darwinConfigurations;
+#   all others produce nixosConfigurations.
+#   Falls back to "x86_64-linux" if facter.json is absent (pre-scan).
+#
+# USER DISCOVERY
+#   Scans inputs.self/users/<username>/ for directories.
+#   Each user is paired with every system found in machines/ plus the
+#   local machine's system (read from var/local/system, written by
+#   bootstrap). This ensures home configs exist for standalone HM users
+#   who have no machines/ entry.
+#
+# MODULE INJECTION
+#   ../modules/nixos is prepended to every nixosConfiguration/
+#   darwinConfiguration so consumer machine files never need explicit
+#   ft-home imports.
+#   ../modules/home is prepended to every homeConfiguration similarly.
+# =============================================================================
 inputs@{ nixpkgs, home-manager, darwin ? null, self, ... }:
 let
   inherit (nixpkgs) lib;
