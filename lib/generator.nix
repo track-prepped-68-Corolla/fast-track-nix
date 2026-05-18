@@ -18,13 +18,12 @@ let
 
   mkHostEntry = name:
     let
-      factsFile  = self + "/hosts/${name}/var/facter.json";
-      facter     = if builtins.pathExists factsFile
-                   then builtins.fromJSON (builtins.readFile factsFile)
-                   else {};
-      kernelArch = facter.kernel.architecture or "x86_64";
-      system     = "${kernelArch}-linux";
-      isDarwin   = false;
+      factsFile = self + "/hosts/${name}/var/facter.json";
+      facter    = if builtins.pathExists factsFile
+                  then builtins.fromJSON (builtins.readFile factsFile)
+                  else {};
+      system    = facter.system or "x86_64-linux";
+      isDarwin  = lib.hasSuffix "-darwin" system;
     in {
       inherit name system isDarwin;
       path = hostsDir + "/${name}";
