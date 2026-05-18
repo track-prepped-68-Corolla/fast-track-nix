@@ -59,8 +59,19 @@ let
   homesDir = self + "/homes";
   homeUsers = getDirs homesDir;
 
-  # Derive supported systems from declared hosts
-  supportedSystems = lib.unique (map (h: h.system) hostList);
+  # Local machine system — written by bootstrap to var/local/system.
+  # Ensures a home config is generated for the current machine even when
+  # it has no corresponding host entry (e.g. standalone HM on non-NixOS).
+  localSystemFile = self + "/var/local/system";
+  localSystem     = if builtins.pathExists localSystemFile
+                    then lib.removeSuffix "\n" (builtins.readFile localSystemFile)
+                    else null;
+
+  # Derive supported systems from declared hosts, plus the local machine.
+  supportedSystems = lib.unique (
+    (map (h: h.system) hostList)
+    ++ lib.optional (localSystem != null) localSystem
+  );
 
   # Create a matrix of every user paired with every supported system
   homeMatrix = lib.flatten (map (user:
