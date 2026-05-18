@@ -22,7 +22,7 @@
 
     sops = {
       # No defaultSopsFile — callers reference secrets explicitly:
-      #   sops.secrets."my-key".sopsFile = "${config.ft.repoPath}/secrets/hosts/<name>/foo.yaml";
+      #   sops.secrets."my-key".sopsFile = "${config.ft.repoPath}/secrets/machines/<name>/foo.yaml";
       validateSopsFiles = false;
 
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];

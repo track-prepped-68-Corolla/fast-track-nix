@@ -11,6 +11,6 @@ in {
   config = lib.mkIf cfg.enable {
     sops.age.keyFile = lib.mkDefault "${config.home.homeDirectory}/.config/sops/age/keys.txt";
     sops.defaultSopsFile = lib.mkDefault
-      "${config.ft.repoPath}/homes/${config.home.username}/var/secrets.yaml";
+      "${config.ft.repoPath}/users/${config.home.username}/var/secrets.yaml";
   };
 }

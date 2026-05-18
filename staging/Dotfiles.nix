@@ -1,7 +1,7 @@
 { config, lib, ... }:
 
 let
-  targetPath = "${config.ft.repoPath}/homes/${config.home.username}/dotfiles";
+  targetPath = "${config.ft.repoPath}/users/${config.home.username}/dotfiles";
   prefixLen = builtins.stringLength targetPath + 1;
 in 
 {
