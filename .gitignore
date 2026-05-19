@@ -1,2 +1,3 @@
 *.pub
 *.qcow2
+flake.lock
