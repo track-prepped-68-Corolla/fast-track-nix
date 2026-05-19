@@ -44,7 +44,7 @@
 
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs.follows = "nixpkgs";
+      #inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Declarative disk partitioning, used with nixos-anywhere for remote installs.
