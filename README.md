@@ -69,8 +69,6 @@ Every feature is a `ft.*` option in your machine or user file. Nothing is on by 
 ```nix
 # machines/my-desktop/default.nix
 _: {
-  imports = [ ../../modules/nixos ];  # injected automatically — omit this
-
   ft = {
     boot.limine.enable   = true;
     desktop.cosmic.enable = true;
@@ -161,7 +159,7 @@ statix check .     # lint for anti-patterns
 nix flake check    # build all checks.* derivations (format + lint)
 ```
 
-All four checks must pass before every commit. CI runs `nix flake check` on every push.
+All four checks (treefmt via `nix fmt`, deadnix, statix, and trufflehog secret scan) must pass before every commit. CI runs `nix flake check` plus secret scanning on every push.
 
 ---
 
