@@ -17,11 +17,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      yubikey-manager
-      yubico-piv-tool
-      pam_u2f
-    ];
+    environment.systemPackages = with pkgs; [ yubikey-manager yubico-piv-tool pam_u2f ];
 
     services.pcscd.enable = true;
 
@@ -38,9 +34,6 @@ in
     # cosmic-greeter is excluded: the greeter doesn't relay pam_u2f prompts
     # reliably and a hang there locks the user out completely. cosmic-lock
     # (the screen locker) is sufficient for DE-level key protection.
-    security.pam.services = {
-      sddm.u2fAuth = true;
-      cosmic-lock.u2fAuth = true;
-    };
+    security.pam.services = { sddm.u2fAuth = true; cosmic-lock.u2fAuth = true; };
   };
 }

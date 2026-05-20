@@ -17,10 +17,7 @@
 
   config = lib.mkIf config.ft.security.sops.enable {
     environment.systemPackages =
-      [
-        pkgs.sops
-        pkgs.age
-      ]
+      [ pkgs.sops pkgs.age ]
       ++ lib.optional config.ft.security.sops.useTPM pkgs.age-plugin-tpm
       ++ lib.optional config.ft.security.sops.useYubikey pkgs.age-plugin-yubikey;
 

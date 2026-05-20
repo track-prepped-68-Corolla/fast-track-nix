@@ -20,10 +20,7 @@ in
     };
 
     useRoutingFeatures = lib.mkOption {
-      type = lib.types.enum [
-        "client"
-        "server"
-      ];
+      type = lib.types.enum [ "client" "server" ];
       default = "client";
       description = "Tailscale routing features (client or server/exit node).";
     };
@@ -35,9 +32,7 @@ in
       useRoutingFeatures = cfg.useRoutingFeatures;
     };
 
-    environment.systemPackages = lib.mkIf cfg.enableTrayApp [
-      pkgs.trayscale
-    ];
+    environment.systemPackages = lib.mkIf cfg.enableTrayApp [ pkgs.trayscale ];
 
     networking.firewall = {
       trustedInterfaces = [ "tailscale0" ];
