@@ -31,23 +31,29 @@ in
 
     # --- 2. HARDWARE & CONNECTIVITY ---
     networking.networkmanager.enable = lib.mkDefault true;
-    hardware.bluetooth.enable = lib.mkDefault true;
-    hardware.bluetooth.powerOnBoot = lib.mkDefault true;
+    hardware.bluetooth = {
+      enable = lib.mkDefault true;
+      powerOnBoot = lib.mkDefault true;
+    };
 
     # --- 3. PRINTING & DISCOVERY ---
-    services.printing.enable = lib.mkDefault true;
-    services.avahi = {
-      enable = lib.mkDefault true;
-      nssmdns4 = true;
-      openFirewall = lib.mkDefault true;
+    services = {
+      printing.enable = lib.mkDefault true;
+      avahi = {
+        enable = lib.mkDefault true;
+        nssmdns4 = true;
+        openFirewall = lib.mkDefault true;
+      };
     };
 
     # --- 4. NIX SETTINGS ---
-    nix.settings.experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
-    nix.settings.auto-optimise-store = true;
+    nix.settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      auto-optimise-store = true;
+    };
     nixpkgs.config.allowUnfree = true;
 
     # --- 5. TIME & LOCALE ---

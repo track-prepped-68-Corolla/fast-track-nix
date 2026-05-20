@@ -53,7 +53,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    programs.gamemode.enable = true;
+    programs = {
+      gamemode.enable = true;
+      steam = {
+        enable = true;
+        remotePlay.openFirewall = true;
+        dedicatedServer.openFirewall = true;
+        localNetworkGameTransfers.openFirewall = true;
+        gamescopeSession.enable = false;
+      };
+    };
 
     environment.systemPackages = with pkgs; [
       mangohud
@@ -63,22 +72,15 @@ in
       heroic
     ];
 
-    programs.steam = {
-      enable = true;
-      remotePlay.openFirewall = true;
-      dedicatedServer.openFirewall = true;
-      localNetworkGameTransfers.openFirewall = true;
-      gamescopeSession.enable = false;
+    jovian = {
+      steam = {
+        enable = true;
+        autoStart = cfg.enableLeanbackUI;
+        inherit (cfg) user;
+        desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
+      };
+      decky-loader.enable = cfg.enableLeanbackUI;
+      hardware.has.amd.gpu = cfg.gpuVendor == "amd";
     };
-
-    jovian.steam = {
-      enable = true;
-      autoStart = cfg.enableLeanbackUI;
-      inherit (cfg) user;
-      desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
-    };
-
-    jovian.decky-loader.enable = cfg.enableLeanbackUI;
-    jovian.hardware.has.amd.gpu = (cfg.gpuVendor == "amd");
   };
 }

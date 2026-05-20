@@ -35,10 +35,12 @@
     sops = {
       defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
       validateSopsFiles = false;
-      age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-      age.keyFile = lib.mkIf (
-        config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey
-      ) "/var/lib/sops-nix/key.txt";
+      age = {
+        sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+        keyFile = lib.mkIf (
+          config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey
+        ) "/var/lib/sops-nix/key.txt";
+      };
       gnupg.sshKeyPaths = [ ];
     };
   };

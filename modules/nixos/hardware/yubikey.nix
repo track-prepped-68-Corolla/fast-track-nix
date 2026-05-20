@@ -28,9 +28,10 @@ in
       pam_u2f
     ];
 
-    services.pcscd.enable = true;
-
-    services.udev.packages = [ pkgs.yubikey-personalization ];
+    services = {
+      pcscd.enable = true;
+      udev.packages = [ pkgs.yubikey-personalization ];
+    };
 
     # YubiKey is a USB HID device; guarantee the driver loads regardless of
     # what facter-modules derives from the hardware report.

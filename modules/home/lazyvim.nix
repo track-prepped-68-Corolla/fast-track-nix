@@ -16,46 +16,48 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = with pkgs; [
-      neovim
-      git
-      gcc
-      gnumake
-      ripgrep
-      fd
-      lazygit
-      unzip
-      wget
-      curl
-      tree-sitter
-      nodejs
-      wl-clipboard
-      pyright
-      black
-      isort
-      go
-      gopls
-      gofumpt
-      cargo
-      rustc
-      rust-analyzer
-      rustfmt
-      clang-tools
-      marksman
-      prettier
-      yaml-language-server
-      vscode-langservers-extracted
-      lemminx
-      nixd
-      nixfmt
-    ];
+    home = {
+      packages = with pkgs; [
+        neovim
+        git
+        gcc
+        gnumake
+        ripgrep
+        fd
+        lazygit
+        unzip
+        wget
+        curl
+        tree-sitter
+        nodejs
+        wl-clipboard
+        pyright
+        black
+        isort
+        go
+        gopls
+        gofumpt
+        cargo
+        rustc
+        rust-analyzer
+        rustfmt
+        clang-tools
+        marksman
+        prettier
+        yaml-language-server
+        vscode-langservers-extracted
+        lemminx
+        nixd
+        nixfmt
+      ];
+
+      sessionVariables = {
+        EDITOR = "nvim";
+        VISUAL = "nvim";
+      };
+    };
 
     xdg.configFile."nvim".source =
       config.lib.file.mkOutOfStoreSymlink "${config.ft.dotfiles.path}/nvim";
-
-    home.sessionVariables = {
-      EDITOR = "nvim";
-      VISUAL = "nvim";
-    };
   };
 }

@@ -38,15 +38,17 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    virtualisation.libvirtd.enable = true;
+    virtualisation = {
+      libvirtd.enable = true;
+      spiceUSBRedirection.enable = cfg.enableSpiceUsbRedirection;
+      vmware.host.enable = lib.mkIf cfg.enableVmwareHost true;
+      incus = lib.mkIf cfg.enableIncus {
+        enable = true;
+        package = pkgs.incus;
+      };
+    };
     programs.virt-manager.enable = true;
     users.groups.libvirtd.members = [ config.mainuser ];
-    virtualisation.spiceUSBRedirection.enable = cfg.enableSpiceUsbRedirection;
-    virtualisation.vmware.host.enable = lib.mkIf cfg.enableVmwareHost true;
-    virtualisation.incus = lib.mkIf cfg.enableIncus {
-      enable = true;
-      package = pkgs.incus;
-    };
     networking.nftables.enable = lib.mkDefault true;
   };
 }

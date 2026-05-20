@@ -34,20 +34,22 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    services.printing = {
-      enable = true;
-      cups-pdf.enable = cfg.enableVirtualPdfPrinter;
-      drivers = cfg.extraDrivers;
-    };
+    services = {
+      printing = {
+        enable = true;
+        cups-pdf.enable = cfg.enableVirtualPdfPrinter;
+        drivers = cfg.extraDrivers;
+      };
 
-    services.avahi = lib.mkIf cfg.enableNetworkDiscovery {
-      enable = true;
-      nssmdns4 = true;
-      openFirewall = true;
-    };
+      avahi = lib.mkIf cfg.enableNetworkDiscovery {
+        enable = true;
+        nssmdns4 = true;
+        openFirewall = true;
+      };
 
-    services.udev.extraRules = ''
-      TAG=="systemd", ENV{SYSTEMD_ALIAS}+="/dev/lp0"
-    '';
+      udev.extraRules = ''
+        TAG=="systemd", ENV{SYSTEMD_ALIAS}+="/dev/lp0"
+      '';
+    };
   };
 }

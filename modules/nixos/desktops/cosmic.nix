@@ -15,9 +15,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    services.desktopManager.cosmic.enable = lib.mkDefault true;
-    services.displayManager.cosmic-greeter.enable = lib.mkDefault true;
-    services.system76-scheduler.enable = lib.mkDefault true;
+    services = {
+      desktopManager.cosmic.enable = lib.mkDefault true;
+      displayManager.cosmic-greeter.enable = lib.mkDefault true;
+      system76-scheduler.enable = lib.mkDefault true;
+    };
     hardware.graphics.enable = lib.mkDefault true;
   };
 }
