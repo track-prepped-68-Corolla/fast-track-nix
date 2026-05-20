@@ -24,11 +24,14 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@v14
 
-      # GitHub-native Nix build cache — no Cachix account required.
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      # ft-home has no committed flake.lock (it is a library input).
+      # Materialise a lock for this CI run without committing it.
+      - name: Resolve flake inputs
+        run: nix flake lock
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
       # format: treefmt (nixfmt + deadnix)    lint: statix
+      # Binary substitutes are fetched from cache.nixos.org.
       - name: nix flake check
         run: nix flake check
 
