@@ -98,7 +98,6 @@
   outputs = inputs:
     let
       inherit (inputs.nixpkgs) lib;
-      # Systems to expose checks and formatter for.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -110,7 +109,8 @@
       # Quality checks run by `nix flake check` and CI.
       # HOME is set to TMPDIR so treefmt can write its cache database;
       # the Nix build sandbox points $HOME at /homeless-shelter by default.
-      mkChecks = system:
+      mkChecks =
+        system:
         let
           pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
@@ -137,40 +137,39 @@
           '';
         };
 
-      # `nix fmt` entry-point: runs treefmt with nixfmt and deadnix in PATH.
-      # Used by CI to auto-format before nix flake check.
-      mkFormatter = system:
+      # `nix fmt` entry-point — uses writeShellScriptBin to avoid the
+      # shellcheck build-time validation that writeShellApplication runs.
+      mkFormatter =
+        system:
         let
           pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
-        pkgs.writeShellApplication {
-          name = "format";
-          runtimeInputs = with pkgs; [
+        pkgs.writeShellScriptBin "format" ''
+          export PATH="${pkgs.lib.makeBinPath (with pkgs; [ treefmt nixfmt deadnix ])}:$PATH"
+          exec "${pkgs.treefmt}/bin/treefmt" "$@"
+        '';
+
+      # Dev shell for local formatting/linting: `nix develop`.
+      mkDevShell =
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        pkgs.mkShell {
+          packages = with pkgs; [
             treefmt
             nixfmt
             deadnix
+            statix
           ];
-          text = ''exec treefmt "$@"'';
         };
     in
     {
-      # Called by consumers: merges framework inputs with consumer inputs (consumer
-      # keys take precedence), then runs the generator so inputs.self resolves to
-      # the consumer's repo and directory scanning works correctly.
       lib.mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
-
-      # Single NixOS module that auto-imports everything under modules/nixos/.
-      # Injected into every nixosConfiguration and darwinConfiguration.
       nixosModules.default = import ./modules/nixos;
-
-      # Single Home Manager module that auto-imports everything under modules/home/.
-      # Injected into every homeConfiguration.
       homeManagerModules.default = import ./modules/home;
-
-      # Run `nix fmt` to format all .nix files via treefmt.
       formatter = forAllSystems mkFormatter;
-
-      # Format and lint checks. Run locally with `nix flake check`.
+      devShells = forAllSystems (system: { default = mkDevShell system; });
       checks = forAllSystems mkChecks;
     };
 }
