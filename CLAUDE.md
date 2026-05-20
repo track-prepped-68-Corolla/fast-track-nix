@@ -2,7 +2,7 @@
 
 ## What this is
 
-ft-home is a framework flake. Consumers add it as an input and call `ft-home.lib.mkFlake inputs` from a minimal `flake.nix`. `lib/generator.nix` auto-discovers `hosts/` and `homes/` directories and emits `nixosConfigurations`, `darwinConfigurations`, and `homeConfigurations`. All framework modules are injected automatically; users enable features via `ft.*` options.
+ft-home is a framework flake. Consumers add it as an input and call `ft-home.lib.mkFlake inputs` from a minimal `flake.nix`. `lib/generator.nix` auto-discovers the consumer's `hosts/` and `homes/` directories and emits `nixosConfigurations`, `darwinConfigurations`, and `homeConfigurations`. All framework modules are injected automatically; users enable features via `ft.*` options.
 
 Darwin support is declared in the generator but not yet implemented in the module tree.
 
@@ -63,7 +63,7 @@ in
 
 ### Adding a module
 
-Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file will be discovered and evaluated automatically on the next build.
+Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub in each uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file is discovered and evaluated automatically on the next build.
 
 **Workflow for new modules:**
 1. Propose the option interface: namespace, option names, types, and defaults. Write no `config` yet.
@@ -109,12 +109,23 @@ modules/
     system/
   home/
     default.nix            # hub: listFilesRecursive — no manual imports
-    <feature>/
-hosts/                     # example or test hosts only — no personal data
-homes/                     # example or test homes only — no personal data
+    dotfiles.nix           # home modules live as flat files directly here
+    home-core.nix
+    <feature>.nix
+hosts/
+  generic/                 # reference/template host — no personal data
+    default.nix
+    hardware-configuration.nix
+homes/
+  admin/                   # reference/template homes — no personal data
+  guest/
 scripts/
 treefmt.toml
 ```
+
+Note: the consumer's `hosts/` follows `hosts/<arch>/<hostname>/` (see `lib/generator.nix`). The `hosts/` here is for template reference only and does not use the arch-subdirectory convention.
+
+`modules/nixos/` organises modules into feature subdirectories. `modules/home/` is flat — Home Manager modules live directly as `.nix` files with no subdirectory grouping.
 
 ---
 
@@ -156,6 +167,14 @@ When adding a new module, include a `nixosTest` skeleton even if assertions are 
 
 ---
 
+## Branch workflow
+
+`feature` → `testing` → `main`
+
+All pull requests target `testing`, not `main`. Changes reach `main` only after passing on `testing`.
+
+---
+
 ## What Claude must never do
 
 - Add `flake.lock` to ft-home.
@@ -166,4 +185,4 @@ When adding a new module, include a `nixosTest` skeleton even if assertions are 
 - Refactor existing modules unless the task explicitly requires it.
 - Expand scope beyond what was asked.
 - Update `flake.lock` or any input pin without explicit instruction.
-- Merge to `main` without going through `feature` → `testing` first.
+- Open a pull request targeting `main` — all PRs target `testing`.
