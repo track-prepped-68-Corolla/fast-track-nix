@@ -131,7 +131,7 @@
                 find src -type f -name "*.nix" | sort | xargs -r nixfmt
                 find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
                 find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
-                if ! diff -r src ref > /dev/null 2>&1; then
+                if ! diff -r -q src ref; then
                   echo "Some Nix files need formatting."
                   echo "Run: nixfmt <file> && deadnix --edit <file>"
                   exit 1

@@ -40,6 +40,7 @@ jobs:
       - name: Auto-format (nixfmt + deadnix)
         run: |
           nix shell .#nixfmt .#deadnix --command sh -c '
+            set -e
             find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r nixfmt
             find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r deadnix --edit
           '
@@ -51,7 +52,7 @@ jobs:
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
       - name: nix flake check
-        run: nix flake check
+        run: nix flake check -L
 
       - name: Secret scan
         uses: trufflesecurity/trufflehog@main
