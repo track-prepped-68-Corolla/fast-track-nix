@@ -76,6 +76,8 @@ in
     };
 
     users.users = lib.mkMerge [
+      # Hardcoded safety net — always present regardless of 'mainuser' to prevent
+      # complete lockout if the primary account becomes inaccessible.
       {
         admin = {
           isNormalUser = true;
@@ -84,6 +86,8 @@ in
           shell = pkgs.zsh;
         };
       }
+      # 'admin' is filtered out here to avoid a duplicate-definition conflict
+      # when mainuser or superUsers also lists "admin".
       (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
         (_user: {
           isNormalUser = true;

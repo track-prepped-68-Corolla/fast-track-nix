@@ -14,6 +14,8 @@ let
   cfg = config.ft.profiles.gaming;
 in
 {
+  # The module system deduplicates imports, so multiple profiles enabling this
+  # won't cause a conflict if both pull in jovian-nixos.nixosModules.default.
   imports = [
     inputs.jovian-nixos.nixosModules.default
   ];
@@ -65,11 +67,11 @@ in
     };
 
     environment.systemPackages = with pkgs; [
-      mangohud
-      protonup-qt
-      steamtinkerlaunch
-      goverlay
-      heroic
+      mangohud # in-game performance overlay
+      protonup-qt # GUI for managing Proton-GE versions
+      steamtinkerlaunch # per-game launch configurator
+      goverlay # GUI front-end for MangoHud profiles
+      heroic # launcher for Epic Games Store and GOG
     ];
 
     jovian = {
