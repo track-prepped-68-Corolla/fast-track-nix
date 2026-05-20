@@ -98,8 +98,7 @@
   outputs = inputs:
     let
       inherit (inputs.nixpkgs) lib;
-      # Systems to expose checks for. Builds only run on the host system in CI,
-      # but the attrset is defined for all so consumers on any platform get them.
+      # Systems to expose checks for.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -109,7 +108,8 @@
       forAllSystems = lib.genAttrs systems;
 
       # Quality checks run by `nix flake check` and CI.
-      # Copy source to a writable path so treefmt can write its cache database.
+      # HOME is set to TMPDIR so treefmt can write its cache database;
+      # the Nix build sandbox points $HOME at /homeless-shelter by default.
       mkChecks = system:
         let
           pkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -122,6 +122,7 @@
               deadnix
             ];
           } ''
+            export HOME=$TMPDIR
             cp -r ${inputs.self}/. .
             chmod -R u+w .
             treefmt --check

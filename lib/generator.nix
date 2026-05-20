@@ -132,6 +132,8 @@ let
   # 3. QUALITY CHECKS
   # Emitted for every supported system so `nix flake check` covers the
   # consumer's codebase without any extra wiring in the consumer flake.
+  # HOME is set to TMPDIR so treefmt can write its cache database;
+  # the Nix build sandbox points $HOME at /homeless-shelter by default.
   # ==========================================
   mkChecks = system:
     let
@@ -145,6 +147,7 @@ let
           deadnix
         ];
       } ''
+        export HOME=$TMPDIR
         cp -r ${self}/. .
         chmod -R u+w .
         treefmt --check

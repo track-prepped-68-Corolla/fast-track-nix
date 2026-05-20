@@ -22,7 +22,10 @@ jobs:
           # Full history required for trufflehog secret scanning.
           fetch-depth: 0
 
-      - uses: DeterminateSystems/nix-installer-action@v14
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       # ft-home has no committed flake.lock (it is a library input).
       # Materialise a lock for this CI run without committing it.
