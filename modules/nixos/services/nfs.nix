@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 ################################################################################
 # NFS CLIENT MODULE
@@ -39,7 +44,7 @@ in
     boot.supportedFilesystems = [ "nfs" ];
 
     fileSystems = lib.mapAttrs' (
-      name: value:
+      _name: value:
       lib.nameValuePair "${value.mountPoint}" {
         device = "${value.remotePath}";
         fsType = "nfs";

@@ -1,11 +1,20 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 let
   cfg = config.ft.users;
-  commonGroups =
-    [ "video" "render" "lp" "scanner" ]
-    ++ lib.optional config.networking.networkmanager.enable "networkmanager"
-    ++ lib.optional config.virtualisation.podman.enable "podman";
+  commonGroups = [
+    "video"
+    "render"
+    "lp"
+    "scanner"
+  ]
+  ++ lib.optional config.networking.networkmanager.enable "networkmanager"
+  ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
   options = {
@@ -59,7 +68,10 @@ in
       };
     };
 
-    security.pam.services = { login.u2fAuth = true; sudo.u2fAuth = true; };
+    security.pam.services = {
+      login.u2fAuth = true;
+      sudo.u2fAuth = true;
+    };
 
     users.users = lib.mkMerge [
       {
@@ -70,15 +82,15 @@ in
           shell = pkgs.zsh;
         };
       }
-      (lib.genAttrs
-        (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
-        (user: {
+      (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
+        (_user: {
           isNormalUser = true;
           extraGroups = commonGroups ++ [ "wheel" ];
           initialPassword = lib.mkDefault "changeme";
           shell = pkgs.zsh;
-        }))
-      (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (user: {
+        })
+      )
+      (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (_user: {
         isNormalUser = true;
         extraGroups = commonGroups;
         initialPassword = lib.mkDefault "changeme";

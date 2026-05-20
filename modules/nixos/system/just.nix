@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.ft.cli;
@@ -15,6 +20,9 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ pkgs.just ftWrapper ];
+    environment.systemPackages = [
+      pkgs.just
+      ftWrapper
+    ];
   };
 }

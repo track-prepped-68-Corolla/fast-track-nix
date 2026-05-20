@@ -95,7 +95,8 @@
     };
   };
 
-  outputs = inputs:
+  outputs =
+    inputs:
     let
       inherit (inputs.nixpkgs) lib;
       systems = [
@@ -113,26 +114,32 @@
           pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
         {
-          format = pkgs.runCommand "format-check" {
-            nativeBuildInputs = with pkgs; [
-              nixfmt
-              deadnix
-              findutils
-            ];
-          } ''
-            cp -r ${inputs.self}/. src
-            find src \( -type f -o -type d \) -exec chmod u+w {} +
-            find src -type f -name "*.nix" | sort | xargs -r nixfmt --check
-            find src -type f -name "*.nix" | sort | xargs -r deadnix
-            touch $out
-          '';
+          format =
+            pkgs.runCommand "format-check"
+              {
+                nativeBuildInputs = with pkgs; [
+                  nixfmt
+                  deadnix
+                  findutils
+                ];
+              }
+              ''
+                cp -r ${inputs.self}/. src
+                find src \( -type f -o -type d \) -exec chmod u+w {} +
+                find src -type f -name "*.nix" | sort | xargs -r nixfmt --check
+                find src -type f -name "*.nix" | sort | xargs -r deadnix
+                touch $out
+              '';
 
-          lint = pkgs.runCommand "statix-check" {
-            nativeBuildInputs = [ pkgs.statix ];
-          } ''
-            statix check ${inputs.self}
-            touch $out
-          '';
+          lint =
+            pkgs.runCommand "statix-check"
+              {
+                nativeBuildInputs = [ pkgs.statix ];
+              }
+              ''
+                statix check ${inputs.self}
+                touch $out
+              '';
         };
 
       # `nix fmt` entry-point — wraps treefmt for local dev use.
@@ -143,7 +150,16 @@
           pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
         pkgs.writeShellScriptBin "format" ''
-          export PATH="${pkgs.lib.makeBinPath (with pkgs; [ treefmt nixfmt deadnix ])}:$PATH"
+          export PATH="${
+            pkgs.lib.makeBinPath (
+              with pkgs;
+              [
+                treefmt
+                nixfmt
+                deadnix
+              ]
+            )
+          }:$PATH"
           exec "${pkgs.treefmt}/bin/treefmt" "$@"
         '';
 
@@ -167,7 +183,9 @@
       nixosModules.default = import ./modules/nixos;
       homeManagerModules.default = import ./modules/home;
       formatter = forAllSystems mkFormatter;
-      devShells = forAllSystems (system: { default = mkDevShell system; });
+      devShells = forAllSystems (system: {
+        default = mkDevShell system;
+      });
       checks = forAllSystems mkChecks;
       packages = forAllSystems (
         system:

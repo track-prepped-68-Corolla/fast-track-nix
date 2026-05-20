@@ -1,4 +1,10 @@
-{ lib, config, pkgs, inputs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 let
   cfgTheme = config.ft.theme;
@@ -34,25 +40,40 @@ in
 
       fonts = {
         sans = {
-          name = lib.mkOption { type = lib.types.str; default = "Atkinson Hyperlegible"; };
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "Atkinson Hyperlegible";
+          };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.atkinson-hyperlegible;
           };
         };
         mono = {
-          name = lib.mkOption { type = lib.types.str; default = "AtkynsonMono Nerd Font Mono"; };
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "AtkynsonMono Nerd Font Mono";
+          };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.nerd-fonts.atkynson-mono;
           };
         };
         serif = {
-          name = lib.mkOption { type = lib.types.str; default = "IBM Plex Serif"; };
-          package = lib.mkOption { type = lib.types.package; default = pkgs.ibm-plex; };
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "IBM Plex Serif";
+          };
+          package = lib.mkOption {
+            type = lib.types.package;
+            default = pkgs.ibm-plex;
+          };
         };
         emoji = {
-          name = lib.mkOption { type = lib.types.str; default = "Noto Color Emoji"; };
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "Noto Color Emoji";
+          };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.noto-fonts-color-emoji;
@@ -81,11 +102,28 @@ in
         base16Scheme = cfgTheme.schemePath;
 
         fonts = {
-          sansSerif = { package = cfgTheme.fonts.sans.package; name = cfgTheme.fonts.sans.name; };
-          monospace = { package = cfgTheme.fonts.mono.package; name = cfgTheme.fonts.mono.name; };
-          serif = { package = cfgTheme.fonts.serif.package; name = cfgTheme.fonts.serif.name; };
-          emoji = { package = cfgTheme.fonts.emoji.package; name = cfgTheme.fonts.emoji.name; };
-          sizes = { applications = 12; terminal = 13; desktop = 11; popups = 11; };
+          sansSerif = {
+            package = cfgTheme.fonts.sans.package;
+            name = cfgTheme.fonts.sans.name;
+          };
+          monospace = {
+            package = cfgTheme.fonts.mono.package;
+            name = cfgTheme.fonts.mono.name;
+          };
+          serif = {
+            package = cfgTheme.fonts.serif.package;
+            name = cfgTheme.fonts.serif.name;
+          };
+          emoji = {
+            package = cfgTheme.fonts.emoji.package;
+            name = cfgTheme.fonts.emoji.name;
+          };
+          sizes = {
+            applications = 12;
+            terminal = 13;
+            desktop = 11;
+            popups = 11;
+          };
         };
 
         cursor = {
@@ -94,7 +132,11 @@ in
           size = 24;
         };
 
-        opacity = { terminal = 0.85; applications = 0.95; desktop = 0.90; };
+        opacity = {
+          terminal = 0.85;
+          applications = 0.95;
+          desktop = 0.90;
+        };
 
         targets.starship.enable = false;
       };

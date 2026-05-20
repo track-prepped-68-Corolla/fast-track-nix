@@ -1,4 +1,10 @@
-{ config, lib, pkgs, inputs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 
 ################################################################################
 # UNIVERSAL GAMING PROFILE MODULE
@@ -36,7 +42,11 @@ in
     };
 
     gpuVendor = lib.mkOption {
-      type = lib.types.enum [ "amd" "intel" "nvidia" ];
+      type = lib.types.enum [
+        "amd"
+        "intel"
+        "nvidia"
+      ];
       default = "amd";
       description = "GPU vendor for hardware optimizations (amd, intel, nvidia).";
     };

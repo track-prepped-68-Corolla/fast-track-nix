@@ -1,4 +1,10 @@
-{ lib, config, inputs, pkgs, ... }:
+{
+  lib,
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 
 {
   imports = [ inputs.sops-nix.nixosModules.sops ];
@@ -16,10 +22,12 @@
   };
 
   config = lib.mkIf config.ft.security.sops.enable {
-    environment.systemPackages =
-      [ pkgs.sops pkgs.age ]
-      ++ lib.optional config.ft.security.sops.useTPM pkgs.age-plugin-tpm
-      ++ lib.optional config.ft.security.sops.useYubikey pkgs.age-plugin-yubikey;
+    environment.systemPackages = [
+      pkgs.sops
+      pkgs.age
+    ]
+    ++ lib.optional config.ft.security.sops.useTPM pkgs.age-plugin-tpm
+    ++ lib.optional config.ft.security.sops.useYubikey pkgs.age-plugin-yubikey;
 
     services.pcscd.enable = lib.mkIf config.ft.security.sops.useYubikey true;
     security.tpm2.enable = lib.mkIf config.ft.security.sops.useTPM true;
@@ -28,9 +36,9 @@
       defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
       validateSopsFiles = false;
       age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-      age.keyFile = lib.mkIf
-        (config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey)
-        "/var/lib/sops-nix/key.txt";
+      age.keyFile = lib.mkIf (
+        config.ft.security.sops.useTPM || config.ft.security.sops.useYubikey
+      ) "/var/lib/sops-nix/key.txt";
       gnupg.sshKeyPaths = [ ];
     };
   };
