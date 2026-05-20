@@ -36,16 +36,25 @@ jobs:
         run: nix flake lock
 
       # Run treefmt (nixfmt + deadnix) via the flake's formatter output.
-      # If any files need formatting, commit them back to the branch so
-      # the format check derivation in nix flake check sees clean source.
+      # If any .nix files need formatting, commit them back to the branch.
+      # The push is best-effort (|| true): even if it fails, the local
+      # commit makes inputs.self point at formatted source, so the format
+      # derivation in nix flake check still passes on this run.
       - name: Auto-format (nixfmt + deadnix)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          nix fmt
-          if ! git diff --quiet; then
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git config user.name "github-actions[bot]"            
-            git commit -am "style: auto-format"
-            git push
+          if nix fmt; then
+            if ! git diff --quiet; then
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git config user.name "github-actions[bot]"
+              git commit -am "style: auto-format"
+              git push \
+                "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+                "HEAD:${{ github.head_ref || github.ref_name }}" || true
+            fi
+          else
+            echo "::warning::nix fmt returned non-zero; some files may not be formatted"
           fi
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.

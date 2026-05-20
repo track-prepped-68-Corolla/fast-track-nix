@@ -43,11 +43,11 @@ inputs@{
 let
   inherit (nixpkgs) lib;
 
-  # Helper function to get a list of subdirectories in a given path
-  getDirs = path:
+  getDirs =
+    path:
     if builtins.pathExists path
     then lib.attrNames (lib.filterAttrs (_: t: t == "directory") (builtins.readDir path))
-    else [];
+    else [ ];
 
   # ==========================================
   # 1. MACHINES DISCOVERY (Flat Structure)
@@ -57,10 +57,14 @@ let
   machinesDir = self + "/machines";
   machineNames = getDirs machinesDir;
 
-  mkMachineEntry = name:
+  mkMachineEntry =
+    name:
     let
       factsFile = self + "/machines/${name}/var/facter.json";
-      facter = if builtins.pathExists factsFile then builtins.fromJSON (builtins.readFile factsFile) else {};
+      facter =
+        if builtins.pathExists factsFile
+        then builtins.fromJSON (builtins.readFile factsFile)
+        else { };
       system = facter.system or "x86_64-linux";
       isDarwin = lib.hasSuffix "-darwin" system;
     in
@@ -73,17 +77,21 @@ let
   nixosMachines = builtins.filter (x: !x.isDarwin) machineList;
   darwinMachines = builtins.filter (x: x.isDarwin) machineList;
 
-  mkNixosMachine = machine: lib.nameValuePair machine.name (lib.nixosSystem {
-    specialArgs = { inherit inputs; };
-    modules = [
-      ../modules/nixos
-      machine.path
-      { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
-    ];
-  });
+  mkNixosMachine =
+    machine:
+    lib.nameValuePair machine.name (lib.nixosSystem {
+      specialArgs = { inherit inputs; };
+      modules = [
+        ../modules/nixos
+        machine.path
+        { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
+      ];
+    });
 
-  mkDarwinMachine = machine:
-    assert lib.assertMsg (darwin != null) "The 'darwin' input is missing, but a macOS machine (${machine.name}) was discovered!";
+  mkDarwinMachine =
+    machine:
+    assert lib.assertMsg (darwin != null)
+      "The 'darwin' input is missing, but a macOS machine (${machine.name}) was discovered!";
     lib.nameValuePair machine.name (darwin.lib.darwinSystem {
       specialArgs = { inherit inputs; };
       modules = [
@@ -99,43 +107,40 @@ let
   usersDir = self + "/users";
   userNames = getDirs usersDir;
 
-  # Local machine system — written by bootstrap to var/local/system.
-  # Ensures a home config is generated for the current machine even when
-  # it has no corresponding machines/ entry (e.g. standalone HM on non-NixOS).
   localSystemFile = self + "/var/local/system";
   localSystem =
     if builtins.pathExists localSystemFile
     then lib.removeSuffix "\n" (builtins.readFile localSystemFile)
     else null;
 
-  # Derive supported systems from declared machines, plus the local machine.
   supportedSystems = lib.unique (
     (map (m: m.system) machineList) ++ lib.optional (localSystem != null) localSystem
   );
 
-  # Always include x86_64-linux so checks exist even before any machine is declared.
   checkSystems = lib.unique (supportedSystems ++ [ "x86_64-linux" ]);
 
-  # Create a matrix of every user paired with every supported system
-  userMatrix = lib.flatten (map (user: map (system: { inherit user system; }) supportedSystems) userNames);
+  userMatrix = lib.flatten (
+    map (user: map (system: { inherit user system; }) supportedSystems) userNames
+  );
 
-  mkUser = { user, system }: lib.nameValuePair "${user}@${system}" (home-manager.lib.homeManagerConfiguration {
-    pkgs = nixpkgs.legacyPackages.${system};
-    extraSpecialArgs = { inherit inputs; };
-    modules = [
-      ../modules/home
-      (usersDir + "/${user}")
-    ];
-  });
+  mkUser =
+    { user, system }:
+    lib.nameValuePair "${user}@${system}" (home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.${system};
+      extraSpecialArgs = { inherit inputs; };
+      modules = [
+        ../modules/home
+        (usersDir + "/${user}")
+      ];
+    });
 
   # ==========================================
   # 3. QUALITY CHECKS
-  # Emitted for every supported system so `nix flake check` covers the
-  # consumer's codebase without any extra wiring in the consumer flake.
   # HOME is set to TMPDIR so treefmt can write its cache database;
   # the Nix build sandbox points $HOME at /homeless-shelter by default.
   # ==========================================
-  mkChecks = system:
+  mkChecks =
+    system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
     in
