@@ -1,3 +1,5 @@
 *.pub
 *.qcow2
 flake.lock
+result
+result-*

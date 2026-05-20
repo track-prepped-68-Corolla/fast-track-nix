@@ -107,25 +107,23 @@
       forAllSystems = lib.genAttrs systems;
 
       # Quality checks run by `nix flake check` and CI.
-      # HOME is set to TMPDIR so treefmt can write its cache database;
-      # the Nix build sandbox points $HOME at /homeless-shelter by default.
       mkChecks =
         system:
         let
           pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
         {
-          format = pkgs.runCommand "treefmt-check" {
+          format = pkgs.runCommand "format-check" {
             nativeBuildInputs = with pkgs; [
-              treefmt
               nixfmt
               deadnix
+              findutils
             ];
           } ''
-            export HOME=$TMPDIR
-            cp -r ${inputs.self}/. .
-            chmod -R u+w .
-            treefmt --check
+            cp -r ${inputs.self}/. src
+            find src \( -type f -o -type d \) -exec chmod u+w {} +
+            find src -type f -name "*.nix" | sort | xargs -r nixfmt --check
+            find src -type f -name "*.nix" | sort | xargs -r deadnix
             touch $out
           '';
 
@@ -137,8 +135,8 @@
           '';
         };
 
-      # `nix fmt` entry-point — uses writeShellScriptBin to avoid the
-      # shellcheck build-time validation that writeShellApplication runs.
+      # `nix fmt` entry-point — wraps treefmt for local dev use.
+      # Uses writeShellScriptBin to avoid shellcheck build-time validation.
       mkFormatter =
         system:
         let
@@ -171,5 +169,14 @@
       formatter = forAllSystems mkFormatter;
       devShells = forAllSystems (system: { default = mkDevShell system; });
       checks = forAllSystems mkChecks;
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        {
+          inherit (pkgs) nixfmt deadnix;
+        }
+      );
     };
 }

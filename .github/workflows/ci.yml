@@ -33,25 +33,24 @@ jobs:
       - name: Resolve flake inputs
         run: nix flake lock
 
-      # Run treefmt via the flake's devShell (uses same nixpkgs pin as the
-      # format check). If any .nix files need formatting, commit them back.
-      # Push is best-effort: the local commit is enough for inputs.self to
-      # point at formatted source when nix flake check runs.
+      # Run nixfmt and deadnix directly via nix shell (bypasses treefmt).
+      # If any .nix files need formatting, commit them back so that
+      # inputs.self points at formatted source when nix flake check runs.
       - name: Auto-format (nixfmt + deadnix)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if nix develop --command treefmt; then
-            if ! git diff --quiet; then
-              git config user.email "github-actions[bot]@users.noreply.github.com"
-              git config user.name "github-actions[bot]"
-              git commit -am "style: auto-format"
-              git push \
-                "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
-                "HEAD:${{ github.head_ref || github.ref_name }}" || true
-            fi
-          else
-            echo "::warning::treefmt returned non-zero; some files may not be formatted"
+          nix shell .#nixfmt .#deadnix --command sh -c '
+            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r nixfmt
+            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r deadnix --edit
+          '
+          if ! git diff --quiet; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -am "style: auto-format"
+            git push \
+              "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+              "HEAD:${{ github.head_ref || github.ref_name }}" || true
           fi
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
