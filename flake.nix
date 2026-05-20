@@ -98,7 +98,7 @@
   outputs = inputs:
     let
       inherit (inputs.nixpkgs) lib;
-      # Systems to expose checks for.
+      # Systems to expose checks and formatter for.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -136,6 +136,22 @@
             touch $out
           '';
         };
+
+      # `nix fmt` entry-point: runs treefmt with nixfmt and deadnix in PATH.
+      # Used by CI to auto-format before nix flake check.
+      mkFormatter = system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        pkgs.writeShellApplication {
+          name = "format";
+          runtimeInputs = with pkgs; [
+            treefmt
+            nixfmt
+            deadnix
+          ];
+          text = ''exec treefmt "$@"'';
+        };
     in
     {
       # Called by consumers: merges framework inputs with consumer inputs (consumer
@@ -150,6 +166,9 @@
       # Single Home Manager module that auto-imports everything under modules/home/.
       # Injected into every homeConfiguration.
       homeManagerModules.default = import ./modules/home;
+
+      # Run `nix fmt` to format all .nix files via treefmt.
+      formatter = forAllSystems mkFormatter;
 
       # Format and lint checks. Run locally with `nix flake check`.
       checks = forAllSystems mkChecks;

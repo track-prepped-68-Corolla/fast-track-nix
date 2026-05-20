@@ -14,13 +14,16 @@ jobs:
   check:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history required for trufflehog secret scanning.
+          # token enables pushing auto-format commits back to the branch.
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: cachix/install-nix-action@v30
         with:
@@ -31,6 +34,19 @@ jobs:
       # Materialise a lock for this CI run without committing it.
       - name: Resolve flake inputs
         run: nix flake lock
+
+      # Run treefmt (nixfmt + deadnix) via the flake's formatter output.
+      # If any files need formatting, commit them back to the branch so
+      # the format check derivation in nix flake check sees clean source.
+      - name: Auto-format (nixfmt + deadnix)
+        run: |
+          nix fmt
+          if ! git diff --quiet; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"            
+            git commit -am "style: auto-format"
+            git push
+          fi
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
       # format: treefmt (nixfmt + deadnix)    lint: statix
