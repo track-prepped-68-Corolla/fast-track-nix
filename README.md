@@ -1,4 +1,4 @@
-# ft-home
+# Fast Track Nix
 
 **Building the onramp I wish I had.**
 
