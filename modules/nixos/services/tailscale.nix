@@ -37,7 +37,7 @@ in
   config = lib.mkIf cfg.enable {
     services.tailscale = {
       enable = true;
-      useRoutingFeatures = cfg.useRoutingFeatures;
+      inherit (cfg) useRoutingFeatures;
     };
 
     environment.systemPackages = lib.mkIf cfg.enableTrayApp [ pkgs.trayscale ];

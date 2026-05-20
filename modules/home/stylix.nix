@@ -103,20 +103,16 @@ in
 
         fonts = {
           sansSerif = {
-            package = cfgTheme.fonts.sans.package;
-            name = cfgTheme.fonts.sans.name;
+            inherit (cfgTheme.fonts.sans) package name;
           };
           monospace = {
-            package = cfgTheme.fonts.mono.package;
-            name = cfgTheme.fonts.mono.name;
+            inherit (cfgTheme.fonts.mono) package name;
           };
           serif = {
-            package = cfgTheme.fonts.serif.package;
-            name = cfgTheme.fonts.serif.name;
+            inherit (cfgTheme.fonts.serif) package name;
           };
           emoji = {
-            package = cfgTheme.fonts.emoji.package;
-            name = cfgTheme.fonts.emoji.name;
+            inherit (cfgTheme.fonts.emoji) package name;
           };
           sizes = {
             applications = 12;

@@ -74,7 +74,7 @@ in
     jovian.steam = {
       enable = true;
       autoStart = cfg.enableLeanbackUI;
-      user = cfg.user;
+      inherit (cfg) user;
       desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
     };
 
