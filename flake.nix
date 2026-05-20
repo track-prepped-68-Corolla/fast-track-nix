@@ -121,13 +121,21 @@
                   nixfmt
                   deadnix
                   findutils
+                  diffutils
                 ];
               }
               ''
+                cp -r ${inputs.self}/. ref
                 cp -r ${inputs.self}/. src
                 find src \( -type f -o -type d \) -exec chmod u+w {} +
-                find src -type f -name "*.nix" | sort | xargs -r nixfmt --check
-                find src -type f -name "*.nix" | sort | xargs -r deadnix
+                find src -type f -name "*.nix" | sort | xargs -r nixfmt
+                find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
+                find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
+                if ! diff -r src ref > /dev/null 2>&1; then
+                  echo "Some Nix files need formatting."
+                  echo "Run: nixfmt <file> && deadnix --edit <file>"
+                  exit 1
+                fi
                 touch $out
               '';
 
