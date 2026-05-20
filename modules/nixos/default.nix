@@ -20,8 +20,7 @@
 # =============================================================================
 { lib, ... }:
 let
-  allFiles = lib.filesystem.listFilesRecursive ./.
-  ;
+  allFiles = lib.filesystem.listFilesRecursive ./.;
 
   # Exclude non-.nix files and this file itself to prevent an import cycle.
   validModules = builtins.filter (
