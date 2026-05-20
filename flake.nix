@@ -95,18 +95,62 @@
     };
   };
 
-  outputs = inputs: {
-    # Called by consumers: merges framework inputs with consumer inputs (consumer
-    # keys take precedence), then runs the generator so inputs.self resolves to
-    # the consumer's repo and directory scanning works correctly.
-    lib.mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
+  outputs = inputs:
+    let
+      inherit (inputs.nixpkgs) lib;
+      # Systems to expose checks for. Builds only run on the host system in CI,
+      # but the attrset is defined for all so consumers on any platform get them.
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+        "x86_64-darwin"
+      ];
+      forAllSystems = lib.genAttrs systems;
 
-    # Single NixOS module that auto-imports everything under modules/nixos/.
-    # Injected into every nixosConfiguration and darwinConfiguration.
-    nixosModules.default = import ./modules/nixos;
+      # Quality checks run by `nix flake check` and CI.
+      # Copy source to a writable path so treefmt can write its cache database.
+      mkChecks = system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        {
+          format = pkgs.runCommand "treefmt-check" {
+            nativeBuildInputs = with pkgs; [
+              treefmt
+              nixfmt
+              deadnix
+            ];
+          } ''
+            cp -r ${inputs.self}/. .
+            chmod -R u+w .
+            treefmt --check
+            touch $out
+          '';
 
-    # Single Home Manager module that auto-imports everything under modules/home/.
-    # Injected into every homeConfiguration.
-    homeManagerModules.default = import ./modules/home;
-  };
+          lint = pkgs.runCommand "statix-check" {
+            nativeBuildInputs = [ pkgs.statix ];
+          } ''
+            statix check ${inputs.self}
+            touch $out
+          '';
+        };
+    in
+    {
+      # Called by consumers: merges framework inputs with consumer inputs (consumer
+      # keys take precedence), then runs the generator so inputs.self resolves to
+      # the consumer's repo and directory scanning works correctly.
+      lib.mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
+
+      # Single NixOS module that auto-imports everything under modules/nixos/.
+      # Injected into every nixosConfiguration and darwinConfiguration.
+      nixosModules.default = import ./modules/nixos;
+
+      # Single Home Manager module that auto-imports everything under modules/home/.
+      # Injected into every homeConfiguration.
+      homeManagerModules.default = import ./modules/home;
+
+      # Format and lint checks. Run locally with `nix flake check`.
+      checks = forAllSystems mkChecks;
+    };
 }
