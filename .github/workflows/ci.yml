@@ -23,27 +23,23 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: cachix/install-nix-action@v30
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      # GitHub-native Nix build cache — no Cachix account required.
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       # ft-home has no committed flake.lock (it is a library input).
       # Materialise a lock for this CI run without committing it.
       - name: Resolve flake inputs
         run: nix flake lock
 
-      # Format .nix files in-place and commit locally (no push).
-      # A local commit is enough for inputs.self to point at formatted
-      # source when nix flake check runs. Pushing would move the PR HEAD
-      # to a bot commit that GitHub Actions won't re-trigger CI for.
-      - name: Auto-format (nixfmt + deadnix)
+      # Auto-format via treefmt (nixfmt + deadnix) and commit if anything changed.
+      # A local commit is enough for inputs.self to point at formatted source when
+      # nix flake check runs. Pushing would move the PR HEAD to a bot commit that
+      # GitHub Actions won't re-trigger CI for.
+      - name: Auto-format (treefmt)
         run: |
-          nix shell .#nixfmt .#deadnix --command sh -c '
-            set -e
-            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r nixfmt
-            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r deadnix --edit
-          '
+          nix fmt
           if ! git diff --quiet; then
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git config user.name "github-actions[bot]"
@@ -51,10 +47,11 @@ jobs:
           fi
 
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
+      # format: nixfmt + deadnix diff    lint: statix
       - name: nix flake check
         run: nix flake check -L
 
       - name: Secret scan
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3
         with:
           extra_args: --only-verified
