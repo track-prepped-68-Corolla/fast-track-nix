@@ -1,19 +1,83 @@
-{ lib, pkgs, config, inputs, ... }:
-
 {
-  options.ft.repoPath = lib.mkOption {
-    type        = lib.types.str;
-    default     = "";
-    description = "Absolute path to the flake repo on disk. Auto-read from var/local/repoPath; written by bootstrap.";
+  pkgs,
+  lib,
+  config,
+  ...
+}:
+
+let
+  cfg = config.ft.system.core;
+in
+{
+  # -------------------------------------------------------------------------
+  #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
+  # -------------------------------------------------------------------------
+
+  options.ft.system.core.enable = lib.mkEnableOption "system core baseline" // {
+    default = true;
+    description = "Sets the system-wide baseline every host shares: stateVersion, NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, timezone (America/New_York), locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
   };
 
-  config = {
-    ft.repoPath = lib.mkDefault (
-      let f = inputs.self + "/var/local/repoPath";
-      in if builtins.pathExists f then lib.removeSuffix "\n" (builtins.readFile f) else ""
-    );
-    nix.settings.experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
-    system.stateVersion                 = lib.mkDefault "24.11";
-    environment.systemPackages = with pkgs; [ git neovim curl wget ];
+  options.ft.repoPath = lib.mkOption {
+    type = lib.types.str;
+    default = "/nix/ft-home";
+    description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
+  };
+
+  config = lib.mkIf cfg.enable {
+
+    # --- 1. SYSTEM IDENTITY ---
+    system.stateVersion = "24.05";
+
+    # --- 2. HARDWARE & CONNECTIVITY ---
+    networking.networkmanager.enable = lib.mkDefault true;
+    hardware.bluetooth = {
+      enable = lib.mkDefault true;
+      powerOnBoot = lib.mkDefault true;
+    };
+
+    # --- 3. PRINTING & DISCOVERY ---
+    services = {
+      printing.enable = lib.mkDefault true;
+      avahi = {
+        enable = lib.mkDefault true;
+        nssmdns4 = true;
+        openFirewall = lib.mkDefault true;
+      };
+    };
+
+    # --- 4. NIX SETTINGS ---
+    nix.settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      auto-optimise-store = true;
+    };
+    nixpkgs.config.allowUnfree = true;
+
+    # --- 5. TIME & LOCALE ---
+    time.timeZone = lib.mkDefault "America/New_York";
+    i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
+
+    # --- 6. CORE PACKAGES ---
+    programs.zsh.enable = true;
+
+    environment.systemPackages = with pkgs; [
+      nano
+      git
+      curl
+      wget
+      htop
+      tmux
+      home-manager
+      lix
+      nh
+      nvd
+      nix-output-monitor
+      nixfmt
+      findutils
+      delta
+    ];
   };
 }

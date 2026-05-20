@@ -14,7 +14,7 @@
 #   Do not import ft-home modules directly — the generator injects them.
 #   Per-user Home Manager config belongs in users/<username>/default.nix.
 # =============================================================================
-{ ... }:
+_:
 
 {
   # --- IDENTITY ---
@@ -25,9 +25,11 @@
   users.mutableUsers = true;
 
   # --- FEATURE TOGGLES ---
-  ft.boot.limine.enable = true;
-  ft.desktop.cosmic.enable = true;
-  ft.cli.enable = true;
+  ft = {
+    boot.limine.enable = true;
+    desktop.cosmic.enable = true;
+    cli.enable = true;
+  };
 
   nixpkgs.hostPlatform = "x86_64-linux";
 }

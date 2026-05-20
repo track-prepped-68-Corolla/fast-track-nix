@@ -2,55 +2,47 @@
   config,
   lib,
   pkgs,
-  inputs, # <--- 1. Catch 'inputs' passed from specialArgs in flake.nix
+  inputs,
   ...
 }:
 
 ################################################################################
 # UNIVERSAL GAMING PROFILE MODULE
-# ------------------------------------------------------------------------------
-# This module provides a flexible and comprehensive gaming configuration,
-# consolidating features for both traditional PC gaming and a "leanback" Steam
-# Deck-like (console) experience. It includes Steam, game performance tools,
-# and integration with Jovian-NixOS for optimized hardware settings.
 ################################################################################
 
 let
   cfg = config.ft.profiles.gaming;
 in
 {
-  # --- 2. THE FIX: Explicitly import the upstream flake module ---
-  # Nix's module system automatically deduplicates, so if two different 
-  # profiles import this same Jovian module, it will only load once.
+  # The module system deduplicates imports, so multiple profiles enabling this
+  # won't cause a conflict if both pull in jovian-nixos.nixosModules.default.
   imports = [
     inputs.jovian-nixos.nixosModules.default
   ];
 
   options.ft.profiles.gaming = {
-    enable = lib.mkEnableOption "Universal Gaming Profile";
+    enable = lib.mkEnableOption "Universal Gaming Profile" // {
+      description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set `ft.profiles.gaming.enableLeanbackUI = true` to boot directly into Steam Big Picture with Decky Loader.";
+    };
 
-    # Toggle for a leanback (Steam Deck UI) experience, booting directly into Steam.
     enableLeanbackUI = lib.mkOption {
       type = lib.types.bool;
       default = false;
       description = "Enable Steam Deck-like UI (boots directly into Steam Big Picture).";
     };
 
-    # The username for the gaming session. Important for Steam and Home Manager.
     user = lib.mkOption {
       type = lib.types.str;
-      default = "joe"; # Assuming 'joe' is the default user
+      default = config.mainuser;
       description = "The username for the gaming session.";
     };
 
-    # The desktop environment to use when not in leanback mode (e.g., "plasma", "gnome").
     desktopEnvironment = lib.mkOption {
       type = lib.types.str;
-      default = "plasma"; # Default to Plasma as it's common for gaming
+      default = "plasma";
       description = "Desktop environment for gaming sessions (e.g., plasma, gnome).";
     };
 
-    # The GPU vendor for hardware optimizations (e.g., "amd", "nvidia", "intel").
     gpuVendor = lib.mkOption {
       type = lib.types.enum [
         "amd"
@@ -63,44 +55,34 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # 1. Gaming Performance Tools
-    # Gamemode optimizes system performance for games.
-    programs.gamemode.enable = true;
+    programs = {
+      gamemode.enable = true;
+      steam = {
+        enable = true;
+        remotePlay.openFirewall = true;
+        dedicatedServer.openFirewall = true;
+        localNetworkGameTransfers.openFirewall = true;
+        gamescopeSession.enable = false;
+      };
+    };
 
-    # Essential gaming utilities and launchers.
     environment.systemPackages = with pkgs; [
-      mangohud # In-game overlay for performance metrics
-      protonup-qt # GUI for managing Proton versions
-      steamtinkerlaunch # Utility for configuring Steam games
-      goverlay # GUI for MangoHud and ReplaySorcery
-      heroic # Launcher for Epic Games Store and GOG
+      mangohud # in-game performance overlay
+      protonup-qt # GUI for managing Proton-GE versions
+      steamtinkerlaunch # per-game launch configurator
+      goverlay # GUI front-end for MangoHud profiles
+      heroic # launcher for Epic Games Store and GOG
     ];
 
-    # 2. Steam Client Configuration
-    programs.steam = {
-      enable = true;
-      # Open firewall ports for Steam features.
-      remotePlay.openFirewall = true;
-      dedicatedServer.openFirewall = true;
-      localNetworkGameTransfers.openFirewall = true;
-      # Gamescope session for performance and scaling (optional, can be toggled).
-      gamescopeSession.enable = false; # Default to false, enable if desired
+    jovian = {
+      steam = {
+        enable = true;
+        autoStart = cfg.enableLeanbackUI;
+        inherit (cfg) user;
+        desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
+      };
+      decky-loader.enable = cfg.enableLeanbackUI;
+      hardware.has.amd.gpu = cfg.gpuVendor == "amd";
     };
-
-    # 3. Jovian-NixOS Integration (for Steam Deck-like optimizations)
-    jovian.steam = {
-      enable = true; # Always enable Jovian for optimizations
-      autoStart = cfg.enableLeanbackUI; # Auto-start Steam Big Picture if leanback UI is enabled
-      user = cfg.user;
-      desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
-    };
-
-    # 4. Decky Loader (for Steam Deck UI plugins)
-    jovian.decky-loader.enable = cfg.enableLeanbackUI;
-
-    # 5. Hardware Optimization based on GPU vendor
-    # This dynamically applies kernel parameters and Mesa optimizations.
-    jovian.hardware.has.amd.gpu = (cfg.gpuVendor == "amd");
-    # Add more conditions for Intel/NVIDIA specific Jovian optimizations if they exist.
   };
 }

@@ -3,7 +3,7 @@
 let
   targetPath = "${config.ft.repoPath}/users/${config.home.username}/dotfiles";
   prefixLen = builtins.stringLength targetPath + 1;
-in 
+in
 {
   options.ft = {
     repoPath = lib.mkOption { type = lib.types.str; };
@@ -11,11 +11,17 @@ in
   };
 
   config = lib.mkIf config.ft.dotfiles.enable {
-    home.file = builtins.listToAttrs (map (file: 
-      let pathStr = toString file; in {
-        name = builtins.substring prefixLen (builtins.stringLength pathStr) pathStr;
-        value.source = config.lib.file.mkOutOfStoreSymlink pathStr;
-      }
-    ) (lib.filesystem.listFilesRecursive (/. + targetPath)));
+    home.file = builtins.listToAttrs (
+      map (
+        file:
+        let
+          pathStr = toString file;
+        in
+        {
+          name = builtins.substring prefixLen (builtins.stringLength pathStr) pathStr;
+          value.source = config.lib.file.mkOutOfStoreSymlink pathStr;
+        }
+      ) (lib.filesystem.listFilesRecursive (/. + targetPath))
+    );
   };
 }

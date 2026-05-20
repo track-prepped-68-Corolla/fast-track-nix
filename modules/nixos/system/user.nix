@@ -1,15 +1,28 @@
-{ pkgs, lib, config, inputs, ...}:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 let
-  # --- CONSTANTS ---
-  commonGroups = [ "video" "render" "lp" "scanner" ]
-    ++ lib.optional config.networking.networkmanager.enable "networkmanager"
-    ++ lib.optional config.virtualisation.podman.enable "podman";
+  cfg = config.ft.users;
+  commonGroups = [
+    "video"
+    "render"
+    "lp"
+    "scanner"
+  ]
+  ++ lib.optional config.networking.networkmanager.enable "networkmanager"
+  ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
-  # --- THE API (Options) ---
-  # These are the "knobs" you turn in your host files (e.g., machines/spec/default.nix).
   options = {
+    ft.users.enable = lib.mkEnableOption "user management" // {
+      default = true;
+      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership. Also configures PAM U2F for login and sudo; append additional key mappings via `u2fMappings`.";
+    };
+
     mainuser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
@@ -35,59 +48,55 @@ in
     };
   };
 
-  # --- THE IMPLEMENTATION (Config) ---
-  config = {
+  config = lib.mkIf cfg.enable {
+    security.pam = {
+      u2f = {
+        enable = true;
+        settings = {
+          cue = true;
+          control = "sufficient";
+          # nouserok: if the user has no entry in the authfile (or the device
+          # is unreachable), skip the challenge and fall through to password.
+          # Prevents lockout when the key is absent or a new user is created.
+          nouserok = true;
+          authfile =
+            let
+              defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
+            in
+            pkgs.writeText "u2f_keys" (
+              defaultAdmin + lib.optionalString (config.u2fMappings != "") ("\n" + config.u2fMappings)
+            );
+        };
+      };
 
-    # 1. ENABLE YUBIKEY / U2F AUTHENTICATION
-    security.pam.u2f = {
-      enable = true;
-      settings = {
-        cue = true; # Tells you to tap the key
-        interactive = true;
-        control = "sufficient"; 
-        # Use a path that can be managed by sops-nix later
-        authFile = let
-          defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
-        in 
-          pkgs.writeText "u2f_keys" (defaultAdmin + "\n" + config.u2fMappings);
+      services = {
+        login.u2fAuth = true;
+        sudo.u2fAuth = true;
       };
     };
 
-    security.pam.services = {
-      login.u2fAuth = true;
-      sudo.u2fAuth = true;
-    };
-
     users.users = lib.mkMerge [
-
-      # 1. THE PERMANENT ADMIN (Safety Net)
-      # This user is hardcoded. It is always present on every system you build.
+      # Hardcoded safety net — always present regardless of 'mainuser' to prevent
+      # complete lockout if the primary account becomes inaccessible.
       {
         admin = {
           isNormalUser = true;
-          extraGroups = commonGroups ++ [ "wheel" ]; # 'wheel' = sudo access
+          extraGroups = commonGroups ++ [ "wheel" ];
           initialPassword = lib.mkDefault "snp";
-          #openssh.authorizedKeys.keys = [
-          # "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINTWBO+wJvD/8Dili8rdo9fNvNLxYnzTZxv90Y2AK0WfAAAADXNzaDpmYXN0dHJhY2s= ssh:fasttrack"
-          #];
           shell = pkgs.zsh;
         };
       }
-
-      # 2. EXTRA SUPER USERS
-      # Combines 'mainuser' and 'superUsers', filtering out the safety 'admin'.
-      (lib.genAttrs (lib.filter (u: u != "admin") (
-        lib.unique ([ config.mainuser ] ++ config.superUsers)
-      )) (user: {
-        isNormalUser = true;
-        extraGroups = commonGroups ++ [ "wheel" ];
-        initialPassword = lib.mkDefault "changeme";
-        shell = pkgs.zsh;
-      }))
-
-      # 3. NORMAL USERS
-      # This loop creates restricted accounts with no sudo access.
-      (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (user: {
+      # 'admin' is filtered out here to avoid a duplicate-definition conflict
+      # when mainuser or superUsers also lists "admin".
+      (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
+        (_user: {
+          isNormalUser = true;
+          extraGroups = commonGroups ++ [ "wheel" ];
+          initialPassword = lib.mkDefault "changeme";
+          shell = pkgs.zsh;
+        })
+      )
+      (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (_user: {
         isNormalUser = true;
         extraGroups = commonGroups;
         initialPassword = lib.mkDefault "changeme";

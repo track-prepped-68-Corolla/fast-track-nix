@@ -95,18 +95,114 @@
     };
   };
 
-  outputs = inputs: {
-    # Called by consumers: merges framework inputs with consumer inputs (consumer
-    # keys take precedence), then runs the generator so inputs.self resolves to
-    # the consumer's repo and directory scanning works correctly.
-    lib.mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
+  outputs =
+    inputs:
+    let
+      inherit (inputs.nixpkgs) lib;
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+        "x86_64-darwin"
+      ];
+      forAllSystems = lib.genAttrs systems;
 
-    # Single NixOS module that auto-imports everything under modules/nixos/.
-    # Injected into every nixosConfiguration and darwinConfiguration.
-    nixosModules.default = import ./modules/nixos;
+      # Quality checks run by `nix flake check` and CI.
+      mkChecks =
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        {
+          format =
+            pkgs.runCommand "format-check"
+              {
+                nativeBuildInputs = with pkgs; [
+                  nixfmt
+                  deadnix
+                  findutils
+                  diffutils
+                ];
+              }
+              ''
+                cp -r ${inputs.self}/. ref
+                cp -r ${inputs.self}/. src
+                find src \( -type f -o -type d \) -exec chmod u+w {} +
+                find src -type f -name "*.nix" | sort | xargs -r nixfmt
+                find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
+                find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
+                if ! diff -r -q src ref; then
+                  echo "Some Nix files need formatting."
+                  echo "Run: nixfmt <file> && deadnix --edit <file>"
+                  exit 1
+                fi
+                touch $out
+              '';
 
-    # Single Home Manager module that auto-imports everything under modules/home/.
-    # Injected into every homeConfiguration.
-    homeManagerModules.default = import ./modules/home;
-  };
+          lint =
+            pkgs.runCommand "statix-check"
+              {
+                nativeBuildInputs = [ pkgs.statix ];
+              }
+              ''
+                statix check ${inputs.self}
+                touch $out
+              '';
+        };
+
+      # `nix fmt` entry-point — wraps treefmt for local dev use.
+      # Uses writeShellScriptBin to avoid shellcheck build-time validation.
+      mkFormatter =
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        pkgs.writeShellScriptBin "format" ''
+          export PATH="${
+            pkgs.lib.makeBinPath (
+              with pkgs;
+              [
+                treefmt
+                nixfmt
+                deadnix
+              ]
+            )
+          }:$PATH"
+          exec "${pkgs.treefmt}/bin/treefmt" "$@"
+        '';
+
+      # Dev shell for local formatting/linting: `nix develop`.
+      mkDevShell =
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        pkgs.mkShell {
+          packages = with pkgs; [
+            treefmt
+            nixfmt
+            deadnix
+            statix
+          ];
+        };
+    in
+    {
+      lib.mkFlake = consumerInputs: import ./lib/generator.nix (inputs // consumerInputs);
+      nixosModules.default = import ./modules/nixos;
+      homeManagerModules.default = import ./modules/home;
+      formatter = forAllSystems mkFormatter;
+      devShells = forAllSystems (system: {
+        default = mkDevShell system;
+      });
+      checks = forAllSystems mkChecks;
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+        in
+        {
+          inherit (pkgs) nixfmt deadnix;
+        }
+      );
+    };
 }

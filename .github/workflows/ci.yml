@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - testing
+      - main
+  pull_request:
+    branches:
+      - testing
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # ft-home has no committed flake.lock (it is a library input).
+      # Materialise a lock for this CI run without committing it.
+      - name: Resolve flake inputs
+        run: nix flake lock
+
+      # Format .nix files in-place and commit locally (no push).
+      # A local commit is enough for inputs.self to point at formatted
+      # source when nix flake check runs. Pushing would move the PR HEAD
+      # to a bot commit that GitHub Actions won't re-trigger CI for.
+      - name: Auto-format (nixfmt + deadnix)
+        run: |
+          nix shell .#nixfmt .#deadnix --command sh -c '
+            set -e
+            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r nixfmt
+            find . -type f -name "*.nix" -not -path "./.git/*" | sort | xargs -r deadnix --edit
+          '
+          if ! git diff --quiet; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -am "style: auto-format"
+          fi
+
+      # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
+      - name: nix flake check
+        run: nix flake check -L
+
+      - name: Secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
