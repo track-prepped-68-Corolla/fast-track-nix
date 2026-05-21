@@ -25,7 +25,7 @@ in
 
     dotfiles.path = lib.mkOption {
       type = lib.types.str;
-      default = "${config.ft.repoPath}/homes/${config.home.username}/dotfiles";
+      default = "${config.ft.repoPath}/users/${config.home.username}/dotfiles";
       description = "Absolute path to this user's dotfiles directory.";
     };
   };
