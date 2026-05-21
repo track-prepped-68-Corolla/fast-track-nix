@@ -175,7 +175,8 @@ let
             nativeBuildInputs = [ pkgs.statix ];
           }
           ''
-            statix check ${self}
+            cd ${self}
+            statix check .
             touch $out
           '';
     };

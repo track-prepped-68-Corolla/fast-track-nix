@@ -11,7 +11,7 @@
 # That single call runs lib/generator.nix, which auto-discovers the consumer's
 # machines/ and users/ directories and emits:
 #   nixosConfigurations.<name>        — one per machines/<name>/
-#   darwinConfigurations.<name>       — one per machines/<name>/ (Darwin systems)
+#   darwinConfigurations.<name>        — one per machines/<name>/ (Darwin systems)
 #   homeConfigurations.<user>@<arch>  — one per users/<username>/ × machine arch
 #
 # All framework NixOS and Home Manager modules are injected automatically.
@@ -145,7 +145,8 @@
                 nativeBuildInputs = [ pkgs.statix ];
               }
               ''
-                statix check ${inputs.self}
+                cd ${inputs.self}
+                statix check .
                 touch $out
               '';
         };
