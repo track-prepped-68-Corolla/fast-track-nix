@@ -170,13 +170,16 @@ let
           '';
 
       lint =
+        let
+          statixConfig = self + "/statix.toml";
+          configArg = lib.optionalString (builtins.pathExists statixConfig) "--config ${statixConfig}";
+        in
         pkgs.runCommand "statix-check"
           {
             nativeBuildInputs = [ pkgs.statix ];
           }
           ''
-            cd ${self}
-            statix check .
+            statix check ${configArg} ${self}
             touch $out
           '';
     };
