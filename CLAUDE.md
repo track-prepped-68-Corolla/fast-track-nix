@@ -1,5 +1,11 @@
 # ft-home — Developer Reference
 
+## Repository naming
+
+The framework lives in the **`fast-track-nix`** GitHub repo. It is aliased as `ft-home` in flake inputs (reflecting the project's original name). The companion **`ft-home`** GitHub repo is a personal consumer of this framework — not the framework itself. Do not confuse the two.
+
+---
+
 ## What this is
 
 ft-home is a framework flake. Consumers add it as an input and call `ft-home.lib.mkFlake inputs` from a minimal `flake.nix`. `lib/generator.nix` auto-discovers the consumer's `machines/` and `users/` directories and emits `nixosConfigurations`, `darwinConfigurations`, and `homeConfigurations`. All framework modules are injected automatically; users enable features via `ft.*` options.
@@ -86,19 +92,47 @@ Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `defa
 
 ## Option naming convention
 
-All options are exactly three levels deep: `ft.<namespace>.<feature>.enable`.
+New modules should be exactly three levels deep: `ft.<namespace>.<feature>.enable`. Several existing modules predate this convention and use two levels (e.g., `ft.cli.enable`, `ft.keepass.enable`, `ft.theme.enable`, `ft.terminal.enable`) — these are grandfathered in and should not be renamed without a migration plan.
 
 | Namespace | Domain |
 |---|---|
 | `ft.system.*` | Core OS baseline |
-| `ft.desktops.*` | Desktop environments |
-| `ft.profiles.*` | Compound use-case profiles |
-| `ft.security.*` | Security tooling and secrets |
+| `ft.boot.*` | Bootloader configuration |
 | `ft.kernel.*` | Kernel variants |
+| `ft.desktop.*` | Desktop environments |
+| `ft.hardware.*` | Hardware support (GPU, YubiKey, disk layout) |
+| `ft.profiles.*` | Compound use-case profiles |
+| `ft.services.*` | System services (printing, NFS, Tailscale, etc.) |
+| `ft.programs.*` | Program-level features (nix-index) |
+| `ft.security.*` | Security tooling and secrets |
+| `ft.cli` | The `ft` CLI helper (two-level; grandfathered) |
+| `ft.keepass` | KeePassXC secret service (two-level; grandfathered) |
+| `ft.theme` | System-wide theming via Stylix — Home Manager (two-level; grandfathered) |
+| `ft.terminal` | Terminal stack — Home Manager (two-level; grandfathered) |
+| `ft.lazyvim` | LazyVim Neovim config — Home Manager (two-level; grandfathered) |
+| `ft.dotfiles` | Dotfile symlinking — Home Manager (two-level; grandfathered) |
+| `ft.home.sops` | Per-user sops age key — Home Manager |
+| `ft.cosmic` | COSMIC desktop theming — Home Manager (two-level; grandfathered) |
 
 New namespaces require a comment in the module justifying why none of the above apply.
 
 Every module must declare `options.ft.<namespace>.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
+
+---
+
+## Special options
+
+### `ft.repoPath`
+
+A string option set at the machine level by the consumer pointing to the absolute path of their consumer repo root on disk. Required by `ft.cli.enable` to locate `scripts/ft.just` at runtime. Consumers must set this if they enable `ft.cli`:
+
+```nix
+# machines/my-desktop/default.nix
+_: {
+  ft.repoPath = "/home/alice/nixos-config";
+  ft.cli.enable = true;
+}
+```
 
 ---
 
@@ -112,7 +146,9 @@ modules/
   nixos/
     default.nix            # hub: listFilesRecursive — no manual imports
     desktops/
+    hardware/
     profiles/
+    services/
     system/
   home/
     default.nix            # hub: listFilesRecursive — no manual imports
@@ -126,7 +162,9 @@ machines/
 users/
   admin/                   # reference/template users — no personal data
   guest/
-staging/
+staging/                   # WIP modules not yet promoted to modules/
+                           # Files here are drafts; do not import from staging/
+                           # in production code. Graduate to modules/ after review.
 ```
 
 `modules/nixos/` organises modules into feature subdirectories. `modules/home/` is flat — Home Manager modules live directly as `.nix` files with no subdirectory grouping.
@@ -155,6 +193,8 @@ statix check .   # Nix anti-pattern linter
 trufflehog git . # credential and secret scanner
 nix flake check  # validates all outputs build and evaluate cleanly
 ```
+
+> Note: `trufflehog` is not included in the `nix develop` devShell and must be available in your PATH separately. The CI gate runs it regardless.
 
 ---
 
