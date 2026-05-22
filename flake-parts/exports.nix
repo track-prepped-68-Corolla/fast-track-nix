@@ -1,7 +1,7 @@
 { inputs, ... }:
 {
   flake = {
-    lib.mkFlake = consumerInputs: import ./generator.nix (inputs // consumerInputs);
+    lib.mkFlake = consumerInputs: import ./_generator.nix (inputs // consumerInputs);
     nixosModules.default = import ../modules/nixos;
     homeManagerModules.default = import ../modules/home;
   };
