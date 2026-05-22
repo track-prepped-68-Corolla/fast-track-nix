@@ -8,7 +8,7 @@ fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a m
 
 ## How it works
 
-fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. ft-home supplies all the modules.
+fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
 
 ```nix
 # Your flake.nix — this is all the wiring you need.
