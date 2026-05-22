@@ -165,7 +165,7 @@ let
             export HOME=$TMPDIR
             cp -r ${self}/. .
             chmod -R u+w .
-            treefmt --check
+            treefmt --ci
             touch $out
           '';
 
