@@ -139,9 +139,15 @@ _: {
 ## Directory layout
 
 ```
-flake.nix                  # pure wiring only
+flake.nix                  # pure wiring: inputs = import + one mkFlake call
 lib/
+  inputs.nix               # all flake input declarations
   generator.nix            # machine/user auto-discovery and output generation
+  parts/
+    checks.nix             # format + lint checks (nix flake check)
+    devshell.nix           # nix develop shell
+    exports.nix            # lib.mkFlake, nixosModules, homeManagerModules, packages
+    formatter.nix          # nix fmt entry-point
 modules/
   nixos/
     default.nix            # hub: listFilesRecursive — no manual imports
