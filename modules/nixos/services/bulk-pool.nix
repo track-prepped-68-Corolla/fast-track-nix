@@ -44,13 +44,6 @@ let
   hasPool = poolDrives != [ ];
   hasSnapraid = drives.parity != [ ] && drives.data != [ ];
 
-  snapraidBtrfs =
-    pkgs.snapraid-btrfs or (
-      pkgs.writeShellScriptBin "snapraid-btrfs" ''
-        echo "WARNING: pkgs.snapraid-btrfs not found in nixpkgs; falling back to plain snapraid." >&2
-        exec ${pkgs.snapraid}/bin/snapraid "$@"
-      ''
-    );
 in
 {
   options.ft.services.bulkPool = {
@@ -87,13 +80,21 @@ in
 
   config = lib.mkMerge [
 
-    # ── Individual drive mounts (btrfs root, no subvol restriction) ────────────
-    (lib.mkIf (cfg.enable && hasAny) {
+    # ── Always install tools when enabled (needed before any drives are registered) ──
+    (lib.mkIf cfg.enable {
       environment.systemPackages = with pkgs; [
         mergerfs
         snapraid
+        snapraid-btrfs
         btrfs-progs
+        util-linux
+        parted
+        jq
       ];
+    })
+
+    # ── Individual drive mounts (btrfs root, no subvol restriction) ────────────
+    (lib.mkIf (cfg.enable && hasAny) {
 
       fileSystems = lib.listToAttrs (
         map (label: lib.nameValuePair "${cfg.driveBase}/${label}" {
@@ -161,7 +162,7 @@ in
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${snapraidBtrfs}/bin/snapraid-btrfs sync";
+          ExecStart = "${pkgs.snapraid-btrfs}/bin/snapraid-btrfs sync";
         };
       };
 
