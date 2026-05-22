@@ -2,27 +2,35 @@
 
 **Building the onramp I wish I had.**
 
-fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add fast-track-nix as an input, call one function, and get auto discovered machine and user configurations with a full module library of opt in features.
+fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add fast-track-nix as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
+
+---
+
+## Repository naming
+
+The framework lives in the **`fast-track-nix`** GitHub repo and is aliased as `ft-home` in flake inputs (reflecting the project's original name). The companion **`ft-home`** GitHub repo is a personal consumer of this framework — it is not the framework itself. See `ft-home/CLAUDE.md` for the consumer's developer reference.
 
 ---
 
 ## How it works
 
-fast-track-nix is **consumed, not forked.** Your repo stays minimal, just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
+fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
 
 ```nix
 # Your flake.nix — this is all the wiring you need.
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    ft-home.url = "github:track-prepped-68-corolla/ft-home";
-    ft-home.inputs.nixpkgs.follows = "nixpkgs";
+    ft-home.url = "github:track-prepped-68-corolla/fast-track-nix/testing";
+    # Follow ft-home's pins to avoid duplicate fetches and version drift.
+    nixpkgs.follows = "ft-home/nixpkgs";
   };
 
   outputs = inputs @ { ft-home, ... }:
     ft-home.lib.mkFlake inputs;
 }
 ```
+
+> **Branch guidance:** `testing` is the CI-gated integration branch. `main` receives stable promotions only. Tracking `testing` is recommended until a versioned release scheme is in place.
 
 `lib.mkFlake` scans your repo and spits out:
 
@@ -39,7 +47,7 @@ All fast-track-nix modules are injected automatically. You never import module p
 ## Consumer repo layout
 
 ```
-flake.nix                      # the three-liner above
+flake.nix                      # the minimal wiring above
 machines/
   my-desktop/
     default.nix                # ft.* options for this machine
@@ -51,7 +59,7 @@ users/
     dotfiles/                  # optional: files symlinked into $HOME
 var/
   secrets/
-    secrets.yaml               # age-encrypted sops secrets
+    .sops.yaml                 # sops key configuration
   local/
     system                     # written by bootstrap; arch for standalone HM use
 ```
@@ -62,7 +70,7 @@ The system architecture is read from `machines/<name>/var/facter.json` (`facter.
 
 ## Enabling features
 
-Every feature is a `ft.*` option in your machine or user file. Nothing is on by default except `ft.home.core` and `ft.users`.
+Four modules default to `enable = true`: `ft.system.core`, `ft.users`, `ft.terminal`, and `ft.programs.nixIndex`. All others default to `false` and must be explicitly enabled.
 
 ### Example machine file
 
@@ -70,7 +78,9 @@ Every feature is a `ft.*` option in your machine or user file. Nothing is on by 
 # machines/my-desktop/default.nix
 _: {
   ft = {
-    boot.limine.enable   = true;
+    repoPath = "/home/alice/nixos-config"; # required when ft.cli.enable = true
+
+    boot.limine.enable    = true;
     desktop.cosmic.enable = true;
     kernel.cachyos.enable = true;
     profiles.gaming = {
@@ -79,6 +89,7 @@ _: {
     };
     security.sops.enable = true;
     services.tailscale.enable = true;
+    cli.enable = true;
   };
 }
 ```
@@ -106,31 +117,32 @@ _: {
 
 | Option | What it does |
 |--------|-------------|
-| `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F |
+| `ft.system.core.enable` | NetworkManager, Bluetooth, CUPS/Avahi, nix flakes, timezone, locale, core CLI packages (**default on**) |
+| `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F (**default on**) |
 | `ft.boot.limine.enable` | Limine bootloader |
 | `ft.kernel.cachyos.enable` | CachyOS-optimised kernel builds |
 | `ft.desktop.cosmic.enable` | COSMIC desktop environment + cosmic-greeter + system76-scheduler |
 | `ft.desktop.plasma.enable` | KDE Plasma 6 |
-| `ft.profiles.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
+| `ft.profiles.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), goverlay, Heroic, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
 | `ft.security.sops.enable` | sops-nix secret management via SSH host key (or TPM/YubiKey) |
 | `ft.hardware.yubikey.enable` | YubiKey udev rules and pcscd |
 | `ft.keepass.enable` | KeePassXC as the system secret service |
 | `ft.services.printing.enable` | CUPS + Avahi network printing |
 | `ft.services.nfs.enable` | NFS client mounts |
 | `ft.services.tailscale.enable` | Tailscale VPN client |
-| `ft.programs.nixIndex.enable` | nix-index with pre-built database and `,` command-not-found handler |
-| `ft.cli.enable` | The `ft` command-line helper |
+| `ft.programs.nixIndex.enable` | nix-index with pre-built database and `,` command-not-found handler (**default on**) |
+| `ft.cli.enable` | The `ft` command-line helper — also requires `ft.repoPath` set to your consumer repo root |
 | `ft.system.virt.*` | libvirt/QEMU, Incus, VMware host |
 
 ### Home Manager modules
 
 | Option | What it does |
 |--------|-------------|
-| `ft.terminal.enable` | Kitty, Zsh + Starship, Zoxide, fzf, and the modern Unix CLI kit |
+| `ft.terminal.enable` | Kitty + Ghostty, Zsh + Starship, Zoxide, fzf, and the modern Unix CLI kit (bat, eza, btop, fd, ripgrep, dust, yazi, lazygit, tealdeer, and more) (**default on**) |
 | `ft.lazyvim.enable` | Custom LazyVim Neovim configuration |
 | `ft.dotfiles.enable` | Symlinks `users/<name>/dotfiles/` into `$HOME` |
 | `ft.home.sops.enable` | Per-user sops age key |
-| `ft.stylix.enable` | System-wide theming via Stylix / Base16 |
+| `ft.theme.enable` | System-wide theming via Stylix / Base16; configure wallpaper and fonts with `ft.theme.*` sub-options |
 
 ---
 
@@ -160,6 +172,8 @@ nix flake check    # build all checks.* derivations (format + lint)
 ```
 
 All four checks (treefmt via `nix fmt`, deadnix, statix, and trufflehog secret scan) must pass before every commit. CI runs `nix flake check` plus secret scanning on every push.
+
+> Note: `trufflehog` is not included in the `nix develop` shell and must be available in your PATH separately.
 
 ---
 
