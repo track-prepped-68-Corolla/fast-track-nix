@@ -139,9 +139,8 @@ _: {
 ## Directory layout
 
 ```
-flake.nix                  # pure wiring: inputs = import + one mkFlake call
+flake.nix                  # pure wiring: inputs literal + one mkFlake call
 lib/
-  inputs.nix               # all flake input declarations
   generator.nix            # machine/user auto-discovery and output generation
   parts/
     checks.nix             # format + lint checks (nix flake check)
