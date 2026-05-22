@@ -2,13 +2,13 @@
 
 **Building the onramp I wish I had.**
 
-fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add fast-track-nix as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
+fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add fast-track-nix as an input, call one function, and get auto discovered machine and user configurations with a full module library of opt in features.
 
 ---
 
 ## How it works
 
-fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
+fast-track-nix is **consumed, not forked.** Your repo stays minimal, just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
 
 ```nix
 # Your flake.nix — this is all the wiring you need.
@@ -24,7 +24,7 @@ fast-track-nix is **consumed, not forked.** Your repo stays minimal — just you
 }
 ```
 
-`lib.mkFlake` scans your repo and emits:
+`lib.mkFlake` scans your repo and spits out:
 
 | Output | Source |
 |--------|--------|
