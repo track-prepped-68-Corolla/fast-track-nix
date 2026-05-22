@@ -32,6 +32,9 @@
 #   Format (treefmt) and lint (statix) checks are emitted under
 #   checks.<system>.{format,lint} for every supported system so that
 #   `nix flake check` in a consumer repo runs the full quality gate.
+#
+# FORMATTER
+#   formatter.<system> is emitted so `nix fmt` works in consumer repos.
 # =============================================================================
 inputs@{
   nixpkgs,
@@ -184,10 +187,34 @@ let
           '';
     };
 
+  # ==========================================
+  # 4. FORMATTER
+  # `nix fmt` entry-point for consumer repos.
+  # ==========================================
+  mkFormatter =
+    system:
+    let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    pkgs.writeShellScriptBin "format" ''
+      export PATH="${
+        pkgs.lib.makeBinPath (
+          with pkgs;
+          [
+            treefmt
+            nixfmt
+            deadnix
+          ]
+        )
+      }:$PATH"
+      exec "${pkgs.treefmt}/bin/treefmt" "$@"
+    '';
+
 in
 {
   nixosConfigurations = builtins.listToAttrs (map mkNixosMachine nixosMachines);
   darwinConfigurations = builtins.listToAttrs (map mkDarwinMachine darwinMachines);
   homeConfigurations = builtins.listToAttrs (map mkUser userMatrix);
   checks = lib.genAttrs checkSystems mkChecks;
+  formatter = lib.genAttrs checkSystems mkFormatter;
 }
