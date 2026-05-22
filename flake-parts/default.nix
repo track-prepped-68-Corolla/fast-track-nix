@@ -1,5 +1,5 @@
 let
   dir = builtins.readDir ./.;
-  isModule = name: _: builtins.match "[^_].*\\.nix" name != null && name != "default.nix";
+  isModule = name: _: name != "default.nix" && builtins.match ".*\\.nix" name != null;
 in
 { imports = map (name: ./. + "/${name}") (builtins.attrNames (builtins.filterAttrs isModule dir)); }
