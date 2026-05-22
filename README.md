@@ -2,7 +2,7 @@
 
 **Building the onramp I wish I had.**
 
-fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add ft-home as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
+fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add fast-track-nix as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
 
 ---
 
