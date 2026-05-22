@@ -62,7 +62,7 @@ in
     disko.devices = lib.mkDefault {
       disk.main = {
         type = "disk";
-        device = cfg.device;
+        inherit (cfg) device;
         content = {
           type = "gpt";
           partitions = {
