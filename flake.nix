@@ -112,10 +112,7 @@
         "x86_64-darwin"
       ];
       imports = [
-        ./lib/parts/checks.nix
-        ./lib/parts/devshell.nix
-        ./lib/parts/formatter.nix
-        ./lib/parts/exports.nix
+        ./flake-parts
       ];
     };
 }

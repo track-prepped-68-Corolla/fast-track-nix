@@ -8,7 +8,7 @@ The framework lives in the **`fast-track-nix`** GitHub repo. It is aliased as `f
 
 ## What this is
 
-ft-home is a framework flake. Consumers add it as an input and call `ft-home.lib.mkFlake inputs` from a minimal `flake.nix`. `lib/generator.nix` auto-discovers the consumer's `machines/` and `users/` directories and emits `nixosConfigurations`, `darwinConfigurations`, and `homeConfigurations`. All framework modules are injected automatically; users enable features via `ft.*` options.
+ft-home is a framework flake. Consumers add it as an input and call `ft-home.lib.mkFlake inputs` from a minimal `flake.nix`. `flake-parts/generator.nix` auto-discovers the consumer's `machines/` and `users/` directories and emits `nixosConfigurations`, `darwinConfigurations`, and `homeConfigurations`. All framework modules are injected automatically; users enable features via `ft.*` options.
 
 Darwin support is declared in the generator but not yet implemented in the module tree.
 
@@ -20,7 +20,7 @@ Darwin support is declared in the generator but not yet implemented in the modul
 
 `flake.nix` exposes two things: `lib.mkFlake` (delegates to `lib/generator.nix`) and the module hub entry-points (`nixosModules.default`, `homeManagerModules.default`). No evaluation logic, no config generation, no module code lives in `flake.nix`.
 
-- Complex logic → `lib/`
+- Complex logic → `flake-parts/`
 - NixOS/HM configuration → `modules/`
 - flake-parts is used only to create flake modules. Never mix flake wiring into module code or module code into flake wiring (the dendritic pattern).
 
@@ -36,7 +36,7 @@ ft-home must contain zero user-specific, machine-specific, or site-specific info
 
 ## Machine and user discovery
 
-The generator (`lib/generator.nix`) uses a flat directory structure:
+The generator (`flake-parts/generator.nix`) uses a flat directory structure:
 
 - `machines/<name>/` — one directory per machine. System is read from `machines/<name>/var/facter.json` (`facter.system`). Falls back to `x86_64-linux` if absent. Names whose system ends in `-darwin` produce `darwinConfigurations`; all others produce `nixosConfigurations`.
 - `users/<username>/` — one directory per user. Cross-producted with every system found in `machines/`, plus the local system from `var/local/system` (written by bootstrap).
@@ -140,13 +140,13 @@ _: {
 
 ```
 flake.nix                  # pure wiring: inputs literal + one mkFlake call
-lib/
+flake-parts/
+  default.nix              # imports every module in this directory
+  checks.nix               # format + lint checks (nix flake check)
+  devshell.nix             # nix develop shell
+  exports.nix              # lib.mkFlake, nixosModules, homeManagerModules, packages
+  formatter.nix            # nix fmt entry-point
   generator.nix            # machine/user auto-discovery and output generation
-  parts/
-    checks.nix             # format + lint checks (nix flake check)
-    devshell.nix           # nix develop shell
-    exports.nix            # lib.mkFlake, nixosModules, homeManagerModules, packages
-    formatter.nix          # nix fmt entry-point
 modules/
   nixos/
     default.nix            # hub: listFilesRecursive — no manual imports
