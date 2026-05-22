@@ -14,7 +14,7 @@
           "x86_64-darwin"
         ];
         imports = [
-          ./generator.nix
+          ./_generator.nix
           ./checks.nix
           ./formatter.nix
         ];

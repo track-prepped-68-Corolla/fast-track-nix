@@ -36,7 +36,7 @@ ft-home must contain zero user-specific, machine-specific, or site-specific info
 
 ## Machine and user discovery
 
-The generator (`flake-parts/generator.nix`) uses a flat directory structure:
+The generator (`flake-parts/_generator.nix`) uses a flat directory structure:
 
 - `machines/<name>/` — one directory per machine. System is read from `machines/<name>/var/facter.json` (`facter.system`). Falls back to `x86_64-linux` if absent. Names whose system ends in `-darwin` produce `darwinConfigurations`; all others produce `nixosConfigurations`.
 - `users/<username>/` — one directory per user. Cross-producted with every system found in `machines/`, plus the local system from `var/local/system` (written by bootstrap).
@@ -141,12 +141,12 @@ _: {
 ```
 flake.nix                  # pure wiring: inputs literal + one mkFlake call
 flake-parts/
-  default.nix              # auto-imports every *.nix except itself
+  default.nix              # auto-imports every *.nix not prefixed with _ or named default.nix
   checks.nix               # format + lint checks (nix flake check)
   devshell.nix             # nix develop shell
   exports.nix              # lib.mkFlake, nixosModules, homeManagerModules, packages
   formatter.nix            # nix fmt entry-point
-  generator.nix            # machine/user discovery → nixosConfigurations etc.
+  _generator.nix           # consumer-only flake-parts module; _ excludes it from ft-home's own flake
 modules/
   nixos/
     default.nix            # hub: listFilesRecursive — no manual imports
