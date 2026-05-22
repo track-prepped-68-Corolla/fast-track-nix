@@ -2,13 +2,13 @@
 
 **Building the onramp I wish I had.**
 
-ft-home is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add ft-home as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
+fast-track-nix is a NixOS + Home Manager framework flake. Instead of writing a monolithic configuration, you add ft-home as an input, call one function, and get auto-discovered machine and user configurations with a full module library of opt-in features.
 
 ---
 
 ## How it works
 
-ft-home is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. ft-home supplies all the modules.
+fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. ft-home supplies all the modules.
 
 ```nix
 # Your flake.nix — this is all the wiring you need.
@@ -32,7 +32,7 @@ ft-home is **consumed, not forked.** Your repo stays minimal — just your machi
 | `darwinConfigurations.<name>` | one per `machines/<name>/` whose system ends in `-darwin` |
 | `homeConfigurations.<user>@<arch>` | every `users/<username>/` × every machine architecture |
 
-All ft-home modules are injected automatically. You never import module paths directly.
+All fast-track-nix modules are injected automatically. You never import module paths directly.
 
 ---
 
@@ -136,7 +136,7 @@ _: {
 
 ## Provisioning a new machine
 
-ft-home uses **nixos-anywhere + disko + nixos-facter** for remote installs.
+fast-track-nix uses **nixos-anywhere + disko + nixos-facter** for provisioning.
 
 1. Boot the target machine from a NixOS live ISO.
 2. Run `nixos-facter` to generate `machines/<name>/var/facter.json` and commit it.
