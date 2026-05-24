@@ -41,6 +41,16 @@ in
       description = "Standard users with no administrative privileges.";
     };
 
+    initialPasswords = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      example = {
+        admin = "mypassword";
+        guest = "guestpass";
+      };
+      description = "Per-user initial plaintext passwords set at first boot. Key is username; value overrides the 'changeme' default. Use sops secrets for production credentials.";
+    };
+
     u2f = {
       enable = lib.mkEnableOption "PAM U2F authentication" // {
         description = "Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.";
@@ -67,7 +77,7 @@ in
           admin = {
             isNormalUser = true;
             extraGroups = commonGroups ++ [ "wheel" ];
-            initialPassword = lib.mkDefault "snp";
+            initialPassword = lib.mkDefault (cfg.initialPasswords.admin or "changeme");
             shell = pkgs.zsh;
           };
         }
@@ -77,14 +87,14 @@ in
           (_user: {
             isNormalUser = true;
             extraGroups = commonGroups ++ [ "wheel" ];
-            initialPassword = lib.mkDefault "changeme";
+            initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or "changeme");
             shell = pkgs.zsh;
           })
         )
         (lib.genAttrs (lib.filter (u: u != "admin") cfg.normalUsers) (_user: {
           isNormalUser = true;
           extraGroups = commonGroups;
-          initialPassword = lib.mkDefault "changeme";
+          initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or "changeme");
           shell = pkgs.zsh;
         }))
       ];

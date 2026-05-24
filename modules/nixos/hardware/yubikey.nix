@@ -11,13 +11,7 @@ in
 {
   options.ft.hardware.yubikey = {
     enable = lib.mkEnableOption "YubiKey support and PAM integration" // {
-      description = "Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f) and enables PAM U2F authentication for login, sudo, SDDM, cosmic-greeter, and cosmic-lock. Set `ft.hardware.yubikey.u2fMapping` to your key's registration string.";
-    };
-
-    u2fMapping = lib.mkOption {
-      type = lib.types.str;
-      default = "";
-      description = "The U2F registration string for the YubiKey. Set in your host file.";
+      description = "Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.";
     };
   };
 
@@ -37,8 +31,8 @@ in
     # what facter-modules derives from the hardware report.
     boot.kernelModules = [ "usbhid" ];
 
-    # Feed this host's key mapping into the shared authfile built by user.nix.
-    u2fMappings = cfg.u2fMapping;
+    # Activate the shared U2F PAM stack owned by user.nix.
+    ft.users.u2f.enable = lib.mkDefault true;
 
     # user.nix owns security.pam.u2f — only add the lock screen here.
     # cosmic-greeter is excluded: the greeter doesn't relay pam_u2f prompts
