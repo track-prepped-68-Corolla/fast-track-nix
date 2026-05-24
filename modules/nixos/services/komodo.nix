@@ -96,8 +96,9 @@ in
       };
     };
 
-    # One-shot creates the bridge network before any container starts.
-    # Rootless user context injected into all generated oci-container services.
+    # All systemd.services definitions merged here to avoid duplicate attribute errors.
+    # First element: network creation oneshot. Remaining: user-context overrides for
+    # each generated oci-container service (XDG_RUNTIME_DIR for rootless podman).
     systemd.services = lib.mkMerge (
       [
         {
@@ -114,7 +115,10 @@ in
               RemainAfterExit = true;
               User = lib.mkDefault "podman";
               Group = lib.mkDefault "podman";
-              Environment = lib.mkDefault [ rtDir homeEnv ];
+              Environment = lib.mkDefault [
+                rtDir
+                homeEnv
+              ];
               ExecStart = lib.mkDefault (
                 pkgs.writeShellScript "create-komodo-net" ''
                   ${pkgs.podman}/bin/podman network inspect komodo-net >/dev/null 2>&1 || \
