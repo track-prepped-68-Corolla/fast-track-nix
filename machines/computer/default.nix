@@ -7,7 +7,7 @@
 #
 # WHAT GOES HERE
 #   hardware-configuration.nix   machine-specific kernel modules and filesystems
-#   Identity                     hostName, mainuser, superUsers
+#   Identity                     hostName, ft.users.mainUser, ft.users.superUsers
 #   ft.* feature toggles         enable framework and consumer modules
 #
 # WHAT DOES NOT GO HERE
@@ -19,9 +19,6 @@ _:
 {
   # --- IDENTITY ---
   networking.hostName = "computer";
-
-  mainuser = "guest";
-  superUsers = [ "admin" ];
   users.mutableUsers = true;
 
   # --- FEATURE TOGGLES ---
@@ -29,6 +26,8 @@ _:
     boot.limine.enable = true;
     desktop.cosmic.enable = true;
     cli.enable = true;
+    users.mainUser = "guest";
+    users.superUsers = [ "admin" ];
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
