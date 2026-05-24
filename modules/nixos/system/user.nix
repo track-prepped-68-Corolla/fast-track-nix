@@ -17,13 +17,13 @@ let
   ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
-  options = {
-    ft.users.enable = lib.mkEnableOption "user management" // {
+  options.ft.users = {
+    enable = lib.mkEnableOption "user management" // {
       default = true;
-      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership. Also configures PAM U2F for login and sudo; append additional key mappings via `u2fMappings`.";
+      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership.";
     };
 
-    mainuser = lib.mkOption {
+    mainUser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
       description = "The primary username other modules (like Home Manager) will target.";
@@ -41,67 +41,79 @@ in
       description = "Standard users with no administrative privileges.";
     };
 
-    u2fMappings = lib.mkOption {
-      type = lib.types.lines;
-      default = "";
-      description = "Raw U2F auth mappings (user:key1,key2...).";
+    u2f = {
+      enable = lib.mkEnableOption "PAM U2F authentication" // {
+        description = "Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.";
+      };
+
+      mappings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        example = {
+          admin = "publicKey,keyHandle";
+          guest = "publicKey2,keyHandle2";
+        };
+        description = "Per-user U2F key data. Attribute name is the username; value is the raw credential string (the part after 'username:' in the pam-u2f authfile format).";
+      };
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    security.pam = {
-      u2f = {
-        enable = true;
-        settings = {
-          cue = true;
-          control = "sufficient";
-          # nouserok: if the user has no entry in the authfile (or the device
-          # is unreachable), skip the challenge and fall through to password.
-          # Prevents lockout when the key is absent or a new user is created.
-          nouserok = true;
-          authfile =
-            let
-              defaultAdmin = "admin:umYt1X/qG0dA0eXySg2gujsVMu8hrZpifCf1rynFdb47NZzWGPLJ1db8R5Jgg8C4PxgjsVtYZoNxeUKD4YbKcA==,1XgVi7a4BpLBwWW6x17CU9VguEwoqAEJCg7LvnlgAQpcsFOBuiAl40jAiO//dvaDN";
-            in
-            pkgs.writeText "u2f_keys" (
-              defaultAdmin + lib.optionalString (config.u2fMappings != "") ("\n" + config.u2fMappings)
-            );
-        };
-      };
-
-      services = {
-        login.u2fAuth = true;
-        sudo.u2fAuth = true;
-      };
-    };
-
-    users.users = lib.mkMerge [
-      # Hardcoded safety net — always present regardless of 'mainuser' to prevent
-      # complete lockout if the primary account becomes inaccessible.
-      {
-        admin = {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
+      users.users = lib.mkMerge [
+        # Hardcoded safety net — always present regardless of mainUser to prevent
+        # complete lockout if the primary account becomes inaccessible.
+        {
+          admin = {
+            isNormalUser = true;
+            extraGroups = commonGroups ++ [ "wheel" ];
+            initialPassword = lib.mkDefault "snp";
+            shell = pkgs.zsh;
+          };
+        }
+        # admin is filtered out here to avoid a duplicate-definition conflict
+        # when mainUser or superUsers also lists "admin".
+        (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ cfg.mainUser ] ++ cfg.superUsers)))
+          (_user: {
+            isNormalUser = true;
+            extraGroups = commonGroups ++ [ "wheel" ];
+            initialPassword = lib.mkDefault "changeme";
+            shell = pkgs.zsh;
+          })
+        )
+        (lib.genAttrs (lib.filter (u: u != "admin") cfg.normalUsers) (_user: {
           isNormalUser = true;
-          extraGroups = commonGroups ++ [ "wheel" ];
-          initialPassword = lib.mkDefault "snp";
-          shell = pkgs.zsh;
-        };
-      }
-      # 'admin' is filtered out here to avoid a duplicate-definition conflict
-      # when mainuser or superUsers also lists "admin".
-      (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ config.mainuser ] ++ config.superUsers)))
-        (_user: {
-          isNormalUser = true;
-          extraGroups = commonGroups ++ [ "wheel" ];
+          extraGroups = commonGroups;
           initialPassword = lib.mkDefault "changeme";
           shell = pkgs.zsh;
-        })
-      )
-      (lib.genAttrs (lib.filter (u: u != "admin") config.normalUsers) (_user: {
-        isNormalUser = true;
-        extraGroups = commonGroups;
-        initialPassword = lib.mkDefault "changeme";
-        shell = pkgs.zsh;
-      }))
-    ];
-  };
+        }))
+      ];
+    })
+
+    (lib.mkIf (cfg.enable && cfg.u2f.enable) {
+      security.pam = {
+        u2f = {
+          enable = true;
+          settings = {
+            cue = true;
+            control = "sufficient";
+            # nouserok: if the user has no entry in the authfile (or the device
+            # is unreachable), skip the challenge and fall through to password.
+            # Prevents lockout when the key is absent or a new user is created.
+            nouserok = true;
+            authfile = pkgs.writeText "u2f_keys" (
+              lib.concatStringsSep "\n" (
+                lib.mapAttrsToList (user: key: "${user}:${key}") cfg.u2f.mappings
+              )
+            );
+          };
+        };
+
+        services = {
+          login.u2fAuth = true;
+          sudo.u2fAuth = true;
+        };
+      };
+    })
+  ];
 }

@@ -33,7 +33,7 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.mainuser;
+      default = config.ft.users.mainUser;
       description = "The username for the gaming session.";
     };
 
