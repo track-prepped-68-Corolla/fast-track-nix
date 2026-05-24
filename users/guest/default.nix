@@ -1,0 +1,5 @@
+_:
+
+{
+  home.username = "guest";
+}

@@ -53,33 +53,6 @@ in
       "d /opt/containers/komodo/core     0750 podman podman -"
     ];
 
-    # One-shot creates the bridge network before any container starts
-    systemd.services.podman-create-komodo-net = {
-      description = "Create komodo-net Podman network";
-      before = [
-        "podman-komodo-postgres.service"
-        "podman-komodo-core.service"
-        "podman-komodo-periphery.service"
-      ];
-      wantedBy = lib.mkDefault [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        User = lib.mkDefault "podman";
-        Group = lib.mkDefault "podman";
-        Environment = lib.mkDefault [
-          rtDir
-          homeEnv
-        ];
-        ExecStart = lib.mkDefault (
-          pkgs.writeShellScript "create-komodo-net" ''
-            ${pkgs.podman}/bin/podman network inspect komodo-net >/dev/null 2>&1 || \
-              ${pkgs.podman}/bin/podman network create komodo-net
-          ''
-        );
-      };
-    };
-
     virtualisation.oci-containers = {
       backend = lib.mkDefault "podman";
 
@@ -123,17 +96,40 @@ in
       };
     };
 
-    # Inject the rootless user context into the generated oci-container services.
-    # XDG_RUNTIME_DIR tells rootless podman where its runtime directory lives.
+    # One-shot creates the bridge network before any container starts.
+    # Rootless user context injected into all generated oci-container services.
     systemd.services = lib.mkMerge (
-      map (name: {
+      [
+        {
+          podman-create-komodo-net = {
+            description = "Create komodo-net Podman network";
+            before = [
+              "podman-komodo-postgres.service"
+              "podman-komodo-core.service"
+              "podman-komodo-periphery.service"
+            ];
+            wantedBy = lib.mkDefault [ "multi-user.target" ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              User = lib.mkDefault "podman";
+              Group = lib.mkDefault "podman";
+              Environment = lib.mkDefault [ rtDir homeEnv ];
+              ExecStart = lib.mkDefault (
+                pkgs.writeShellScript "create-komodo-net" ''
+                  ${pkgs.podman}/bin/podman network inspect komodo-net >/dev/null 2>&1 || \
+                    ${pkgs.podman}/bin/podman network create komodo-net
+                ''
+              );
+            };
+          };
+        }
+      ]
+      ++ map (name: {
         "podman-${name}".serviceConfig = {
           User = lib.mkDefault "podman";
           Group = lib.mkDefault "podman";
-          Environment = lib.mkDefault [
-            rtDir
-            homeEnv
-          ];
+          Environment = lib.mkDefault [ rtDir homeEnv ];
         };
       }) [
         "komodo-postgres"
