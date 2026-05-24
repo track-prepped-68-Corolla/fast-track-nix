@@ -133,10 +133,7 @@ in
         "podman-${name}".serviceConfig = {
           User = lib.mkDefault "podman";
           Group = lib.mkDefault "podman";
-          Environment = lib.mkDefault [
-            rtDir
-            homeEnv
-          ];
+          Environment = lib.mkDefault [ rtDir homeEnv ];
         };
       }) [
         "komodo-postgres"

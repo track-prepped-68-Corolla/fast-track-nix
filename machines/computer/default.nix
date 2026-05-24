@@ -21,6 +21,19 @@ _:
   networking.hostName = "computer";
   users.mutableUsers = true;
 
+  # --- FILESYSTEM (placeholder — replace with disko or hardware-configuration.nix) ---
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+    options = [
+      "defaults"
+      "size=2G"
+      "mode=755"
+    ];
+  };
+
+  boot.loader.systemd-boot.enable = true;
+
   # --- FEATURE TOGGLES ---
   ft = {
     boot.limine.enable = true;
