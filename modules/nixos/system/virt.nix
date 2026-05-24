@@ -15,7 +15,7 @@ in
 {
   options.ft.system.virt = {
     enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)" // {
-      description = "Enables libvirtd/KVM with virt-manager and adds `mainuser` to the libvirtd group. Optionally enable `ft.system.virt.enableVmwareHost` for VMware Workstation, `ft.system.virt.enableIncus` for Incus containers, and `ft.system.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
+      description = "Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.system.virt.enableVmwareHost` for VMware Workstation, `ft.system.virt.enableIncus` for Incus containers, and `ft.system.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
     };
 
     enableVmwareHost = lib.mkOption {
@@ -48,7 +48,7 @@ in
       };
     };
     programs.virt-manager.enable = true;
-    users.groups.libvirtd.members = [ config.mainuser ];
+    users.groups.libvirtd.members = [ config.ft.users.mainUser ];
     networking.nftables.enable = lib.mkDefault true;
   };
 }
