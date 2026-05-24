@@ -37,8 +37,11 @@ in
     # what facter-modules derives from the hardware report.
     boot.kernelModules = [ "usbhid" ];
 
-    # Feed this host's key mapping into the shared authfile built by user.nix.
-    u2fMappings = cfg.u2fMapping;
+    # Feed this host's key mapping into user.nix's u2f authfile.
+    ft.users.u2f = {
+      enable = true;
+      mappings.${config.ft.users.mainUser} = cfg.u2fMapping;
+    };
 
     # user.nix owns security.pam.u2f — only add the lock screen here.
     # cosmic-greeter is excluded: the greeter doesn't relay pam_u2f prompts
