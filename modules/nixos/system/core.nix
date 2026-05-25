@@ -34,7 +34,7 @@ in
   config = lib.mkIf cfg.enable {
 
     # --- 1. SYSTEM IDENTITY ---
-    system.stateVersion = cfg.stateVersion;
+    system.stateVersion = lib.mkDefault cfg.stateVersion;
 
     # --- 2. HARDWARE & CONNECTIVITY ---
     networking.networkmanager.enable = lib.mkDefault true;
