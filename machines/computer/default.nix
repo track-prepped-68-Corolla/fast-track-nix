@@ -36,6 +36,7 @@ _:
 
   # --- FEATURE TOGGLES ---
   ft = {
+    system.core.stateVersion = "25.05";
     boot.limine.enable = true;
     desktop.cosmic.enable = true;
     cli.enable = true;
