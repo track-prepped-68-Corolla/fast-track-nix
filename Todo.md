@@ -1,7 +1,12 @@
-# fast-track-nix — Todo
+# fast-track-nix — Consolidated Todo
+
+> Merged from `fast-track-nix/testing` and `ft-home/testing`.
+
+---
 
 ## ✅ Done
 
+### Framework (fast-track-nix)
 - [x] Wire up all flake inputs
 - [x] Machine and user auto-discovery via `lib/generator.nix`
 - [x] NixOS module hub (`modules/nixos/default.nix` — `listFilesRecursive`)
@@ -12,78 +17,182 @@
 - [x] treefmt + nixfmt + statix + deadnix wired into CI (`nix flake check`)
 - [x] `README.md` explaining framework consumption
 
+### Consumer (ft-home)
+- [x] Wire up all flake inputs
+- [x] Create magic folder functions for hosts and homes
+- [x] Create magic collator files for host and home modules
+- [x] Create a home module for magic `mkOutOfStoreSymlink` folder functions
+- [x] Externalize generator logic into `lib/generator.nix`
+- [x] Purge modules and bring back MVP; import and verify core NixOS and Home Manager modules
+- [x] Implement "The Mullet" (consumer side) — `mullet.nix` ingests a flat `mullet.txt` for imperative packages
+- [x] Set Atkinson Hyperlegible as the default system font via Stylix
+- [x] Swap bootloader to Limine; remove lanzaboote; add facter
+- [x] Set up facter modules and GPU module *(done in ft-home consumer)*
+- [x] Bring in just scripts and modify as needed
+- [x] Add `sops-nix` to flake inputs and wire into the core module system
+- [x] Export module collators via `nixosModules.default` and `homeManagerModules.default`
+- [x] Write `README.md` explaining framework consumption
+- [x] Clean up and standardize the `justfile` scripts:
+  - [x] Delete legacy `.justfile`; make `ft.just` a thin entry point (imports + aliases only)
+  - [x] Split into modules: `sys.just`, `bootstrap.just`, `mullet.just`, `store.just`
+  - [x] Fix `add-machine` template to match actual machine structure
+  - [x] Fix `mullet.just` path — moved `mullet.txt` to `users/<user>/var/mullet.txt`
+  - [x] Port `home-switch` with correct just parameter syntax
+  - [x] Fix secrets and bootstrap paths to match `var/secrets/` layout
+
 ---
 
-## 🏗️ Module Ports (consumer → framework)
+## 🏗️ Module Ports (Consumer → Framework)
 
-Items currently implemented in ft-home that belong here as proper `ft.*` modules.
+Items currently in ft-home that belong in fast-track-nix as proper `ft.*` modules.
 
 - [ ] **`ft.mullet`** — imperative package escape hatch
-  - [ ] Move `mullet.nix` from ft-home `modules/nixos/apps/` into `modules/nixos/system/`.
-  - [ ] Option: `ft.mullet.enable`, `ft.mullet.sourcePath` (path, required when enabled).
-  - [ ] Export `nixosModules.mullet` as a standalone flake output.
+  - [ ] Move `mullet.nix` from ft-home `modules/nixos/apps/` into `modules/nixos/system/`
+  - [ ] Option: `ft.mullet.enable`, `ft.mullet.sourcePath` (path, required when enabled)
+  - [ ] Consumer enables `ft.mullet` and sets `ft.mullet.filePath` to their local `mullet.txt`; remove local `mullet.nix`
+  - [ ] Update `mullet.just` hardcoded `MULLET_FILE` path to use the configured option path
+  - [ ] Export `nixosModules.mullet` as a standalone flake output
 - [ ] **`ft.hardware.facter`** — nixos-facter hardware report ingestion
-  - [ ] Move from ft-home consumer into `modules/nixos/hardware/facter.nix`.
-  - [ ] Option: `ft.hardware.facter.enable`, `ft.hardware.facter.reportPath`.
+  - [ ] Move `facter.nix` from ft-home into `modules/nixos/hardware/facter.nix`
+  - [ ] Option: `ft.hardware.facter.enable`, `ft.hardware.facter.reportPath`
+  - [ ] Remove local copy from ft-home once framework version is stable
 - [ ] **`ft.hardware.gpu`** — generic GPU vendor detection
-  - [ ] Move from ft-home consumer into `modules/nixos/hardware/gpu.nix`.
-  - [ ] Support AMD, Intel, NVIDIA, integrated. Detect from facter output where possible.
+  - [ ] Move `gpu.nix` from ft-home into `modules/nixos/hardware/gpu.nix`
+  - [ ] Support AMD, Intel, NVIDIA, integrated; detect from facter output where possible
+  - [ ] Remove local copy from ft-home once framework version is stable
+- [ ] **Convert applicable modules from system level to user level:**
+  - [ ] Identify which existing system modules only affect user environments
+  - [ ] Rewrite Nix expressions to use Home Manager options (`home.packages`, `home.file`)
+  - [ ] Remove old system-level configurations and test user-level replacements
+- [ ] Create a user-level Komodo module
 
 ---
 
 ## 🔌 Flake API
 
-- [ ] Export additional library utilities under `outputs.lib` (currently only `lib.mkFlake`).
-- [ ] Export `ft` CLI wrapper via `packages.default` using `writeShellApplication`.
-  - [ ] `runtimeInputs`: `just`, `nh`, `git`, `nvd`, `delta`, `trufflehog` — zero global dependency footprint.
-- [ ] Export `nixosModules.mullet` standalone *(blocked on mullet port above)*.
-- [ ] **External base path:** refactor `mkOutOfStoreSymlink` to accept `absoluteBasePath` from the consumer.
+- [ ] Export additional library utilities under `outputs.lib` (currently only `lib.mkFlake` is exported)
+- [ ] Export `ft` CLI wrapper via `packages.default` using `writeShellApplication`
+  - [ ] `runtimeInputs`: `just`, `glow`, `nh`, `git`, `nvd`, `delta`, `trufflehog` — zero global dependency footprint
+- [ ] Export `nixosModules.mullet` standalone *(blocked on mullet port above)*
+- [ ] **External base path:** refactor `mkOutOfStoreSymlink` to accept `absoluteBasePath` from the consumer
 
 ---
 
-## 🖥️ TUI App Support (fast-track-nix side)
+## 🖥️ TUI App — Trolley
 
-The ft-home consumer is building a Trolley-packaged TUI. The framework needs to hold up
-its end for option introspection to work correctly.
+See `ft-home/scripts/plan.md` for full architecture and development sequence.
 
-- [ ] **Option quality audit** — every `ft.*` option must have a concrete type and a
-  `description`. Audit all modules; replace `lib.types.anything` with specific types where possible.
-  Vague types produce vague widgets in the TUI.
-- [ ] **`ui-settings.nix` pattern** — document in README that consumer machine configs should
-  import an optional `./ui-settings.nix` for TUI-managed overrides. Add to reference machine template.
-- [ ] **Darwin module tree** — generator declares Darwin support; implement the module side.
+**Target audience:** Gamers and regular PC users who prefer not to touch the terminal.  
+**Packaging:** Trolley (bundles libghostty into a portable application).  
+**Framework:** Python + Textual. Async subprocesses throughout.
 
----
-
-## 🌐 Public Release
-
-- [ ] Audit all modules and reference configs for personal data (usernames, paths, IPs).
-- [ ] Replace hardcoded user strings with `config.home.username` references.
-- [ ] Create `template/` directory with minimal consumer flake skeleton.
-- [ ] Add `nixosTest` skeletons for each module (one per module, minimal assertions).
-- [ ] Build smoke test: minimal consumer flake that builds on `x86_64-linux`.
+- [ ] **Option quality audit** — every `ft.*` option must have a concrete type and a `description`; replace `lib.types.anything` with specific types where possible (vague types produce vague widgets in the TUI)
+- [ ] **`ui-settings.nix` overlay pattern**
+  - [ ] Document in README that consumer machine configs should import an optional `./ui-settings.nix` for TUI-managed overrides
+  - [ ] Add `import ./ui-settings.nix` to machine `default.nix` templates (update `add-machine` scaffold in `bootstrap.just`)
+  - [ ] Create initial empty `ui-settings.nix` stubs for existing machines (`strix`, `strix-vm`)
+- [ ] **Darwin module tree** — generator declares Darwin support; implement the module side
+- [ ] **Python backend (`ft/ops/`)**
+  - [ ] `sys.py` — switch, pull, rollback, clean, fmt, check (async subprocess, streaming output)
+  - [ ] `bootstrap.py` — git_init, add_machine, secrets_init, generate_facts, deploy
+  - [ ] `mullet.py` — search (nix-index + nix search), add, remove, list, clear
+  - [ ] `options.py` — option discovery via `nix eval`, `ui-settings.nix` read/write
+- [ ] **Module toggle panel** (split-pane: checkboxes left, live Nix preview right)
+  - [ ] Option tree from `nix eval .#nixosConfigurations.<name>.options.ft --json`
+  - [ ] Dynamic widget generation from Nix option types (bool→checkbox, str→input, enum→dropdown)
+  - [ ] Live `ui-settings.nix` preview with syntax highlighting
+  - [ ] Write-on-confirm; in-memory updates only until confirmed
+- [ ] **Maintenance screen** — switch/pull/rollback with streaming output and package diff view
+- [ ] **Package manager screen** — mullet with fuzzy search, add/remove, apply
+- [ ] **OOBE / provisioning wizard** — screen stack: git-init → add-machine → secrets-init → deploy
+- [ ] **Dashboard** — home screen with navigation, system status summary
+- [ ] **Trolley packaging** — bundle Python app + libghostty into portable application
 
 ---
 
 ## 🔐 Security & Secrets
 
-- [ ] `ft.security.sops` — `ssh-to-age` pipeline: derive age key from SSH host key silently on boot.
-- [ ] Diceware generator for high-entropy initial user passphrases.
-- [ ] KeePassXC vault creation scripted from Diceware password.
-- [ ] `systemd-userd` integration.
+- [ ] **`ft.security.sops`** — `ssh-to-age` pipeline: derive age key from SSH host key silently on boot
+- [ ] Implement conditional logic (`mkIf cfg.enableSecrets`) so the system degrades gracefully if secrets aren't ready
+- [ ] Diceware generator for high-entropy initial user passphrases
+- [ ] Script programmatic creation of a KeePassXC (`.kdbx`) vault using the Diceware password as master key
+- [ ] Configure `.gitignore` to explicitly allow the `.kdbx` vault file for local version-controlled redundancy
+- [ ] `systemd-userd` integration
 
 ---
 
 ## 💻 Hardware & Vendors
 
-- [ ] ASUS hardware support.
-- [ ] Survey `nixos-hardware` for Lenovo, Dell, and other common vendor profiles.
-- [ ] Scaffold generic vendor module structure for toggling vendor-specific quirks.
+- [ ] ASUS hardware support
+- [ ] **Support other vendors:**
+  - [ ] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
+  - [ ] Scaffold a generic vendor module structure for toggling vendor-specific quirks
+  - [ ] Implement and test at least one alternative vendor configuration
+
+---
+
+## 👁️ Ergonomics & Accessibility (The "Chaotic Good" Stack)
+
+- [ ] **Visual & Circadian Automation:**
+  - [ ] Build the Matugen → Stylix pipeline for Base24 HCT contrast manipulation
+  - [ ] Integrate Gammastep for circadian color temperature shifting
+  - [ ] Configure `ddcutil` for hardware backlight control (with a silent fallback to Wayland brightness shaders)
+- [ ] **Typography & Spatial Scaling:**
+  - [ ] Script dynamic UI padding and text scaling based on time of day/fatigue levels
+- [ ] **Kinematics & Input (RSI Prevention):**
+  - [ ] Set up `kanata` for kernel-level Home Row Mods
+  - [ ] Integrate `warpd` for geometric, keyboard-driven mouse emulation
+- [ ] **Auditory & Attention Management:**
+  - [ ] Set up local offline STT (Whisper.cpp) and TTS (Piper) tied to global Wayland hotkeys
+  - [ ] Create a DBus notification interceptor script (`mako` or `dunst`) for context-aware routing and squashing during deep work
+
+---
+
+## 👥 User Provisioning & Environment
+
+- [ ] Create a script that creates generic home folders for new users
+- [ ] Create a script that runs the first home-manager switch on users without an existing profile
+- [ ] Create mackup dotfile sync script
+
+---
+
+## 🌐 Public Release
+
+### 🧹 Sanitization & Security
+- [ ] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
+  - [ ] Fix hardcoded wallpaper path in `stylix.nix` — expose as a consumer-supplied option instead
+- [ ] Replace hardcoded user strings with variable references (e.g., `config.home.username`)
+- [ ] Move highly specific private modules out of the repo entirely
+- [ ] **Remove hard-coded defaults from framework modules:**
+  - [ ] `ft.system.core`: Remove `time.timeZone` default (`"America/New_York"`) — require consumers to set their own
+  - [ ] `ft.system.core`: Remove `system.stateVersion` from the framework — consumers must own this value
+  - [ ] `ft.users`: Remove hard-coded `initialPassword = "snp"` for `admin` — require sops or an explicit consumer option
+  - [ ] `ft.users`: Remove hard-coded U2F key for `admin` from PAM `authfile` — consumers supply their own via `ft.hardware.yubikey.u2fMapping`
+- [ ] **Crucial:** Reset Git history right before publishing
+
+### 🔌 Flake API & Exports
+*(see Flake API section above)*
+
+### 📦 Testing
+- [ ] Add `nixosTest` skeletons for each module (one per module, minimal assertions)
+- [ ] Build smoke test: minimal consumer flake that builds on `x86_64-linux`
+
+### 📖 Documentation & Onboarding
+- [ ] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
+- [ ] Consumer quickstart guide in `README.md` (machine + user + first switch)
+- [ ] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
+
+---
+
+## 👾 Scripts & CLI
+
+- [ ] Write a wrapper for the Lix fork of the Determinate Systems installer
+- [ ] **Graceful Degradation:** Wrap git integrations (`git diff`, `delta`, auto-commits) in `git rev-parse --is-inside-work-tree` checks
 
 ---
 
 ## 📖 Documentation
 
-- [ ] Inline comments on all `lib/` functions.
-- [ ] Consumer quickstart guide in `README.md` (machine + user + first switch).
-- [ ] Module authoring guide (the option naming convention, `lib.mkDefault` rule, etc.).
+- [ ] Inline comments on all `lib/` functions
+- [ ] Consumer quickstart guide in `README.md` (machine + user + first switch)
+- [ ] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
