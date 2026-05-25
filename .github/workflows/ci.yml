@@ -22,8 +22,9 @@ jobs:
       # GitHub-native Nix build cache — no Cachix account required.
       - uses: DeterminateSystems/magic-nix-cache-action@v8
 
-      # ft-home has no committed flake.lock (it is a library input).
-      # Materialise a lock for this CI run without committing it.
+      # Materialise a flake.lock if one is not already committed (e.g. on
+      # feature branches that predate the lockfile). No-op when flake.lock
+      # is already present in the checkout.
       - name: Resolve flake inputs
         run: nix flake lock
 

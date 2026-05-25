@@ -24,10 +24,6 @@ Darwin support is declared in the generator but not yet implemented in the modul
 - NixOS/HM configuration → `modules/`
 - flake-parts is used only to create flake modules. Never mix flake wiring into module code or module code into flake wiring (the dendritic pattern).
 
-### Never add `flake.lock` to ft-home
-
-ft-home is a library input, not a standalone configuration. Consumers manage their own lock files. A `flake.lock` committed here breaks that contract.
-
 ### No personal data, ever
 
 ft-home must contain zero user-specific, machine-specific, or site-specific information. Usernames, hostnames, hardware IDs, IP addresses, real file paths, or any identifier unique to one person's setup must be stripped immediately when found. Every feature must be usable by any consumer without modification.
@@ -228,7 +224,6 @@ All pull requests target `testing`, not `main`. Changes reach `main` only after 
 
 ## What Claude must never do
 
-- Add `flake.lock` to ft-home.
 - Commit any user-specific, machine-specific, or site-specific data to ft-home.
 - Create a module without a `ft.<namespace>.<feature>.enable` option.
 - Use `lib.mkForce` except for an explicitly documented security or safety invariant.
