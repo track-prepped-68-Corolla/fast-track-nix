@@ -40,7 +40,7 @@ in
   config = lib.mkIf cfg.enable {
     programs.home-manager.enable = true;
     home = {
-      inherit (cfg) stateVersion;
+      stateVersion = lib.mkDefault cfg.stateVersion;
       homeDirectory = "/home/${config.home.username}";
     };
     targets.genericLinux.enable = true;
