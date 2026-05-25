@@ -22,11 +22,8 @@ jobs:
       # GitHub-native Nix build cache — no Cachix account required.
       - uses: DeterminateSystems/magic-nix-cache-action@v8
 
-      # Materialise a flake.lock if one is not already committed (e.g. on
-      # feature branches that predate the lockfile). No-op when flake.lock
-      # is already present in the checkout.
       - name: Resolve flake inputs
-        run: nix flake lock
+        run: nix flake update
 
       # Auto-format via treefmt (nixfmt + deadnix) and commit if anything changed.
       # A local commit is enough for inputs.self to point at formatted source when
