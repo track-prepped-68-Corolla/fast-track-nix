@@ -111,11 +111,11 @@ in
             # is unreachable), skip the challenge and fall through to password.
             # Prevents lockout when the key is absent or a new user is created.
             nouserok = lib.mkDefault true;
-            authfile = lib.mkDefault (pkgs.writeText "u2f_keys" (
-              lib.concatStringsSep "\n" (
-                lib.mapAttrsToList (user: key: "${user}:${key}") cfg.u2f.mappings
+            authfile = lib.mkDefault (
+              pkgs.writeText "u2f_keys" (
+                lib.concatStringsSep "\n" (lib.mapAttrsToList (user: key: "${user}:${key}") cfg.u2f.mappings)
               )
-            ));
+            );
           };
         };
 

@@ -129,17 +129,23 @@ in
           };
         }
       ]
-      ++ map (name: {
-        "podman-${name}".serviceConfig = {
-          User = lib.mkDefault "podman";
-          Group = lib.mkDefault "podman";
-          Environment = lib.mkDefault [ rtDir homeEnv ];
-        };
-      }) [
-        "komodo-postgres"
-        "komodo-core"
-        "komodo-periphery"
-      ]
+      ++
+        map
+          (name: {
+            "podman-${name}".serviceConfig = {
+              User = lib.mkDefault "podman";
+              Group = lib.mkDefault "podman";
+              Environment = lib.mkDefault [
+                rtDir
+                homeEnv
+              ];
+            };
+          })
+          [
+            "komodo-postgres"
+            "komodo-core"
+            "komodo-periphery"
+          ]
     );
   };
 }

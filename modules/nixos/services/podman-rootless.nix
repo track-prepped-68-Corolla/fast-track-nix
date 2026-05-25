@@ -85,8 +85,7 @@ in
     };
 
     # Derived from cfg.uid — socket path is never hardcoded
-    environment.sessionVariables.DOCKER_HOST =
-      lib.mkDefault "unix:///run/user/${toString cfg.uid}/podman/podman.sock";
+    environment.sessionVariables.DOCKER_HOST = lib.mkDefault "unix:///run/user/${toString cfg.uid}/podman/podman.sock";
 
     environment.systemPackages = [ pkgs.docker-compose ];
 

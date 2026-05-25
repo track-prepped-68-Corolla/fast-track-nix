@@ -97,24 +97,25 @@ in
     (lib.mkIf (cfg.enable && hasAny) {
 
       fileSystems = lib.listToAttrs (
-        map (label: lib.nameValuePair "${cfg.driveBase}/${label}" {
-          device = "/dev/disk/by-label/${label}";
-          fsType = "btrfs";
-          options = [
-            "noatime"
-            "nofail"
-            "x-systemd.device-timeout=5"
-          ];
-        }) allDrives
+        map (
+          label:
+          lib.nameValuePair "${cfg.driveBase}/${label}" {
+            device = "/dev/disk/by-label/${label}";
+            fsType = "btrfs";
+            options = [
+              "noatime"
+              "nofail"
+              "x-systemd.device-timeout=5"
+            ];
+          }
+        ) allDrives
       );
     })
 
     # ── MergerFS pool over @data subvolumes of data + cache drives ─────────────
     (lib.mkIf (cfg.enable && hasPool) {
       fileSystems."${cfg.poolMount}" = {
-        device = lib.concatStringsSep ":" (
-          map (l: "${cfg.driveBase}/${l}/@data") poolDrives
-        );
+        device = lib.concatStringsSep ":" (map (l: "${cfg.driveBase}/${l}/@data") poolDrives);
         fsType = "fuse.mergerfs";
         depends = map (l: "${cfg.driveBase}/${l}") poolDrives;
         options = [
@@ -136,21 +137,16 @@ in
       services.snapraid = {
         enable = lib.mkDefault true;
 
-        parityFiles = lib.mkDefault (
-          map (l: "${cfg.driveBase}/${l}/snapraid.parity") drives.parity
-        );
+        parityFiles = lib.mkDefault (map (l: "${cfg.driveBase}/${l}/snapraid.parity") drives.parity);
 
         dataDisks = lib.mkDefault (
           lib.listToAttrs (
-            lib.imap1 (
-              i: l: lib.nameValuePair "d${toString i}" "${cfg.driveBase}/${l}/@data"
-            ) drives.data
+            lib.imap1 (i: l: lib.nameValuePair "d${toString i}" "${cfg.driveBase}/${l}/@data") drives.data
           )
         );
 
         contentFiles = lib.mkDefault (
-          [ cfg.snapraid.contentFile ]
-          ++ map (l: "${cfg.driveBase}/${l}/@data/snapraid.content") drives.data
+          [ cfg.snapraid.contentFile ] ++ map (l: "${cfg.driveBase}/${l}/@data/snapraid.content") drives.data
         );
       };
 
