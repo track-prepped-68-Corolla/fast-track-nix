@@ -77,7 +77,7 @@ in
           admin = {
             isNormalUser = true;
             extraGroups = commonGroups ++ [ "wheel" ];
-            initialPassword = lib.mkDefault (cfg.initialPasswords.admin or "changeme");
+            initialPassword = lib.mkDefault (cfg.initialPasswords.admin or null);
             shell = pkgs.zsh;
           };
         }
@@ -87,14 +87,14 @@ in
           (_user: {
             isNormalUser = true;
             extraGroups = commonGroups ++ [ "wheel" ];
-            initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or "changeme");
+            initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or null);
             shell = pkgs.zsh;
           })
         )
         (lib.genAttrs (lib.filter (u: u != "admin") cfg.normalUsers) (_user: {
           isNormalUser = true;
           extraGroups = commonGroups;
-          initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or "changeme");
+          initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or null);
           shell = pkgs.zsh;
         }))
       ];

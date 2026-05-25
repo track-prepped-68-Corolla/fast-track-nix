@@ -13,9 +13,16 @@ in
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
   # -------------------------------------------------------------------------
 
-  options.ft.system.core.enable = lib.mkEnableOption "system core baseline" // {
-    default = true;
-    description = "Sets the system-wide baseline every host shares: stateVersion, NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, timezone (America/New_York), locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
+  options.ft.system.core = {
+    enable = lib.mkEnableOption "system core baseline" // {
+      default = true;
+      description = "Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
+    };
+
+    stateVersion = lib.mkOption {
+      type = lib.types.str;
+      description = "The NixOS release version this machine was *first installed* on. Controls which state migration paths activate on boot — setting this wrong triggers unwanted migrations. Set it once at machine creation and never change it.";
+    };
   };
 
   options.ft.repoPath = lib.mkOption {
@@ -27,7 +34,7 @@ in
   config = lib.mkIf cfg.enable {
 
     # --- 1. SYSTEM IDENTITY ---
-    system.stateVersion = "24.05";
+    system.stateVersion = cfg.stateVersion;
 
     # --- 2. HARDWARE & CONNECTIVITY ---
     networking.networkmanager.enable = lib.mkDefault true;
@@ -56,8 +63,7 @@ in
     };
     nixpkgs.config.allowUnfree = true;
 
-    # --- 5. TIME & LOCALE ---
-    time.timeZone = lib.mkDefault "America/New_York";
+    # --- 5. LOCALE ---
     i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
 
     # --- 6. CORE PACKAGES ---
