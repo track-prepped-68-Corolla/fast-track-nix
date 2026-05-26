@@ -28,6 +28,7 @@ in
   config = lib.mkIf cfg.enable (
     let
       podman = lib.getExe pkgs.podman;
+      sleep = lib.getExe' pkgs.coreutils "sleep";
 
       postgresStart = pkgs.writeShellScript "podman-run-komodo-postgres" ''
         exec ${podman} run \
@@ -70,7 +71,7 @@ in
       # Polls podman healthcheck until postgres reports healthy before Core starts.
       waitForPostgres = pkgs.writeShellScript "wait-for-komodo-postgres" ''
         until ${podman} healthcheck run komodo-postgres 2>/dev/null; do
-          sleep 2
+          ${sleep} 2
         done
       '';
     in
