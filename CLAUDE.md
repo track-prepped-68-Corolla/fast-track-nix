@@ -84,7 +84,7 @@ Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `defa
 1. Propose the option interface: namespace, option names, types, and defaults. Write no `config` yet.
 2. Wait for explicit sign-off.
 3. Implement the `config` block.
-4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Modules requiring physical hardware, binary caches, or external secrets infrastructure are exempt — note the exemption in the module's description.
+4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.
 5. Run all quality checks before committing.
 
 ---
@@ -211,7 +211,7 @@ Testing tiers in order of implementation:
 3. `nixosTest` VM smoke tests — one per module in `ft-home/tests/vm/`. Active: see the `VM Smoke Tests` `workflow_dispatch` workflow in `ft-home`. Required for every new testable module before the PR merges.
 4. Static analysis — `statix`, `deadnix`, and `nix-eval-lints` checking option declaration quality across the module tree.
 
-When adding a new module, add a VM smoke test to `ft-home/tests/vm/` before the module PR merges. Modules requiring physical hardware (YubiKey, physical drives, GPU), external binary caches (nix-cachyos), or real secrets infrastructure are exempt — note the exemption in the module's description.
+Merge a module PR only after a corresponding VM smoke test in `ft-home/tests/vm/` passes, unless the module is explicitly exempt (hardware-dependent, binary cache-dependent, or secrets infrastructure).
 
 ---
 
@@ -233,4 +233,4 @@ All pull requests target `testing`, not `main`. Changes reach `main` only after 
 - Expand scope beyond what was asked.
 - Update any input pin without explicit instruction.
 - Open a pull request targeting `main` — all PRs target `testing`.
-- Merge a module PR without a corresponding VM smoke test in `ft-home/tests/vm/`, unless the module is explicitly exempt (hardware-dependent, binary cache, or secrets infrastructure).
+- Merge a module PR only after a corresponding VM smoke test in `ft-home/tests/vm/` passes, unless the module is explicitly exempt (hardware-dependent, binary cache-dependent, or secrets infrastructure).
