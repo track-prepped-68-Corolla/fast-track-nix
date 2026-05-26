@@ -23,6 +23,24 @@ in
       default = "${config.home.homeDirectory}/.local/share/komodo";
       description = "Base directory for persistent Komodo container data (postgres, core).";
     };
+
+    images = {
+      postgres = lib.mkOption {
+        type = lib.types.str;
+        default = "docker.io/library/postgres:16";
+        description = "Postgres container image ref. Override with an immutable digest to lock the version, e.g. docker.io/library/postgres@sha256:<digest>.";
+      };
+      core = lib.mkOption {
+        type = lib.types.str;
+        default = "ghcr.io/moghtech/komodo/core:latest";
+        description = "Komodo Core container image ref. Override with an immutable digest to lock the version.";
+      };
+      periphery = lib.mkOption {
+        type = lib.types.str;
+        default = "ghcr.io/moghtech/komodo/periphery:latest";
+        description = "Komodo Periphery container image ref. Override with an immutable digest to lock the version.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable (
@@ -41,7 +59,7 @@ in
           --health-timeout=3s \
           --health-retries=10 \
           --health-start-period=10s \
-          docker.io/library/postgres:16
+          ${cfg.images.postgres}
       '';
 
       coreStart = pkgs.writeShellScript "podman-run-komodo-core" ''
@@ -51,7 +69,7 @@ in
           --volume=${cfg.dataDir}/core:/data \
           --publish=9120:9120 \
           --network=komodo-net \
-          ghcr.io/moghtech/komodo/core:latest
+          ${cfg.images.core}
       '';
 
       peripheryStart = pkgs.writeShellScript "podman-run-komodo-periphery" ''
@@ -60,7 +78,7 @@ in
           --env-file=${config.sops.secrets."komodo/periphery_env".path} \
           --publish=8120:8120 \
           --network=komodo-net \
-          ghcr.io/moghtech/komodo/periphery:latest
+          ${cfg.images.periphery}
       '';
 
       createNet = pkgs.writeShellScript "create-komodo-net" ''
