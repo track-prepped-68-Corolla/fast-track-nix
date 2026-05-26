@@ -84,7 +84,8 @@ Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `defa
 1. Propose the option interface: namespace, option names, types, and defaults. Write no `config` yet.
 2. Wait for explicit sign-off.
 3. Implement the `config` block.
-4. Run all quality checks before committing.
+4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.
+5. Run all quality checks before committing.
 
 ---
 
@@ -203,14 +204,14 @@ nix flake check  # validates all outputs build and evaluate cleanly
 
 ## Testing
 
-No formal test suite exists yet. As coverage is built out, the expected tiers in order of implementation are:
+Testing tiers in order of implementation:
 
-1. `nix flake check` — catches broken outputs and evaluation errors.
-2. Build smoke tests — a minimal consumer flake that imports ft-home and builds a machine on each supported platform (`x86_64-linux`, eventually `aarch64-linux` and `aarch64-darwin`).
-3. `nixosTest` integration tests — one per module, asserting that enabled services start and behave correctly.
+1. `nix flake check` — catches broken outputs and evaluation errors. Active.
+2. Build smoke tests — a minimal consumer flake that imports ft-home and builds a machine on each supported platform (`x86_64-linux`, eventually `aarch64-linux` and `aarch64-darwin`). Partially active via the `ft-home` CI.
+3. `nixosTest` VM smoke tests — one per module in `ft-home/tests/vm/`. Active: see the `VM Smoke Tests` `workflow_dispatch` workflow in `ft-home`. Required for every new testable module before the PR merges.
 4. Static analysis — `statix`, `deadnix`, and `nix-eval-lints` checking option declaration quality across the module tree.
 
-When adding a new module, include a `nixosTest` skeleton even if assertions are minimal.
+Merge a module PR only after a corresponding VM smoke test in `ft-home/tests/vm/` passes, unless the module is explicitly exempt (hardware-dependent, binary cache-dependent, or secrets infrastructure).
 
 ---
 
@@ -232,3 +233,4 @@ All pull requests target `testing`, not `main`. Changes reach `main` only after 
 - Expand scope beyond what was asked.
 - Update any input pin without explicit instruction.
 - Open a pull request targeting `main` — all PRs target `testing`.
+- Merge a module PR only after a corresponding VM smoke test in `ft-home/tests/vm/` passes, unless the module is explicitly exempt (hardware-dependent, binary cache-dependent, or secrets infrastructure).
