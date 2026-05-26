@@ -19,6 +19,7 @@
 - [x] `ft.security.sops` — ssh-to-age pipeline: derives age key from `/etc/ssh/ssh_host_ed25519_key` silently on boot (`modules/nixos/system/sops.nix`)
 - [x] Graceful degradation for secrets via `ft.security.sops.enable` (`mkIf` guards entire sops config)
 - [x] No hardcoded U2F keys in framework — consumers supply their own via `ft.hardware.yubikey.u2fMapping`
+- [x] Create a user-level Komodo module — `modules/home/komodo.nix` (`ft.home.komodo.enable`)
 
 ### Consumer (ft-home)
 - [x] Wire up all flake inputs
@@ -67,7 +68,6 @@ Items currently in ft-home that belong in fast-track-nix as proper `ft.*` module
   - [ ] Identify which existing system modules only affect user environments
   - [ ] Rewrite Nix expressions to use Home Manager options (`home.packages`, `home.file`)
   - [ ] Remove old system-level configurations and test user-level replacements
-- [ ] Create a user-level Komodo module *(NixOS service module exists; Home Manager equivalent needed)*
 
 ---
 

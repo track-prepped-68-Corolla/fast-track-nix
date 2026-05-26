@@ -60,7 +60,7 @@ komodo:
 Encrypt with your machine's age recipient (SSH host key or hardware token).
 Verify your `.sops.yaml` `creation_rules` covers `secrets/secrets.yaml`.
 
-## Enabling the modules
+## Enabling the NixOS module
 
 In your machine's NixOS configuration:
 
@@ -71,6 +71,34 @@ ft.services.komodo.enable = true;
 
 `ft.services.podmanRootless.uid` defaults to `2000`. Change it if that UID is
 already taken on your system — the Podman socket path derives from it.
+
+## Enabling the Home Manager module
+
+In your user profile (`users/<username>/default.nix`):
+
+```nix
+ft.security.sops.enable = true;
+ft.home.komodo.enable = true;
+```
+
+The module reuses the same three sops secret keys above. For a standalone Home
+Manager deployment, store them in `users/<username>/var/secrets.yaml` (the
+default `sops.defaultSopsFile` set by `ft.security.sops`). Container data is
+written to `~/.local/share/komodo` by default; override with:
+
+```nix
+ft.home.komodo.dataDir = "/path/to/custom/dir";
+```
+
+After `home-manager switch`, reload the user daemon and start the stack:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user start podman-komodo-postgres podman-komodo-core podman-komodo-periphery
+```
+
+`podman-create-komodo-net` is pulled in automatically as a `Requires=`
+dependency of the container services and does not need to be started manually.
 
 ## Post-deploy checklist
 
@@ -83,8 +111,8 @@ already taken on your system — the Podman socket path derives from it.
 
 ## Container dependency note
 
-`komodo-core` declares `dependsOn = ["komodo-postgres"]`, which creates a
-systemd `After=`/`Requires=` ordering. PostgreSQL has a health-check configured
-(`pg_isready`) but systemd itself does not wait for health — only for the unit
-to start. If Core fails to connect on first boot, a `systemctl restart
-podman-komodo-core` after postgres is ready resolves it.
+`komodo-core` waits for the postgres container to report healthy before starting
+(via an `ExecStartPre` polling loop using `podman healthcheck run`). PostgreSQL
+has a health-check configured (`pg_isready`) so Core will not attempt to connect
+until the database is actually ready. The same `After=`/`Requires=` pattern
+ensures Periphery starts only after Core.
