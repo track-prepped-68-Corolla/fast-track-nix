@@ -29,7 +29,9 @@ jobs:
         run: nix fmt
 
       - name: nix flake check
+        id: flake-check
         run: nix flake check -L
+        continue-on-error: true
 
       - name: Commit and push
         run: |
@@ -37,10 +39,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git add -f flake.lock
           git add -u
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: nix flake update $(date -u +%Y-%m-%d)"
-            git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-            git push origin testing
-          else
+          if git diff --cached --quiet; then
             echo "Nothing changed, nothing to commit"
+            exit 0
           fi
+          git commit -m "chore: nix flake update $(date -u +%Y-%m-%d)"
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          if [ "${{ steps.flake-check.outcome }}" == "success" ]; then
+            git push origin HEAD:testing
+          else
+            git push origin HEAD:nix-update-failed --force
+          fi
+
+      # Re-fail the job so the CI status reflects the broken check.
+      - name: Propagate flake check failure
+        if: steps.flake-check.outcome == 'failure'
+        run: |
+          echo "nix flake check failed; changes pushed to nix-update-failed instead of testing"
+          exit 1
