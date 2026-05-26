@@ -97,6 +97,9 @@ systemctl --user daemon-reload
 systemctl --user start podman-komodo-postgres podman-komodo-core podman-komodo-periphery
 ```
 
+`podman-create-komodo-net` is pulled in automatically as a `Requires=`
+dependency of the container services and does not need to be started manually.
+
 ## Post-deploy checklist
 
 1. Komodo Core UI is available at `http://<host>:9120`.
@@ -108,9 +111,8 @@ systemctl --user start podman-komodo-postgres podman-komodo-core podman-komodo-p
 
 ## Container dependency note
 
-`komodo-core` declares `dependsOn = ["komodo-postgres"]`, which creates a
-systemd `After=`/`Requires=` ordering. PostgreSQL has a health-check configured
-(`pg_isready`) but systemd itself does not wait for health — only for the unit
-to start. If Core fails to connect on first boot, a `systemctl restart
-podman-komodo-core` (or `systemctl --user restart podman-komodo-core` for the
-Home Manager module) after postgres is ready resolves it.
+`komodo-core` waits for the postgres container to report healthy before starting
+(via an `ExecStartPre` polling loop using `podman healthcheck run`). PostgreSQL
+has a health-check configured (`pg_isready`) so Core will not attempt to connect
+until the database is actually ready. The same `After=`/`Requires=` pattern
+ensures Periphery starts only after Core.

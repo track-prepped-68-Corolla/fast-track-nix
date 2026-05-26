@@ -66,6 +66,13 @@ in
         ${podman} network inspect komodo-net >/dev/null 2>&1 \
           || ${podman} network create komodo-net
       '';
+
+      # Polls podman healthcheck until postgres reports healthy before Core starts.
+      waitForPostgres = pkgs.writeShellScript "wait-for-komodo-postgres" ''
+        until ${podman} healthcheck run komodo-postgres 2>/dev/null; do
+          sleep 2
+        done
+      '';
     in
     {
       assertions = [
@@ -75,7 +82,7 @@ in
         }
       ];
 
-      home.packages = [ pkgs.podman ];
+      home.packages = lib.mkDefault [ pkgs.podman ];
 
       # User-level sops-nix env-file secrets (KEY=VALUE format) — see NOTES.md.
       sops.secrets = {
@@ -144,7 +151,11 @@ in
           };
           Service = {
             Type = "exec";
-            ExecStartPre = lib.mkDefault "-${podman} rm -f komodo-core";
+            # Remove any stale container first, then wait for postgres to be healthy.
+            ExecStartPre = lib.mkDefault [
+              "-${podman} rm -f komodo-core"
+              "${waitForPostgres}"
+            ];
             ExecStart = lib.mkDefault "${coreStart}";
             ExecStop = lib.mkDefault "${podman} stop komodo-core";
             Restart = lib.mkDefault "on-failure";
