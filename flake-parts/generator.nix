@@ -94,6 +94,7 @@ in
             specialArgs = { inherit inputs; };
             modules = [
               ../modules/nixos
+              inputs.Disko.nixosModules.disko
               machine.path
               { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
             ];

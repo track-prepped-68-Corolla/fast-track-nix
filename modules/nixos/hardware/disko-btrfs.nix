@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  inputs,
   ...
 }:
 
@@ -30,8 +29,6 @@ let
   };
 in
 {
-  imports = [ inputs.Disko.nixosModules.disko ];
-
   options.ft.hardware.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
       description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/) and @home (/home) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
