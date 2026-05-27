@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -13,8 +14,11 @@ let
   cfg = config.ft.profiles.gaming;
 in
 {
-  # jovian-nixos is injected by nixosModules.default in flake-parts/exports.nix
-  # and by generator.nix; no imports needed here.
+  # The module system deduplicates imports, so multiple profiles enabling this
+  # won't cause a conflict if both pull in jovian-nixos.nixosModules.default.
+  imports = [
+    inputs.jovian-nixos.nixosModules.default
+  ];
 
   options.ft.profiles.gaming = {
     enable = lib.mkEnableOption "Universal Gaming Profile" // {
