@@ -25,10 +25,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # cgroup v2 unified hierarchy required for rootless per-cgroup resource delegation
-    systemd.enableUnifiedCgroupHierarchy = lib.mkDefault true;
-    systemd.enableCgroupAccounting = lib.mkDefault true;
-
     # Some kernels (e.g. hardened variants) ship with this sysctl disabled
     boot.kernel.sysctl."kernel.unprivileged_userns_clone" = lib.mkDefault 1;
 
