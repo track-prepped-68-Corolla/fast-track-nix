@@ -93,6 +93,10 @@ in
           lib.nixosSystem {
             specialArgs = { inherit inputs; };
             modules = [
+              # Disko is captured in the closure here (not via module args) so it
+              # is available before any module imports are resolved, matching the
+              # same pattern used in nixosModules.default.
+              inputs.Disko.nixosModules.disko
               ../modules/nixos
               machine.path
               { nixpkgs.hostPlatform = lib.mkDefault machine.system; }

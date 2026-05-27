@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  inputs,
   ...
 }:
 
@@ -30,7 +29,8 @@ let
   };
 in
 {
-  imports = [ inputs.Disko.nixosModules.disko ];
+  # disko is injected by nixosModules.default in flake-parts/exports.nix;
+  # no imports needed here.
 
   options.ft.hardware.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
