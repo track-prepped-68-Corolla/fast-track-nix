@@ -61,7 +61,11 @@ in
       ];
       auto-optimise-store = true;
     };
-    nixpkgs.config.allowUnfree = true;
+    # mkDefault so the NixOS testing framework's nixpkgs/read-only.nix (which
+    # activates when node.pkgs is provided and sets nixpkgs.config as a
+    # types.unique option) takes precedence over this definition in tests.
+    # In production, where read-only.nix is not active, this default applies.
+    nixpkgs.config = lib.mkDefault { allowUnfree = true; };
 
     # --- 5. LOCALE ---
     i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
