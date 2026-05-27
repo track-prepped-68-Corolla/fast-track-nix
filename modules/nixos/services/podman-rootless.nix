@@ -37,7 +37,7 @@ in
     users.users.podman = {
       isNormalUser = lib.mkDefault true;
       uid = lib.mkDefault cfg.uid;
-      group = lib.mkDefault "podman";
+      group = "podman";
       home = lib.mkDefault "/home/podman";
       createHome = lib.mkDefault true;
       description = lib.mkDefault "Rootless Podman service account";
