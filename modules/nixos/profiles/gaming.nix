@@ -11,20 +11,16 @@
 ################################################################################
 
 let
-  cfg = config.ft.profiles.gaming;
+  cfg = config.ft.gaming;
 in
 {
-  # The module system deduplicates imports, so multiple profiles enabling this
-  # won't cause a conflict if both pull in jovian-nixos.nixosModules.default.
   imports = [
     inputs.jovian-nixos.nixosModules.default
   ];
 
-  options.ft.profiles.gaming = {
-    enable = lib.mkEnableOption "Universal Gaming Profile" // {
-      description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set `ft.profiles.gaming.enableLeanbackUI = true` to boot directly into Steam Big Picture with Decky Loader.";
-    };
+  meta.description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set ft.gaming.enableLeanbackUI = true to boot directly into Steam Big Picture with Decky Loader.";
 
+  options.ft.gaming = {
     enableLeanbackUI = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -33,7 +29,7 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.ft.users.mainUser;
+      default = config.ft.user.mainUser;
       description = "The username for the gaming session.";
     };
 
@@ -44,13 +40,9 @@ in
     };
 
     gpuVendor = lib.mkOption {
-      type = lib.types.enum [
-        "amd"
-        "intel"
-        "nvidia"
-      ];
+      type = lib.types.enum [ "amd" "intel" "nvidia" ];
       default = "amd";
-      description = "GPU vendor for hardware optimizations (amd, intel, nvidia).";
+      description = "GPU vendor for hardware optimizations.";
     };
   };
 
@@ -67,11 +59,11 @@ in
     };
 
     environment.systemPackages = with pkgs; [
-      mangohud # in-game performance overlay
-      protonup-qt # GUI for managing Proton-GE versions
-      steamtinkerlaunch # per-game launch configurator
-      goverlay # GUI front-end for MangoHud profiles
-      heroic # launcher for Epic Games Store and GOG
+      mangohud
+      protonup-qt
+      steamtinkerlaunch
+      goverlay
+      heroic
     ];
 
     jovian = {

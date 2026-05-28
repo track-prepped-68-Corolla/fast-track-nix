@@ -1,32 +1,58 @@
 # =============================================================================
-# Framework NixOS Module Hub
+# Framework NixOS Module Hub — Lazy Import Discovery
 # =============================================================================
 #
-# Single entry-point for ALL framework NixOS modules. Passed as `ftNixos` to
-# lib/generator.nix and injected into every nixosConfiguration and
-# darwinConfiguration generated for the consumer.
+# Single entry-point for ALL framework NixOS modules.  For each .nix file
+# found under this tree a wrapper module is generated that:
+#   * declares options.ft.<name>.enable
+#   * imports the real module only when that flag is true
 #
-# HOW IT WORKS
-#   lib.filesystem.listFilesRecursive discovers every .nix file in this tree
-#   at evaluation time and feeds them all to the NixOS module system. The
-#   module system evaluates each file lazily — a module's config block only
-#   runs when its ft.*.enable option is true, so importing everything here
-#   costs nothing for disabled modules.
-#
-# HOW TO ADD A MODULE
-#   Drop a .nix file anywhere under modules/nixos/. No imports list to update.
-#   The file must declare an options.ft.*.enable using lib.mkEnableOption.
-#   See any existing module for the template.
+# meta.description (and optionally meta.default) inside each module are
+# extracted via partial evaluation with stub arguments and surfaced in the
+# generated enable option.
 # =============================================================================
 { lib, ... }:
 let
   allFiles = lib.filesystem.listFilesRecursive ./.;
 
-  # Exclude non-.nix files and this file itself to prevent an import cycle.
   validModules = builtins.filter (
-    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix
+    path:
+      lib.hasSuffix ".nix" (builtins.toString path)
+      && path != ./default.nix
   ) allFiles;
+
+  mkWrapper =
+    path:
+    let
+      baseName = baseNameOf path;
+      name =
+        if baseName == "default.nix" then
+          baseNameOf (dirOf path)
+        else
+          lib.removeSuffix ".nix" baseName;
+
+      raw = import path;
+      moduleAttrs =
+        if builtins.isFunction raw then
+          raw {
+            config = { };
+            pkgs = { };
+            options = { };
+            lib = lib;
+            inputs = { };
+          }
+        else
+          raw;
+      meta = moduleAttrs.meta or { };
+    in
+    { config, ... }:
+    {
+      options.ft.${name}.enable = lib.mkEnableOption name // {
+        description = meta.description or "Whether to enable ${name}.";
+      } // lib.optionalAttrs (meta ? default) { inherit (meta) default; };
+      imports = lib.optionals config.ft.${name}.enable [ path ];
+    };
 in
 {
-  imports = validModules;
+  imports = builtins.map mkWrapper validModules;
 }

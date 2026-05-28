@@ -6,7 +6,7 @@
 }:
 
 let
-  cfg = config.ft.users;
+  cfg = config.ft.user;
   commonGroups = [
     "video"
     "render"
@@ -17,12 +17,12 @@ let
   ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
-  options.ft.users = {
-    enable = lib.mkEnableOption "user management" // {
-      default = true;
-      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership.";
-    };
+  meta = {
+    description = "Creates and manages all system users: always creates an admin wheel user; additional wheel users from superUsers; unprivileged users from normalUsers. All users get zsh and common group membership.";
+    default = true;
+  };
 
+  options.ft.user = {
     mainUser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
@@ -44,26 +44,20 @@ in
     initialPasswords = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
-      example = {
-        admin = "mypassword";
-        guest = "guestpass";
-      };
-      description = "Per-user initial plaintext passwords set at first boot. Key is username; value overrides the 'changeme' default. Use sops secrets for production credentials.";
+      example = { admin = "mypassword"; guest = "guestpass"; };
+      description = "Per-user initial plaintext passwords set at first boot.";
     };
 
     u2f = {
       enable = lib.mkEnableOption "PAM U2F authentication" // {
-        description = "Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.";
+        description = "Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via ft.user.u2f.mappings.";
       };
 
       mappings = lib.mkOption {
         type = lib.types.attrsOf lib.types.str;
         default = { };
-        example = {
-          admin = "publicKey,keyHandle";
-          guest = "publicKey2,keyHandle2";
-        };
-        description = "Per-user U2F key data. Attribute name is the username; value is the raw credential string (the part after 'username:' in the pam-u2f authfile format).";
+        example = { admin = "publicKey,keyHandle"; };
+        description = "Per-user U2F key data. Attribute name is the username; value is the raw credential string.";
       };
     };
   };
@@ -71,8 +65,6 @@ in
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
       users.users = lib.mkMerge [
-        # Hardcoded safety net — always present regardless of mainUser to prevent
-        # complete lockout if the primary account becomes inaccessible.
         {
           admin = {
             isNormalUser = true;
@@ -81,8 +73,6 @@ in
             shell = pkgs.zsh;
           };
         }
-        # admin is filtered out here to avoid a duplicate-definition conflict
-        # when mainUser or superUsers also lists "admin".
         (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ cfg.mainUser ] ++ cfg.superUsers)))
           (_user: {
             isNormalUser = true;
@@ -107,9 +97,6 @@ in
           settings = {
             cue = lib.mkDefault true;
             control = lib.mkDefault "sufficient";
-            # nouserok: if the user has no entry in the authfile (or the device
-            # is unreachable), skip the challenge and fall through to password.
-            # Prevents lockout when the key is absent or a new user is created.
             nouserok = lib.mkDefault true;
             authfile = lib.mkDefault (
               pkgs.writeText "u2f_keys" (

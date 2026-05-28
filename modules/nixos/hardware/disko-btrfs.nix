@@ -5,7 +5,7 @@
 }:
 
 let
-  cfg = config.ft.hardware.diskBtrfs;
+  cfg = config.ft."disko-btrfs";
 
   btrfsContent = {
     type = "btrfs";
@@ -13,30 +13,19 @@ let
     subvolumes = {
       "@" = {
         mountpoint = "/";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
+        mountOptions = [ "noatime" "compress=zstd" ];
       };
       "@home" = {
         mountpoint = "/home";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
+        mountOptions = [ "noatime" "compress=zstd" ];
       };
     };
   };
 in
 {
-  # disko is injected by nixosModules.default in flake-parts/exports.nix;
-  # no imports needed here.
+  meta.description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/) and @home (/home) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
 
-  options.ft.hardware.diskBtrfs = {
-    enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/) and @home (/home) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
-    };
-
+  options.ft."disko-btrfs" = {
     device = lib.mkOption {
       type = lib.types.str;
       default = "/dev/nvme0n1";
@@ -73,10 +62,7 @@ in
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = [
-                  "fmask=0077"
-                  "dmask=0077"
-                ];
+                mountOptions = [ "fmask=0077" "dmask=0077" ];
               };
             };
             root = {

@@ -10,14 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.system.virt;
+  cfg = config.ft.virt;
 in
 {
-  options.ft.system.virt = {
-    enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)" // {
-      description = "Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.system.virt.enableVmwareHost` for VMware Workstation, `ft.system.virt.enableIncus` for Incus containers, and `ft.system.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
-    };
+  meta.description = "Enables libvirtd/KVM with virt-manager and adds ft.user.mainUser to the libvirtd group. Optionally enable ft.virt.enableVmwareHost for VMware Workstation, ft.virt.enableIncus for Incus containers, and ft.virt.enableSpiceUsbRedirection for USB passthrough to VMs.";
 
+  options.ft.virt = {
     enableVmwareHost = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -48,7 +46,7 @@ in
       };
     };
     programs.virt-manager.enable = true;
-    users.groups.libvirtd.members = lib.mkDefault [ config.ft.users.mainUser ];
+    users.groups.libvirtd.members = lib.mkDefault [ config.ft.user.mainUser ];
     networking.nftables.enable = lib.mkDefault true;
   };
 }

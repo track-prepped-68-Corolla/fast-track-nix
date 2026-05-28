@@ -5,14 +5,10 @@
 ################################################################################
 
 let
-  cfg = config.ft.desktop.cosmic;
+  cfg = config.ft.cosmic;
 in
 {
-  options.ft.desktop.cosmic = {
-    enable = lib.mkEnableOption "COSMIC Desktop Environment" // {
-      description = "Enables the COSMIC desktop environment with cosmic-greeter as the display manager and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active.";
-    };
-  };
+  meta.description = "Enables the COSMIC desktop environment with cosmic-greeter as the display manager and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active.";
 
   config = lib.mkIf cfg.enable {
     services = {

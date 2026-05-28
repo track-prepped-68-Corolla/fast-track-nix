@@ -10,14 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.nfs;
+  cfg = config.ft.nfs;
 in
 {
-  options.ft.services.nfs = {
-    enable = lib.mkEnableOption "NFS Client mount management" // {
-      description = "Configures NFS client mounts declared under `ft.services.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.";
-    };
+  meta.description = "Configures NFS client mounts declared under ft.nfs.mounts. Each entry specifies a remotePath (e.g. server:/share) and a mountPoint, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.";
 
+  options.ft.nfs = {
     mounts = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {

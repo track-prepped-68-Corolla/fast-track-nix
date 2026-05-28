@@ -8,10 +8,12 @@
 {
   imports = [ inputs.nix-index-database.nixosModules.nix-index ];
 
-  options.ft.programs.nixIndex = {
-    enable = lib.mkEnableOption "nix-index with pre-built database and comma integration" // {
-      default = true;
-    };
+  meta = {
+    description = "Enables nix-index with a pre-built database (no local indexing required) and comma integration for running uninstalled commands on demand.";
+    default = true;
+  };
+
+  options.ft."nix-index" = {
     comma = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -19,9 +21,9 @@
     };
   };
 
-  config = lib.mkIf config.ft.programs.nixIndex.enable {
+  config = lib.mkIf config.ft."nix-index".enable {
     programs.nix-index-database = {
-      comma.enable = config.ft.programs.nixIndex.comma;
+      comma.enable = config.ft."nix-index".comma;
     };
 
     nix.settings = {

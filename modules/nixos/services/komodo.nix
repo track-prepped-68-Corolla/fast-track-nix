@@ -10,28 +10,22 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.komodo;
-  podmanUid = config.ft.services.podmanRootless.uid;
+  cfg = config.ft.komodo;
+  podmanUid = config.ft."podman-rootless".uid;
   rtDir = "XDG_RUNTIME_DIR=/run/user/${toString podmanUid}";
   homeEnv = "HOME=/home/podman";
 in
 {
-  options.ft.services.komodo = {
-    enable = lib.mkEnableOption "Komodo Core and Periphery" // {
-      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman containers under the podman service user. Requires ft.services.podmanRootless.enable = true. Populate the sops secret keys documented in NOTES.md before the first deploy.";
-    };
-  };
+  meta.description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman containers under the podman service user. Requires ft.\"podman-rootless\".enable = true. Populate the sops secret keys documented in NOTES.md before the first deploy.";
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = config.ft.services.podmanRootless.enable;
-        message = "ft.services.komodo requires ft.services.podmanRootless.enable = true";
+        assertion = config.ft."podman-rootless".enable;
+        message = "ft.komodo requires ft.\"podman-rootless\".enable = true";
       }
     ];
 
-    # Secrets are env-files (KEY=VALUE format) decrypted by sops-nix.
-    # Populate these keys in secrets/secrets.yaml — see NOTES.md.
     sops.secrets = {
       "komodo/postgres_env" = {
         owner = lib.mkDefault "podman";
@@ -59,9 +53,7 @@ in
       containers = {
         komodo-postgres = {
           image = lib.mkDefault "docker.io/library/postgres:16";
-          environmentFiles = lib.mkDefault [
-            config.sops.secrets."komodo/postgres_env".path
-          ];
+          environmentFiles = lib.mkDefault [ config.sops.secrets."komodo/postgres_env".path ];
           volumes = lib.mkDefault [ "/opt/containers/komodo/postgres:/var/lib/postgresql/data" ];
           extraOptions = lib.mkDefault [
             "--network=komodo-net"
@@ -75,9 +67,7 @@ in
 
         komodo-core = {
           image = lib.mkDefault "ghcr.io/moghtech/komodo/core:latest";
-          environmentFiles = lib.mkDefault [
-            config.sops.secrets."komodo/core_env".path
-          ];
+          environmentFiles = lib.mkDefault [ config.sops.secrets."komodo/core_env".path ];
           volumes = lib.mkDefault [ "/opt/containers/komodo/core:/data" ];
           ports = lib.mkDefault [ "9120:9120" ];
           dependsOn = lib.mkDefault [ "komodo-postgres" ];
@@ -86,9 +76,7 @@ in
 
         komodo-periphery = {
           image = lib.mkDefault "ghcr.io/moghtech/komodo/periphery:latest";
-          environmentFiles = lib.mkDefault [
-            config.sops.secrets."komodo/periphery_env".path
-          ];
+          environmentFiles = lib.mkDefault [ config.sops.secrets."komodo/periphery_env".path ];
           ports = lib.mkDefault [ "8120:8120" ];
           dependsOn = lib.mkDefault [ "komodo-core" ];
           extraOptions = lib.mkDefault [ "--network=komodo-net" ];
@@ -96,9 +84,6 @@ in
       };
     };
 
-    # All systemd.services definitions merged here to avoid duplicate attribute errors.
-    # First element: network creation oneshot. Remaining: user-context overrides for
-    # each generated oci-container service (XDG_RUNTIME_DIR for rootless podman).
     systemd.services = lib.mkMerge (
       [
         {
@@ -115,13 +100,10 @@ in
               RemainAfterExit = true;
               User = lib.mkDefault "podman";
               Group = lib.mkDefault "podman";
-              Environment = lib.mkDefault [
-                rtDir
-                homeEnv
-              ];
+              Environment = lib.mkDefault [ rtDir homeEnv ];
               ExecStart = lib.mkDefault (
                 pkgs.writeShellScript "create-komodo-net" ''
-                  ${pkgs.podman}/bin/podman network inspect komodo-net >/dev/null 2>&1 || \
+                  ${pkgs.podman}/bin/podman network inspect komodo-net >/dev/null 2>&1 || \\
                     ${pkgs.podman}/bin/podman network create komodo-net
                 ''
               );
@@ -129,23 +111,15 @@ in
           };
         }
       ]
-      ++
-        map
-          (name: {
-            "podman-${name}".serviceConfig = {
-              User = lib.mkDefault "podman";
-              Group = lib.mkDefault "podman";
-              Environment = lib.mkDefault [
-                rtDir
-                homeEnv
-              ];
-            };
-          })
-          [
-            "komodo-postgres"
-            "komodo-core"
-            "komodo-periphery"
-          ]
+      ++ map
+        (name: {
+          "podman-${name}".serviceConfig = {
+            User = lib.mkDefault "podman";
+            Group = lib.mkDefault "podman";
+            Environment = lib.mkDefault [ rtDir homeEnv ];
+          };
+        })
+        [ "komodo-postgres" "komodo-core" "komodo-periphery" ]
     );
   };
 }

@@ -1,16 +1,12 @@
 { lib, config, ... }:
 
 {
-  options.ft.boot.limine = {
-    enable = lib.mkEnableOption "the Limine bootloader";
-  };
+  meta.description = "Configures the Limine bootloader for modern UEFI hardware: enables efi.canTouchEfiVariables and force-disables systemd-boot to prevent state conflicts.";
 
-  config = lib.mkIf config.ft.boot.limine.enable {
+  config = lib.mkIf config.ft.limine.enable {
     boot.loader = {
       limine.enable = true;
-      # Required for modern UEFI hardware like the Strix
       efi.canTouchEfiVariables = true;
-      # Ensure other bootloaders are disabled to prevent state conflicts
       systemd-boot.enable = lib.mkForce false;
     };
   };
