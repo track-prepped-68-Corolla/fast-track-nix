@@ -13,10 +13,7 @@ in
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
   # -------------------------------------------------------------------------
 
-  meta = {
-    description = "Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
-    default = true;
-  };
+  meta.description = "Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
 
   options.ft.core = {
     stateVersion = lib.mkOption {
@@ -31,7 +28,9 @@ in
     description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
+    { ft.core.enable = lib.mkDefault true; }
+    (lib.mkIf cfg.enable {
     system.stateVersion = lib.mkDefault cfg.stateVersion;
 
     networking.networkmanager.enable = lib.mkDefault true;
@@ -75,5 +74,6 @@ in
       findutils
       delta
     ];
-  };
+  })
+  ];
 }

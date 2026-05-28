@@ -53,7 +53,7 @@ let
     {
       options.ft.${name}.enable = lib.mkEnableOption name // {
         description = meta.description or "Whether to enable ${name}.";
-      } // lib.optionalAttrs (meta ? default) { inherit (meta) default; };
+      };
       imports = [ path ];
     };
 in

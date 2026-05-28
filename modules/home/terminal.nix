@@ -15,12 +15,11 @@ let
   cfg = config.ft.terminal;
 in
 {
-  meta = {
-    description = "Deploys the full terminal stack: kitty and ghostty (terminals), zsh sourced from dotfiles, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
-    default = true;
-  };
+  meta.description = "Deploys the full terminal stack: kitty and ghostty (terminals), zsh sourced from dotfiles, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
+    { ft.terminal.enable = lib.mkDefault true; }
+    (lib.mkIf cfg.enable {
     home = {
       sessionVariables = {
         EDITOR = "nvim";
@@ -99,5 +98,6 @@ in
         enableZshIntegration = true;
       };
     };
-  };
+  })
+  ];
 }

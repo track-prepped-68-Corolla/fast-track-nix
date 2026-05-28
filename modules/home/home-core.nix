@@ -11,10 +11,7 @@ let
   cfg = config.ft."home-core";
 in
 {
-  meta = {
-    description = "Mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";
-    default = true;
-  };
+  meta.description = "Mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";
 
   options.ft = {
     "home-core".stateVersion = lib.mkOption {
@@ -35,7 +32,9 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
+    { ft."home-core".enable = lib.mkDefault true; }
+    (lib.mkIf cfg.enable {
     programs.home-manager.enable = true;
     home = {
       inherit (cfg) stateVersion;
@@ -44,5 +43,6 @@ in
     targets.genericLinux.enable = true;
     xdg.enable = true;
     nixpkgs.config.allowUnfree = true;
-  };
+  })
+  ];
 }

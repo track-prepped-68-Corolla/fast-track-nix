@@ -17,10 +17,7 @@ let
   ++ lib.optional config.virtualisation.podman.enable "podman";
 in
 {
-  meta = {
-    description = "Creates and manages all system users: always creates an admin wheel user; additional wheel users from superUsers; unprivileged users from normalUsers. All users get zsh and common group membership.";
-    default = true;
-  };
+  meta.description = "Creates and manages all system users: always creates an admin wheel user; additional wheel users from superUsers; unprivileged users from normalUsers. All users get zsh and common group membership.";
 
   options.ft.user = {
     mainUser = lib.mkOption {
@@ -63,6 +60,7 @@ in
   };
 
   config = lib.mkMerge [
+    { ft.user.enable = lib.mkDefault true; }
     (lib.mkIf cfg.enable {
       users.users = lib.mkMerge [
         {
