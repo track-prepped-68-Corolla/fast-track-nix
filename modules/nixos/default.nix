@@ -13,7 +13,7 @@
 # =============================================================================
 { lib, ... }:
 let
-  allFiles = lib.filesystem.listFilesRecursive ./.;
+  allFiles = lib.filesystem.listFilesRecursive ./. ;
 
   validModules = builtins.filter (
     path:
@@ -38,7 +38,7 @@ let
             config = { };
             pkgs = { };
             options = { };
-            lib = lib;
+            inherit lib;
             inputs = { };
           }
         else

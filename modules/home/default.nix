@@ -19,20 +19,35 @@
 { lib, ... }:
 let
   allFiles = lib.filesystem.listFilesRecursive ./. ;
+
   validModules = builtins.filter (
-    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix
+    path:
+      lib.hasSuffix ".nix" (builtins.toString path)
+      && path != ./default.nix
   ) allFiles;
-  mkWrapper = path:
+
+  mkWrapper =
+    path:
     let
       baseName = baseNameOf path;
       name =
-        if baseName == "default.nix" then baseNameOf (dirOf path)
-        else lib.removeSuffix ".nix" baseName;
+        if baseName == "default.nix" then
+          baseNameOf (dirOf path)
+        else
+          lib.removeSuffix ".nix" baseName;
+
       raw = import path;
       moduleAttrs =
         if builtins.isFunction raw then
-          raw { config = { }; pkgs = { }; options = { }; lib = lib; inputs = { }; }
-        else raw;
+          raw {
+            config = { };
+            pkgs = { };
+            options = { };
+            inherit lib;
+            inputs = { };
+          }
+        else
+          raw;
       meta = moduleAttrs.meta or { };
     in
     { config, ... }:
@@ -43,4 +58,6 @@ let
       imports = lib.optionals config.ft.${name}.enable [ path ];
     };
 in
-{ imports = builtins.map mkWrapper validModules; }
+{
+  imports = builtins.map mkWrapper validModules;
+}
