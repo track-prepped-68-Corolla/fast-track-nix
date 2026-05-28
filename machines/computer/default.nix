@@ -7,7 +7,7 @@
 #
 # WHAT GOES HERE
 #   hardware-configuration.nix   machine-specific kernel modules and filesystems
-#   Identity                     hostName, ft.users.mainUser, ft.users.superUsers
+#   Identity                     hostName, ft.user.mainUser, ft.user.superUsers
 #   ft.* feature toggles         enable framework and consumer modules
 #
 # WHAT DOES NOT GO HERE
@@ -36,12 +36,12 @@ _:
 
   # --- FEATURE TOGGLES ---
   ft = {
-    system.core.stateVersion = "25.05";
-    boot.limine.enable = true;
-    desktop.cosmic.enable = true;
-    cli.enable = true;
-    users.mainUser = "guest";
-    users.superUsers = [ "admin" ];
+    core.stateVersion = "25.05";
+    limine.enable = true;
+    cosmic.enable = true;
+    just.enable = true;
+    user.mainUser = "guest";
+    user.superUsers = [ "admin" ];
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
