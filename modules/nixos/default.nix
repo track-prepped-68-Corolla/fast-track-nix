@@ -4,12 +4,12 @@
 #
 # Single entry-point for ALL framework NixOS modules.  For each .nix file
 # found under this tree a wrapper module is generated that:
-#   * declares options.ft.<name>.enable
-#   * imports the real module only when that flag is true
+#   * declares options.ft.<name>.enable (sourced from the module's meta block)
+#   * imports the module unconditionally (config is gated internally by mkIf)
 #
-# meta.description (and optionally meta.default) inside each module are
-# extracted via partial evaluation with stub arguments and surfaced in the
-# generated enable option.
+# Heavy input modules (jovian, stylix, sops-nix, nix-index) are NO LONGER
+# imported by the individual feature modules.  Hosts that need them must import
+# the relevant nixosModule from inputs directly in their machine default.nix.
 # =============================================================================
 { lib, ... }:
 let
@@ -45,12 +45,11 @@ let
           raw;
       meta = moduleAttrs.meta or { };
     in
-    { config, ... }:
     {
       options.ft.${name}.enable = lib.mkEnableOption name // {
         description = meta.description or "Whether to enable ${name}.";
       } // lib.optionalAttrs (meta ? default) { inherit (meta) default; };
-      imports = lib.optionals config.ft.${name}.enable [ path ];
+      imports = [ path ];
     };
 in
 {

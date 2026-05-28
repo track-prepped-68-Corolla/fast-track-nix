@@ -2,22 +2,18 @@
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 
 ################################################################################
 # UNIVERSAL GAMING PROFILE MODULE
+# Requires the host to import inputs.jovian-nixos.nixosModules.default.
 ################################################################################
 
 let
   cfg = config.ft.gaming;
 in
 {
-  imports = [
-    inputs.jovian-nixos.nixosModules.default
-  ];
-
   meta.description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set ft.gaming.enableLeanbackUI = true to boot directly into Steam Big Picture with Decky Loader.";
 
   options.ft.gaming = {
