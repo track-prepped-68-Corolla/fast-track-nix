@@ -22,6 +22,8 @@ let
   );
 in
 {
+  meta.description = "Provides read-only ft.machineFacts with hardware information derived from machines/<machineName>/var/facter.json, including GPU vendor detection.";
+
   options.ft.machineFacts = lib.mkOption {
     type = lib.types.attrsOf lib.types.anything;
     default = { };

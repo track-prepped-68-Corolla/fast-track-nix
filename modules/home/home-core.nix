@@ -8,20 +8,18 @@
 ################################################################################
 
 let
-  cfg = config.ft.home.core;
+  cfg = config.ft."home-core";
 in
 {
-  options.ft = {
-    home.core = {
-      enable = lib.mkEnableOption "home manager core settings" // {
-        default = true;
-        description = "Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";
-      };
+  meta = {
+    description = "Mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";
+    default = true;
+  };
 
-      stateVersion = lib.mkOption {
-        type = lib.types.str;
-        description = "The Home Manager release version this user profile was *first created* on. Controls which state migration paths activate — set it once at user creation and never change it.";
-      };
+  options.ft = {
+    "home-core".stateVersion = lib.mkOption {
+      type = lib.types.str;
+      description = "The Home Manager release version this user profile was *first created* on. Controls which state migration paths activate — set it once at user creation and never change it.";
     };
 
     repoPath = lib.mkOption {

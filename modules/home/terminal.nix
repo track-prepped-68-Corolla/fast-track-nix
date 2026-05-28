@@ -15,9 +15,9 @@ let
   cfg = config.ft.terminal;
 in
 {
-  options.ft.terminal.enable = lib.mkEnableOption "terminal stack" // {
-    default = true;
+  meta = {
     description = "Deploys the full terminal stack: kitty and ghostty (terminals), zsh sourced from dotfiles, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
+    default = true;
   };
 
   config = lib.mkIf cfg.enable {

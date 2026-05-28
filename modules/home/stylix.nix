@@ -7,19 +7,17 @@
 }:
 
 let
-  cfgTheme = config.ft.theme;
+  cfg = config.ft.stylix;
 in
 {
   imports = [
     inputs.stylix.homeModules.stylix
   ];
 
-  options = {
-    ft.theme = {
-      enable = lib.mkEnableOption "unified system theming via Stylix" // {
-        description = "Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.";
-      };
+  meta.description = "Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with ft.stylix.wallpaper, ft.stylix.schemePath, and ft.stylix.fonts.*.";
 
+  options = {
+    ft.stylix = {
       wallpaper = lib.mkOption {
         type = lib.types.either lib.types.path lib.types.str;
         default = ../../homes/guest/wallpapers/default.png;
@@ -83,59 +81,57 @@ in
     };
 
     ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic" // {
-      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.desktop.cosmic.enable` when running the COSMIC desktop environment.";
+      description = "Applies COSMIC-specific theming overrides on top of ft.stylix. Enable this alongside ft.cosmic.enable when running the COSMIC desktop environment.";
     };
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf cfgTheme.enable {
-      home.packages = [
-        cfgTheme.fonts.sans.package
-        cfgTheme.fonts.mono.package
-        cfgTheme.fonts.serif.package
-        cfgTheme.fonts.emoji.package
-      ];
+  config = lib.mkIf cfg.enable {
+    home.packages = [
+      cfg.fonts.sans.package
+      cfg.fonts.mono.package
+      cfg.fonts.serif.package
+      cfg.fonts.emoji.package
+    ];
 
-      stylix = {
-        enable = true;
-        image = cfgTheme.wallpaper;
-        base16Scheme = cfgTheme.schemePath;
+    stylix = {
+      enable = true;
+      image = cfg.wallpaper;
+      base16Scheme = cfg.schemePath;
 
-        fonts = {
-          sansSerif = {
-            inherit (cfgTheme.fonts.sans) package name;
-          };
-          monospace = {
-            inherit (cfgTheme.fonts.mono) package name;
-          };
-          serif = {
-            inherit (cfgTheme.fonts.serif) package name;
-          };
-          emoji = {
-            inherit (cfgTheme.fonts.emoji) package name;
-          };
-          sizes = {
-            applications = 12;
-            terminal = 13;
-            desktop = 11;
-            popups = 11;
-          };
+      fonts = {
+        sansSerif = {
+          inherit (cfg.fonts.sans) package name;
         };
-
-        cursor = {
-          package = pkgs.catppuccin-cursors.mochaDark;
-          name = "catppuccin-mocha-dark-cursors";
-          size = 24;
+        monospace = {
+          inherit (cfg.fonts.mono) package name;
         };
-
-        opacity = {
-          terminal = 0.85;
-          applications = 0.95;
-          desktop = 0.90;
+        serif = {
+          inherit (cfg.fonts.serif) package name;
         };
-
-        targets.starship.enable = false;
+        emoji = {
+          inherit (cfg.fonts.emoji) package name;
+        };
+        sizes = {
+          applications = 12;
+          terminal = 13;
+          desktop = 11;
+          popups = 11;
+        };
       };
-    })
-  ];
+
+      cursor = {
+        package = pkgs.catppuccin-cursors.mochaDark;
+        name = "catppuccin-mocha-dark-cursors";
+        size = 24;
+      };
+
+      opacity = {
+        terminal = 0.85;
+        applications = 0.95;
+        desktop = 0.90;
+      };
+
+      targets.starship.enable = false;
+    };
+  };
 }

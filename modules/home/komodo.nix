@@ -10,14 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.home.komodo;
+  cfg = config.ft.komodo;
 in
 {
-  options.ft.home.komodo = {
-    enable = lib.mkEnableOption "Komodo Core and Periphery (user-level)" // {
-      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman user services via systemd. Requires ft.security.sops.enable = true. Populate the sops secret keys documented in NOTES.md before first deploy.";
-    };
+  meta.description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman user services via systemd. Requires ft.sops.enable = true. Populate the sops secret keys documented in NOTES.md before first deploy.";
 
+  options.ft.komodo = {
     dataDir = lib.mkOption {
       type = lib.types.str;
       default = "${config.home.homeDirectory}/.local/share/komodo";
@@ -86,7 +84,6 @@ in
           || ${podman} network create komodo-net
       '';
 
-      # Polls podman healthcheck until postgres reports healthy before Core starts.
       waitForPostgres = pkgs.writeShellScript "wait-for-komodo-postgres" ''
         until ${podman} healthcheck run komodo-postgres 2>/dev/null; do
           ${sleep} 2
@@ -96,28 +93,25 @@ in
     {
       assertions = [
         {
-          assertion = config.ft.security.sops.enable;
-          message = "ft.home.komodo requires ft.security.sops.enable = true";
+          assertion = config.ft.sops.enable;
+          message = "ft.komodo requires ft.sops.enable = true";
         }
       ];
 
       home.packages = lib.mkDefault [ pkgs.podman ];
 
-      # User-level sops-nix env-file secrets (KEY=VALUE format) — see NOTES.md.
       sops.secrets = {
         "komodo/postgres_env" = { };
         "komodo/core_env" = { };
         "komodo/periphery_env" = { };
       };
 
-      # Create persistent data directories at activation time.
       home.activation.createKomodoDataDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg "${cfg.dataDir}/postgres"} ${lib.escapeShellArg "${cfg.dataDir}/core"}
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod 0750 ${lib.escapeShellArg "${cfg.dataDir}/postgres"} ${lib.escapeShellArg "${cfg.dataDir}/core"}
       '';
 
       systemd.user.services = {
-        # Create the komodo-net podman network before any container starts.
         podman-create-komodo-net = {
           Unit = {
             Description = "Create komodo-net Podman network";
@@ -170,7 +164,6 @@ in
           };
           Service = {
             Type = "exec";
-            # Remove any stale container first, then wait for postgres to be healthy.
             ExecStartPre = lib.mkDefault [
               "-${podman} rm -f komodo-core"
               "${waitForPostgres}"

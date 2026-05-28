@@ -6,14 +6,12 @@
 }:
 
 let
-  cfg = config.ft.security.sops;
+  cfg = config.ft.sops;
 in
 {
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
-  options.ft.security.sops = {
-    enable = lib.mkEnableOption "user-level sops-nix secrets";
-  };
+  meta.description = "Configures user-level sops-nix secrets: sets the age keyfile and default secrets file path derived from ft.repoPath and the current username.";
 
   config = lib.mkIf cfg.enable {
     sops = {

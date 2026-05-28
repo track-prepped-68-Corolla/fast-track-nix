@@ -9,11 +9,7 @@ let
   cfg = config.ft.lazyvim;
 in
 {
-  options.ft.lazyvim = {
-    enable = lib.mkEnableOption "Custom LazyVim configuration" // {
-      description = "Installs Neovim with a full suite of language servers and dev tools for Python, Go, Rust, Nix, and web development. Symlinks `ft.dotfiles.path/nvim` into XDG config as a live out-of-store link and sets EDITOR/VISUAL to nvim.";
-    };
-  };
+  meta.description = "Installs Neovim with a full suite of language servers and dev tools for Python, Go, Rust, Nix, and web development. Symlinks ft.dotfiles.path/nvim into XDG config as a live out-of-store link and sets EDITOR/VISUAL to nvim.";
 
   config = lib.mkIf cfg.enable {
     home = {
