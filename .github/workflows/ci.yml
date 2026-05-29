@@ -28,6 +28,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@87b14cf437d03d37989d87f0fa5ce4f5dc1a330b # v8
 
       - name: Resolve flake inputs
+        shell: bash
         run: nix flake update 2>&1 | tee /tmp/ci-update.log; exit ${PIPESTATUS[0]}
 
       # Auto-format via treefmt (nixfmt + deadnix) and commit if anything changed.
@@ -35,6 +36,7 @@ jobs:
       # nix flake check runs. Pushing would move the PR HEAD to a bot commit that
       # GitHub Actions won't re-trigger CI for.
       - name: Auto-format (treefmt)
+        shell: bash
         run: |
           nix fmt 2>&1 | tee /tmp/ci-fmt.log
           FMT_EXIT=${PIPESTATUS[0]}
@@ -48,6 +50,7 @@ jobs:
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
       # format: nixfmt + deadnix diff    lint: statix
       - name: nix flake check
+        shell: bash
         run: nix flake check -L 2>&1 | tee /tmp/ci-check.log; exit ${PIPESTATUS[0]}
 
       - name: Secret scan
@@ -97,9 +100,12 @@ jobs:
                   if (content.length > MAX_LOG_CHARS) {
                     content = '...(truncated)\n' + content.slice(-MAX_LOG_CHARS);
                   }
-                  logSection += `\n<details>\n<summary>${stepName}</summary>\n\n\`\`\`\n${content}\n\`\`\`\n</details>\n`;
+                  const safeContent = content.replace(/```/g, '``\\`');
+                  logSection += `\n<details>\n<summary>${stepName}</summary>\n\n\`\`\`\n${safeContent}\n\`\`\`\n</details>\n`;
                 }
-              } catch (_) {}
+              } catch (err) {
+                core.notice(`Unable to read ${logPath}: ${err.message}`);
+              }
             }
 
             const body = `<!-- claude-auto-tag -->\n@claude CI failed on this PR. Please investigate the [failed run](${run_url}), identify the root cause, and push a fix.${logSection ? '\n\n### Error Logs\n' + logSection : ''}`;
