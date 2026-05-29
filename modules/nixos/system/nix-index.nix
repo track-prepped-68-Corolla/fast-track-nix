@@ -1,11 +1,12 @@
 {
   lib,
   config,
+  inputs,
   ...
 }:
-
-# Requires the host to import inputs.nix-index-database.nixosModules.nix-index.
 {
+  imports = [ inputs.nix-index-database.nixosModules.nix-index ];
+
   meta.description = "Enables nix-index with a pre-built database (no local indexing required) and comma integration for running uninstalled commands on demand.";
 
   options.ft."nix-index" = {

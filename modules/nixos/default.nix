@@ -7,9 +7,10 @@
 #   * declares options.ft.<name>.enable (sourced from the module's meta block)
 #   * imports the module unconditionally (config is gated internally by mkIf)
 #
-# Heavy input modules (jovian, stylix, sops-nix, nix-index) are NO LONGER
-# imported by the individual feature modules.  Hosts that need them must import
-# the relevant nixosModule from inputs directly in their machine default.nix.
+# Modules that set options from external inputs (jovian, stylix, sops-nix,
+# nix-index) declare their own `imports = [ inputs.<foo>.nixosModules.<bar> ]`.
+# The mkWrapper partial evaluation uses `inputs = {}` but only accesses
+# `meta.description`, so the imports thunk is never forced — safe under lazy eval.
 # =============================================================================
 { lib, ... }:
 let

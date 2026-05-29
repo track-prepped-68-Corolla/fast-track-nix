@@ -2,11 +2,12 @@
   lib,
   config,
   pkgs,
+  inputs,
   ...
 }:
-
-# Requires the host to import inputs.sops-nix.nixosModules.sops.
 {
+  imports = [ inputs.sops-nix.nixosModules.sops ];
+
   meta.description = "Wires up sops-nix pointing at ft.repoPath/secrets/secrets.yaml, using the machine's SSH host key for age decryption. Enable ft.sops.useTPM or ft.sops.useYubikey for hardware-token decryption instead.";
 
   options.ft.sops = {

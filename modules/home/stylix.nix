@@ -2,14 +2,15 @@
   lib,
   config,
   pkgs,
+  inputs,
   ...
 }:
-
-# Requires the user config to import inputs.stylix.homeModules.stylix.
 let
   cfg = config.ft.stylix;
 in
 {
+  imports = [ inputs.stylix.homeModules.stylix ];
+
   meta.description = "Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with ft.stylix.wallpaper, ft.stylix.schemePath, and ft.stylix.fonts.*.";
 
   options = {

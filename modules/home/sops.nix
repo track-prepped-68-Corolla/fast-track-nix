@@ -1,14 +1,15 @@
 {
   config,
   lib,
+  inputs,
   ...
 }:
-
-# Requires the user config to import inputs.sops-nix.homeManagerModules.sops.
 let
   cfg = config.ft.sops;
 in
 {
+  imports = [ inputs.sops-nix.homeManagerModules.sops ];
+
   meta.description = "Configures user-level sops-nix secrets: sets the age keyfile and default secrets file path derived from ft.repoPath and the current username.";
 
   config = lib.mkIf cfg.enable {
