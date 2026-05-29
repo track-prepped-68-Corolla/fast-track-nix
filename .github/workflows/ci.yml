@@ -28,15 +28,19 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@87b14cf437d03d37989d87f0fa5ce4f5dc1a330b # v8
 
       - name: Resolve flake inputs
-        run: nix flake update
+        shell: bash
+        run: nix flake update 2>&1 | tee /tmp/ci-update.log; exit ${PIPESTATUS[0]}
 
       # Auto-format via treefmt (nixfmt + deadnix) and commit if anything changed.
       # A local commit is enough for inputs.self to point at formatted source when
       # nix flake check runs. Pushing would move the PR HEAD to a bot commit that
       # GitHub Actions won't re-trigger CI for.
       - name: Auto-format (treefmt)
+        shell: bash
         run: |
-          nix fmt
+          nix fmt 2>&1 | tee /tmp/ci-fmt.log
+          FMT_EXIT=${PIPESTATUS[0]}
+          if [ $FMT_EXIT -ne 0 ]; then exit $FMT_EXIT; fi
           if ! git diff --quiet; then
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git config user.name "github-actions[bot]"
@@ -46,7 +50,8 @@ jobs:
       # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
       # format: nixfmt + deadnix diff    lint: statix
       - name: nix flake check
-        run: nix flake check -L
+        shell: bash
+        run: nix flake check -L 2>&1 | tee /tmp/ci-check.log; exit ${PIPESTATUS[0]}
 
       - name: Secret scan
         uses: trufflesecurity/trufflehog@main
@@ -58,6 +63,7 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
+            const fs = require('fs');
             const MAX_CYCLES = 5;
             const pr_number = context.payload.pull_request.number;
             const run_url = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
@@ -79,9 +85,34 @@ jobs:
               return;
             }
 
+            const logFiles = {
+              'Resolve flake inputs': '/tmp/ci-update.log',
+              'Auto-format (treefmt)': '/tmp/ci-fmt.log',
+              'nix flake check': '/tmp/ci-check.log',
+            };
+
+            const MAX_LOG_CHARS = 6000;
+            let logSection = '';
+            for (const [stepName, logPath] of Object.entries(logFiles)) {
+              try {
+                let content = fs.readFileSync(logPath, 'utf8').trim();
+                if (content) {
+                  if (content.length > MAX_LOG_CHARS) {
+                    content = '...(truncated)\n' + content.slice(-MAX_LOG_CHARS);
+                  }
+                  const safeContent = content.replace(/```/g, '``\\`');
+                  logSection += `\n<details>\n<summary>${stepName}</summary>\n\n\`\`\`\n${safeContent}\n\`\`\`\n</details>\n`;
+                }
+              } catch (err) {
+                core.notice(`Unable to read ${logPath}: ${err.message}`);
+              }
+            }
+
+            const body = `<!-- claude-auto-tag -->\n@claude CI failed on this PR. Please investigate the [failed run](${run_url}), identify the root cause, and push a fix.${logSection ? '\n\n### Error Logs\n' + logSection : ''}`;
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: pr_number,
-              body: `<!-- claude-auto-tag -->\n@claude CI failed on this PR. Please investigate the [failed run](${run_url}), identify the root cause, and push a fix.`,
+              body,
             });
