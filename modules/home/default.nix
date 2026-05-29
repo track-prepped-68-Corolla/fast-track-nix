@@ -58,5 +58,14 @@ let
     };
 in
 {
+  # Same pattern as the NixOS hub: absorb meta.description assignments from
+  # individual HM modules so the module system does not reject them.
+  options.meta.description = lib.mkOption {
+    type = lib.types.lines;
+    default = "";
+    internal = true;
+    description = "Documentation sink — individual modules set this for the hub to read at partial-evaluation time; the runtime value is unused.";
+  };
+
   imports = builtins.map mkWrapper validModules;
 }
