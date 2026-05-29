@@ -174,8 +174,8 @@ See `ft-home/scripts/plan.md` for full architecture and development sequence.
 *(see Flake API section above)*
 
 ### 📦 Testing
-- [ ] Add `nixosTest` skeletons for each module (one per module, minimal assertions)
-- [ ] Build smoke test: minimal consumer flake that builds on `x86_64-linux`
+- [x] Add `nixosTest` skeletons for each module (one per module, minimal assertions)
+- [x] Build smoke test: minimal consumer flake that builds on `x86_64-linux`
 
 ---
 
