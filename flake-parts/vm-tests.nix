@@ -13,11 +13,11 @@
 { inputs, ... }:
 {
   perSystem =
-    { system, lib, ... }:
-    lib.optionalAttrs (system == "x86_64-linux") {
+    { system, pkgs, ... }:
+    pkgs.lib.mkIf (system == "x86_64-linux") {
       packages = import ../tests/vm {
         inherit inputs;
-        nixpkgs = inputs.nixpkgs;
+        inherit (inputs) nixpkgs;
       };
     };
 }
