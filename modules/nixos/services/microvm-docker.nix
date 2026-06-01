@@ -71,6 +71,12 @@ in
       description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).";
     };
 
+    vsockCid = lib.mkOption {
+      type = lib.types.int;
+      default = 3;
+      description = "vsock context ID (CID) assigned to the VM. Enables systemd-notify support for cloud-hypervisor. Must be unique per host when running multiple microvms (valid range: 3–4294967293).";
+    };
+
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -198,6 +204,7 @@ in
           microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
           microvm.vcpu = lib.mkDefault cfg.vcpus;
           microvm.mem = lib.mkDefault cfg.mem;
+          microvm.vsock.cid = lib.mkDefault cfg.vsockCid;
 
           microvm.interfaces = lib.mkDefault [
             {
