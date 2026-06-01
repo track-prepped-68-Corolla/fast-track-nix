@@ -77,6 +77,11 @@ in
       description = "vsock context ID (CID) assigned to the VM. Enables systemd-notify support for cloud-hypervisor. Must be unique per host when running multiple microvms (valid range: 3–4294967293).";
     };
 
+    hostInterface = lib.mkOption {
+      type = lib.types.str;
+      description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access.";
+    };
+
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -124,6 +129,7 @@ in
     # ── NAT — guest internet access ──────────────────────────────────────────
     networking.nat = {
       enable = lib.mkDefault true;
+      externalInterface = lib.mkDefault cfg.hostInterface;
       internalInterfaces = [ "microvm0" ];
     };
 
