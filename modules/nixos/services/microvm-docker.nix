@@ -73,7 +73,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host, exported to the VM via NFSv4 over the TAP bridge.";
+        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host, shared into the VM via virtiofs.";
       };
     };
   };
@@ -128,23 +128,6 @@ in
         "d /opt/komodo/core 0750 root root -"
         "d /opt/komodo/periphery 0750 root root -"
       ];
-
-    # ── NFS export — /opt/komodo shared into the VM ──────────────────────────
-    #
-    # microvm.nix evaluates all hypervisor runners (microvm.runner is attrsOf
-    # package), so Firecracker's runner would unconditionally throw on any
-    # configured microvm.shares — even when cloud-hypervisor is selected.
-    # NFSv4 over the TAP bridge achieves the same host-accessible data path
-    # without touching microvm.shares at all.
-    services.nfs.server = lib.mkIf cfg.komodo.enable {
-      enable = lib.mkDefault true;
-      exports = lib.mkDefault ''
-        /opt/komodo ${cfg.vmAddress}(rw,sync,no_subtree_check,no_root_squash)
-      '';
-    };
-
-    # Allow NFS traffic from the VM across the bridge.
-    networking.firewall.interfaces."microvm0".allowedTCPPorts = lib.mkIf cfg.komodo.enable [ 2049 ];
 
     # ── VM definition ────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
@@ -232,6 +215,16 @@ in
             }
           ];
 
+          # /opt/komodo shared from the host via virtiofs.
+          microvm.shares = lib.mkIf cfg.komodo.enable (lib.mkDefault [
+            {
+              source = "/opt/komodo";
+              mountPoint = "/opt/komodo";
+              tag = "komodo";
+              proto = "virtiofs";
+            }
+          ]);
+
           # ── Guest networking — static IP, gateway to host bridge ─────────
           systemd.network.enable = lib.mkDefault true;
           systemd.network.networks."10-eth" = lib.mkDefault {
@@ -244,19 +237,6 @@ in
                 "8.8.8.8"
               ];
             };
-          };
-
-          # ── NFSv4 mount of /opt/komodo from the host ─────────────────────
-          fileSystems."/opt/komodo" = lib.mkIf cfg.komodo.enable {
-            device = lib.mkDefault "${cfg.hostAddress}:/opt/komodo";
-            fsType = lib.mkDefault "nfs4";
-            options = [
-              "soft"
-              "intr"
-              "_netdev"
-              "nofail"
-              "noatime"
-            ];
           };
 
           # ── Rootful Docker with docker-compose ───────────────────────────
