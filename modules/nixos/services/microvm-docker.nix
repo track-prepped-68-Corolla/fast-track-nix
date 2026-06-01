@@ -75,13 +75,13 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host via a virtiofs share.";
+        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host, shared into the VM via virtiofs.";
       };
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # Provide firecracker and related host binaries from the microvm overlay.
+    # Provide cloud-hypervisor and related host binaries from the microvm overlay.
     nixpkgs.overlays = [ inputs.microvm.overlay ];
 
     # ── Host bridge (microvm0) ───────────────────────────────────────────────
@@ -131,7 +131,7 @@ in
         "d /opt/komodo/periphery 0750 root root -"
       ];
 
-    # ── Firecracker VM definition ────────────────────────────────────────────
+    # ── VM definition ────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
       autostart = lib.mkDefault true;
 
@@ -217,15 +217,15 @@ in
             }
           ];
 
-          # virtiofs share exposing /opt/komodo from the host into the guest.
-          microvm.shares = lib.mkIf cfg.komodo.enable [
+          # /opt/komodo shared from the host via virtiofs.
+          microvm.shares = lib.mkIf cfg.komodo.enable (lib.mkDefault [
             {
               source = "/opt/komodo";
               mountPoint = "/opt/komodo";
               tag = "komodo";
               proto = "virtiofs";
             }
-          ];
+          ]);
 
           # ── Guest networking — static IP, gateway to host bridge ─────────
           systemd.network.enable = lib.mkDefault true;
@@ -256,7 +256,9 @@ in
             after = [
               "docker.service"
               "network-online.target"
+              "opt-komodo.mount"
             ];
+            requires = [ "opt-komodo.mount" ];
             wants = [ "network-online.target" ];
             wantedBy = [ "multi-user.target" ];
             serviceConfig = {
