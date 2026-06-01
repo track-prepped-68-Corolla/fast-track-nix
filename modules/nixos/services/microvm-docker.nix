@@ -129,7 +129,8 @@ in
 
     # ── Persistent storage directories on the host ───────────────────────────
     systemd.tmpfiles.rules =
-      [ "d /var/lib/microvm/${cfg.vmName} 0750 root root -" ]
+      # microvm@.service runs as the microvm user created by the host module.
+      [ "d /var/lib/microvm/${cfg.vmName} 0750 microvm microvm -" ]
       ++ lib.optionals cfg.komodo.enable [
         "d /opt/komodo 0750 root root -"
         "d /opt/komodo/mongo 0750 root root -"
