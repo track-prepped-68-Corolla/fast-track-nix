@@ -103,7 +103,7 @@ in
       networkConfig = {
         Address = "${cfg.hostAddress}/${toString cfg.prefixLength}";
         ConfigureWithoutCarrier = true;
-        IPForward = true;
+        IPv4Forwarding = true;
       };
       linkConfig.RequiredForOnline = "no";
     };
