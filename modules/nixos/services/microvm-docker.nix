@@ -68,6 +68,14 @@ in
       default = "02:00:00:00:00:01";
       description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).";
     };
+
+    komodo = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host via a virtiofs share.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -111,8 +119,15 @@ in
       internalInterfaces = [ "microvm0" ];
     };
 
-    # ── Persistent storage directory on the host ─────────────────────────────
-    systemd.tmpfiles.rules = [ "d /var/lib/microvm/${cfg.vmName} 0750 root root -" ];
+    # ── Persistent storage directories on the host ───────────────────────────
+    systemd.tmpfiles.rules =
+      [ "d /var/lib/microvm/${cfg.vmName} 0750 root root -" ]
+      ++ lib.optionals cfg.komodo.enable [
+        "d /opt/komodo 0750 root root -"
+        "d /opt/komodo/mongo 0750 root root -"
+        "d /opt/komodo/core 0750 root root -"
+        "d /opt/komodo/periphery 0750 root root -"
+      ];
 
     # ── Firecracker VM definition ────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
@@ -120,6 +135,63 @@ in
 
       config =
         { pkgs, ... }:
+        let
+          komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
+            networks:
+              komodo-net:
+                driver: bridge
+
+            volumes:
+              mongo-data:
+                driver: local
+                driver_opts:
+                  type: none
+                  o: bind
+                  device: /opt/komodo/mongo
+              core-data:
+                driver: local
+                driver_opts:
+                  type: none
+                  o: bind
+                  device: /opt/komodo/core
+              periphery-data:
+                driver: local
+                driver_opts:
+                  type: none
+                  o: bind
+                  device: /opt/komodo/periphery
+
+            services:
+              komodo-mongo:
+                image: mongo:7
+                restart: unless-stopped
+                networks:
+                  - komodo-net
+                volumes:
+                  - mongo-data:/data/db
+                command: ["--quiet"]
+
+              komodo-core:
+                image: ghcr.io/moghtech/komodo/core:latest
+                restart: unless-stopped
+                networks:
+                  - komodo-net
+                depends_on:
+                  - komodo-mongo
+                volumes:
+                  - core-data:/data
+                environment:
+                  KOMODO_DATABASE_URI: "mongodb://komodo-mongo:27017"
+
+              komodo-periphery:
+                image: ghcr.io/moghtech/komodo/periphery:latest
+                restart: unless-stopped
+                network_mode: host
+                volumes:
+                  - periphery-data:/data
+                  - /var/run/docker.sock:/var/run/docker.sock
+          '';
+        in
         {
           microvm.hypervisor = lib.mkDefault "firecracker";
           microvm.vcpu = lib.mkDefault cfg.vcpus;
@@ -140,6 +212,16 @@ in
               image = "/var/lib/microvm/${cfg.vmName}/docker.img";
               mountPoint = "/var/lib/docker";
               size = cfg.dockerVolumeSize;
+            }
+          ];
+
+          # virtiofs share exposing /opt/komodo from the host into the guest.
+          microvm.shares = lib.mkIf cfg.komodo.enable [
+            {
+              source = "/opt/komodo";
+              mountPoint = "/opt/komodo";
+              tag = "komodo";
+              proto = "virtiofs";
             }
           ];
 
@@ -165,6 +247,24 @@ in
 
           # Working directory for compose projects.
           systemd.tmpfiles.rules = [ "d /opt/compose 0750 root root -" ];
+
+          # ── Komodo stack ─────────────────────────────────────────────────
+          systemd.services.komodo = lib.mkIf cfg.komodo.enable {
+            description = "Komodo docker-compose stack";
+            after = [
+              "docker.service"
+              "network-online.target"
+            ];
+            wants = [ "network-online.target" ];
+            wantedBy = [ "multi-user.target" ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              ExecStartPre = "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml";
+              ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml up -d --remove-orphans";
+              ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml down";
+            };
+          };
 
           networking.hostName = lib.mkDefault cfg.vmName;
           networking.firewall.enable = lib.mkDefault false;
