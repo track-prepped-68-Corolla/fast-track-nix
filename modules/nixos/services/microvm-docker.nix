@@ -106,6 +106,48 @@ in
         default = "komodo";
         description = "Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.";
       };
+
+      adminUsername = lib.mkOption {
+        type = lib.types.str;
+        default = "admin";
+        description = "Initial Komodo admin username created on first launch.";
+      };
+
+      adminPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "admin";
+        description = "Initial Komodo admin password. Stored in the Nix store — change after first login.";
+      };
+
+      webhookSecret = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo-webhook-secret";
+        description = "Secret used to authenticate incoming Komodo webhooks. Stored in the Nix store.";
+      };
+
+      jwtSecret = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo-jwt-secret";
+        description = "Secret used to sign Komodo JWT tokens. Stored in the Nix store.";
+      };
+
+      host = lib.mkOption {
+        type = lib.types.str;
+        default = "http://${cfg.vmAddress}:9120";
+        description = "Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.";
+      };
+
+      serverName = lib.mkOption {
+        type = lib.types.str;
+        default = "Local";
+        description = "Name for the first Komodo server entry, and the name Periphery uses to connect to Core.";
+      };
+
+      timezone = lib.mkOption {
+        type = lib.types.str;
+        default = "Etc/UTC";
+        description = "Timezone for Komodo schedules (tz database name, e.g. America/New_York).";
+      };
     };
   };
 
@@ -228,8 +270,48 @@ in
           '';
 
           komodoEnv = pkgs.writeText "komodo-compose.env" ''
+            COMPOSE_KOMODO_IMAGE_TAG=${cfg.komodo.imageTag}
+            COMPOSE_KOMODO_BACKUPS_PATH=/opt/komodo/backups
+
             KOMODO_DATABASE_USERNAME=${cfg.komodo.dbUsername}
             KOMODO_DATABASE_PASSWORD=${cfg.komodo.dbPassword}
+
+            TZ=${cfg.komodo.timezone}
+
+            KOMODO_HOST=${cfg.komodo.host}
+            KOMODO_TITLE=Komodo
+            KOMODO_PERIPHERY_PUBLIC_KEY=file:/config/keys/periphery.pub
+            KOMODO_LOCAL_AUTH=true
+            KOMODO_INIT_ADMIN_USERNAME=${cfg.komodo.adminUsername}
+            KOMODO_INIT_ADMIN_PASSWORD=${cfg.komodo.adminPassword}
+            KOMODO_FIRST_SERVER_NAME=${cfg.komodo.serverName}
+            KOMODO_DISABLE_CONFIRM_DIALOG=false
+            KOMODO_WEBHOOK_SECRET=${cfg.komodo.webhookSecret}
+            KOMODO_JWT_SECRET=${cfg.komodo.jwtSecret}
+            KOMODO_JWT_TTL=1-day
+            KOMODO_MONITORING_INTERVAL=15-sec
+            KOMODO_RESOURCE_POLL_INTERVAL=1-hr
+            KOMODO_DISABLE_USER_REGISTRATION=false
+            KOMODO_ENABLE_NEW_USERS=false
+            KOMODO_DISABLE_NON_ADMIN_CREATE=false
+            KOMODO_TRANSPARENT_MODE=false
+            KOMODO_OIDC_ENABLED=false
+            KOMODO_GITHUB_OAUTH_ENABLED=false
+            KOMODO_GOOGLE_OAUTH_ENABLED=false
+            KOMODO_AWS_ACCESS_KEY_ID=
+            KOMODO_AWS_SECRET_ACCESS_KEY=
+            KOMODO_LOGGING_PRETTY=false
+            KOMODO_PRETTY_STARTUP_CONFIG=false
+
+            PERIPHERY_CORE_ADDRESS=ws://core:9120
+            PERIPHERY_CONNECT_AS=${cfg.komodo.serverName}
+            PERIPHERY_CORE_PUBLIC_KEYS=file:/config/keys/core.pub
+            PERIPHERY_ROOT_DIRECTORY=/etc/komodo
+            PERIPHERY_DISABLE_TERMINALS=false
+            PERIPHERY_DISABLE_CONTAINER_TERMINALS=false
+            PERIPHERY_INCLUDE_DISK_MOUNTS=/etc/hostname
+            PERIPHERY_LOGGING_PRETTY=false
+            PERIPHERY_PRETTY_STARTUP_CONFIG=false
           '';
         in
         {
