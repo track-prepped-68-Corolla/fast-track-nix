@@ -281,6 +281,8 @@ in
               ExecStartPre = "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml";
               ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml up -d --remove-orphans";
               ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml down";
+              StandardOutput = "append:/opt/komodo/komodo.log";
+              StandardError = "append:/opt/komodo/komodo.log";
             };
           };
 
