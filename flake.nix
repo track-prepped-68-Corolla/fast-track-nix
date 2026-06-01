@@ -100,6 +100,12 @@
       url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Lightweight VMs (Firecracker, QEMU, Cloud Hypervisor) — used by ft.services.microvmDocker.
+    microvm = {
+      url = "github:astro/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
