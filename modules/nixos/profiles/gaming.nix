@@ -11,7 +11,7 @@
 ################################################################################
 
 let
-  cfg = config.ft.profiles.gaming;
+  cfg = config.ft.gaming;
 in
 {
   # The module system deduplicates imports, so multiple profiles enabling this
@@ -20,9 +20,9 @@ in
     inputs.jovian-nixos.nixosModules.default
   ];
 
-  options.ft.profiles.gaming = {
+  options.ft.gaming = {
     enable = lib.mkEnableOption "Universal Gaming Profile" // {
-      description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set `ft.profiles.gaming.enableLeanbackUI = true` to boot directly into Steam Big Picture with Decky Loader.";
+      description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set `ft.gaming.enableLeanbackUI = true` to boot directly into Steam Big Picture with Decky Loader.";
     };
 
     enableLeanbackUI = lib.mkOption {
