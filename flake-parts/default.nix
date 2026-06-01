@@ -1,10 +1,14 @@
 let
   dir = builtins.readDir ./.;
   isModule = name: _: name != "default.nix" && builtins.match ".*\\.nix" name != null;
-  filterAttrs = pred: attrs:
+  filterAttrs =
+    pred: attrs:
     builtins.listToAttrs (
       builtins.filter (kv: pred kv.name kv.value) (
-        builtins.map (name: { inherit name; value = attrs.${name}; }) (builtins.attrNames attrs)
+        builtins.map (name: {
+          inherit name;
+          value = attrs.${name};
+        }) (builtins.attrNames attrs)
       )
     );
 in
