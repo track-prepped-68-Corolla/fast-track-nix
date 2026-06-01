@@ -10,11 +10,13 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.microvmDocker;
+  cfg = config.ft.dockervm;
   tapId = "tap-${cfg.vmName}";
 in
 {
-  options.ft.services.microvmDocker = {
+  # ft.dockervm uses a two-level name (like ft.cli, ft.keepass) because the
+  # feature is a self-contained VM appliance rather than a generic service.
+  options.ft.dockervm = {
     enable = lib.mkEnableOption "Firecracker microVM with rootful Docker Compose" // {
       description = "Boots a Firecracker microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).";
     };
