@@ -71,6 +71,17 @@ in
       description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).";
     };
 
+    vsockCid = lib.mkOption {
+      type = lib.types.int;
+      default = 3;
+      description = "vsock context ID (CID) assigned to the VM. Enables systemd-notify support for cloud-hypervisor. Must be unique per host when running multiple microvms (valid range: 3–4294967293).";
+    };
+
+    hostInterface = lib.mkOption {
+      type = lib.types.str;
+      description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access.";
+    };
+
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -118,12 +129,14 @@ in
     # ── NAT — guest internet access ──────────────────────────────────────────
     networking.nat = {
       enable = lib.mkDefault true;
+      externalInterface = lib.mkDefault cfg.hostInterface;
       internalInterfaces = [ "microvm0" ];
     };
 
     # ── Persistent storage directories on the host ───────────────────────────
     systemd.tmpfiles.rules =
-      [ "d /var/lib/microvm/${cfg.vmName} 0750 root root -" ]
+      # microvm@.service runs as the microvm user created by the host module.
+      [ "d /var/lib/microvm/${cfg.vmName} 0750 microvm - -" ]
       ++ lib.optionals cfg.komodo.enable [
         "d /opt/komodo 0750 root root -"
         "d /opt/komodo/mongo 0750 root root -"
@@ -198,6 +211,7 @@ in
           microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
           microvm.vcpu = lib.mkDefault cfg.vcpus;
           microvm.mem = lib.mkDefault cfg.mem;
+          microvm.vsock.cid = lib.mkDefault cfg.vsockCid;
 
           microvm.interfaces = lib.mkDefault [
             {
