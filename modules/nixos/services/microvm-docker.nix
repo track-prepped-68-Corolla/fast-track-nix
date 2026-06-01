@@ -86,7 +86,25 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host, shared into the VM via virtiofs.";
+        description = "Deploy a Komodo instance (core + periphery + FerretDB) inside the VM. Container data is stored on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.";
+      };
+
+      imageTag = lib.mkOption {
+        type = lib.types.str;
+        default = "2";
+        description = "Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.";
+      };
+
+      dbUsername = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo";
+        description = "Username for the FerretDB/Postgres database.";
+      };
+
+      dbPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo";
+        description = "Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.";
       };
     };
   };
@@ -139,9 +157,7 @@ in
       [ "d /var/lib/microvm/${cfg.vmName} 0750 microvm - -" ]
       ++ lib.optionals cfg.komodo.enable [
         "d /opt/komodo 0750 root root -"
-        "d /opt/komodo/mongo 0750 root root -"
-        "d /opt/komodo/core 0750 root root -"
-        "d /opt/komodo/periphery 0750 root root -"
+        "d /opt/komodo/backups 0750 root root -"
       ];
 
     # ── VM definition ────────────────────────────────────────────────────────
@@ -152,59 +168,68 @@ in
         { pkgs, ... }:
         let
           komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
-            networks:
-              komodo-net:
-                driver: bridge
+            services:
+              postgres:
+                image: ghcr.io/ferretdb/postgres-documentdb
+                labels:
+                  komodo.skip:
+                restart: unless-stopped
+                volumes:
+                  - postgres-data:/var/lib/postgresql/data
+                environment:
+                  POSTGRES_USER: ${cfg.komodo.dbUsername}
+                  POSTGRES_PASSWORD: ${cfg.komodo.dbPassword}
+                  POSTGRES_DB: postgres
+
+              ferretdb:
+                image: ghcr.io/ferretdb/ferretdb
+                labels:
+                  komodo.skip:
+                restart: unless-stopped
+                depends_on:
+                  - postgres
+                volumes:
+                  - ferretdb-state:/state
+                environment:
+                  FERRETDB_POSTGRESQL_URL: postgres://${cfg.komodo.dbUsername}:${cfg.komodo.dbPassword}@postgres:5432/postgres
+
+              core:
+                image: ghcr.io/moghtech/komodo-core:${cfg.komodo.imageTag}
+                init: true
+                restart: unless-stopped
+                depends_on:
+                  - ferretdb
+                ports:
+                  - 9120:9120
+                env_file: ./compose.env
+                environment:
+                  KOMODO_DATABASE_ADDRESS: ferretdb:27017
+                volumes:
+                  - keys:/config/keys
+                  - /opt/komodo/backups:/backups
+
+              periphery:
+                image: ghcr.io/moghtech/komodo-periphery:${cfg.komodo.imageTag}
+                init: true
+                restart: unless-stopped
+                depends_on:
+                  - core
+                env_file: ./compose.env
+                volumes:
+                  - keys:/config/keys
+                  - /var/run/docker.sock:/var/run/docker.sock
+                  - /proc:/proc
+                  - /etc/komodo:/etc/komodo
 
             volumes:
-              mongo-data:
-                driver: local
-                driver_opts:
-                  type: none
-                  o: bind
-                  device: /opt/komodo/mongo
-              core-data:
-                driver: local
-                driver_opts:
-                  type: none
-                  o: bind
-                  device: /opt/komodo/core
-              periphery-data:
-                driver: local
-                driver_opts:
-                  type: none
-                  o: bind
-                  device: /opt/komodo/periphery
+              postgres-data:
+              ferretdb-state:
+              keys:
+          '';
 
-            services:
-              komodo-mongo:
-                image: mongo:7
-                restart: unless-stopped
-                networks:
-                  - komodo-net
-                volumes:
-                  - mongo-data:/data/db
-                command: ["--quiet"]
-
-              komodo-core:
-                image: ghcr.io/moghtech/komodo/core:latest
-                restart: unless-stopped
-                networks:
-                  - komodo-net
-                depends_on:
-                  - komodo-mongo
-                volumes:
-                  - core-data:/data
-                environment:
-                  KOMODO_DATABASE_URI: "mongodb://komodo-mongo:27017"
-
-              komodo-periphery:
-                image: ghcr.io/moghtech/komodo/periphery:latest
-                restart: unless-stopped
-                network_mode: host
-                volumes:
-                  - periphery-data:/data
-                  - /var/run/docker.sock:/var/run/docker.sock
+          komodoEnv = pkgs.writeText "komodo-compose.env" ''
+            KOMODO_DATABASE_USERNAME=${cfg.komodo.dbUsername}
+            KOMODO_DATABASE_PASSWORD=${cfg.komodo.dbPassword}
           '';
         in
         {
@@ -278,9 +303,12 @@ in
             serviceConfig = {
               Type = "oneshot";
               RemainAfterExit = true;
-              ExecStartPre = "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml";
-              ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml up -d --remove-orphans";
-              ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f /opt/komodo/compose.yaml down";
+              ExecStartPre = [
+                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml"
+                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} /opt/komodo/compose.env"
+              ];
+              ExecStart = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml up -d --remove-orphans";
+              ExecStop = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml down";
               StandardOutput = "append:/opt/komodo/komodo.log";
               StandardError = "append:/opt/komodo/komodo.log";
             };
