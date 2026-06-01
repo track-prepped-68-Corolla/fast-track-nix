@@ -101,7 +101,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Lightweight VMs (Firecracker, QEMU, Cloud Hypervisor) — used by ft.services.microvmDocker.
+    # Lightweight VMs (Firecracker, QEMU, Cloud Hypervisor) — used by ft.dockervm.
     microvm = {
       url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
