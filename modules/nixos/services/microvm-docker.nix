@@ -16,8 +16,6 @@ in
 {
   # ft.dockervm uses a two-level name (like ft.cli, ft.keepass) because the
   # feature is a self-contained VM appliance rather than a generic service.
-  # Cloud Hypervisor is the default hypervisor — it is lightweight like Firecracker
-  # but supports virtiofs shares, which Firecracker does not.
   options.ft.dockervm = {
     enable = lib.mkEnableOption "microVM with rootful Docker Compose" // {
       description = "Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).";
@@ -75,13 +73,13 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host via a virtiofs share.";
+        description = "Deploy a Komodo instance (core + periphery + MongoDB) inside the VM. Container data is stored under /opt/komodo on the host, exported to the VM via NFSv4 over the TAP bridge.";
       };
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # Provide firecracker and related host binaries from the microvm overlay.
+    # Provide cloud-hypervisor and related host binaries from the microvm overlay.
     nixpkgs.overlays = [ inputs.microvm.overlay ];
 
     # ── Host bridge (microvm0) ───────────────────────────────────────────────
@@ -131,7 +129,24 @@ in
         "d /opt/komodo/periphery 0750 root root -"
       ];
 
-    # ── Firecracker VM definition ────────────────────────────────────────────
+    # ── NFS export — /opt/komodo shared into the VM ──────────────────────────
+    #
+    # microvm.nix evaluates all hypervisor runners (microvm.runner is attrsOf
+    # package), so Firecracker's runner would unconditionally throw on any
+    # configured microvm.shares — even when cloud-hypervisor is selected.
+    # NFSv4 over the TAP bridge achieves the same host-accessible data path
+    # without touching microvm.shares at all.
+    services.nfs.server = lib.mkIf cfg.komodo.enable {
+      enable = lib.mkDefault true;
+      exports = lib.mkDefault ''
+        /opt/komodo ${cfg.vmAddress}(rw,sync,no_subtree_check,no_root_squash)
+      '';
+    };
+
+    # Allow NFS traffic from the VM across the bridge.
+    networking.firewall.interfaces."microvm0".allowedTCPPorts = lib.mkIf cfg.komodo.enable [ 2049 ];
+
+    # ── VM definition ────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
       autostart = lib.mkDefault true;
 
@@ -217,16 +232,6 @@ in
             }
           ];
 
-          # virtiofs share exposing /opt/komodo from the host into the guest.
-          microvm.shares = lib.mkIf cfg.komodo.enable [
-            {
-              source = "/opt/komodo";
-              mountPoint = "/opt/komodo";
-              tag = "komodo";
-              proto = "virtiofs";
-            }
-          ];
-
           # ── Guest networking — static IP, gateway to host bridge ─────────
           systemd.network.enable = lib.mkDefault true;
           systemd.network.networks."10-eth" = lib.mkDefault {
@@ -239,6 +244,19 @@ in
                 "8.8.8.8"
               ];
             };
+          };
+
+          # ── NFSv4 mount of /opt/komodo from the host ─────────────────────
+          fileSystems."/opt/komodo" = lib.mkIf cfg.komodo.enable {
+            device = lib.mkDefault "${cfg.hostAddress}:/opt/komodo";
+            fsType = lib.mkDefault "nfs4";
+            options = [
+              "soft"
+              "intr"
+              "_netdev"
+              "nofail"
+              "noatime"
+            ];
           };
 
           # ── Rootful Docker with docker-compose ───────────────────────────
@@ -256,7 +274,9 @@ in
             after = [
               "docker.service"
               "network-online.target"
+              "opt-komodo.mount"
             ];
+            requires = [ "opt-komodo.mount" ];
             wants = [ "network-online.target" ];
             wantedBy = [ "multi-user.target" ];
             serviceConfig = {
