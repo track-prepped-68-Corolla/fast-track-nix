@@ -20,18 +20,20 @@
         ];
       };
 
-    # Capture the disko NixOS module in the closure at flake-evaluation time so
-    # that framework modules (disko-btrfs.nix) never need to reference inputs
-    # inside an `imports` list.  Accessing inputs inside `imports` causes
-    # infinite recursion when inputs is provided via _module.args rather than
-    # specialArgs (e.g. in NixOS VM smoke tests).
+    # Capture disko and microvm host modules in the closure at flake-evaluation
+    # time so that framework modules never need to reference inputs inside an
+    # `imports` list.  Accessing inputs inside `imports` causes infinite
+    # recursion when inputs is provided via _module.args rather than specialArgs
+    # (e.g. in NixOS VM smoke tests).
     nixosModules.default =
       let
         diskoModule = inputs.Disko.nixosModules.disko;
+        microvmHostModule = inputs.microvm.nixosModules.host;
       in
       {
         imports = [
           diskoModule
+          microvmHostModule
           (import ../modules/nixos)
         ];
       };
