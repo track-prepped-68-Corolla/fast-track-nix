@@ -298,6 +298,7 @@ in
             KOMODO_INIT_ADMIN_USERNAME=${cfg.komodo.adminUsername}
             KOMODO_INIT_ADMIN_PASSWORD=${cfg.komodo.adminPassword}
             KOMODO_FIRST_SERVER_NAME=${cfg.komodo.serverName}
+            KOMODO_FIRST_SERVER=http://periphery:8120
             KOMODO_DISABLE_CONFIRM_DIALOG=false
             KOMODO_WEBHOOK_SECRET=${cfg.komodo.webhookSecret}
             KOMODO_JWT_SECRET=${cfg.komodo.jwtSecret}
