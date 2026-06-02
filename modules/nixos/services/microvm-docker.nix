@@ -82,6 +82,12 @@ in
       description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access.";
     };
 
+    sshAuthorizedKeys = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
+    };
+
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -222,6 +228,12 @@ in
                   POSTGRES_USER: ${cfg.komodo.dbUsername}
                   POSTGRES_PASSWORD: ${cfg.komodo.dbPassword}
                   POSTGRES_DB: postgres
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U ${cfg.komodo.dbUsername}"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 30
+                  start_period: 10s
 
               ferretdb:
                 image: ghcr.io/ferretdb/ferretdb
@@ -229,7 +241,8 @@ in
                   komodo.skip:
                 restart: unless-stopped
                 depends_on:
-                  - postgres
+                  postgres:
+                    condition: service_healthy
                 volumes:
                   - ferretdb-state:/state
                 environment:
@@ -394,6 +407,18 @@ in
               StandardOutput = "append:/opt/komodo/komodo.log";
               StandardError = "append:/opt/komodo/komodo.log";
             };
+          };
+
+          services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
+            enable = lib.mkDefault true;
+            settings = {
+              PermitRootLogin = lib.mkDefault "yes";
+              PasswordAuthentication = lib.mkDefault false;
+            };
+          };
+
+          users.users.root = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
+            openssh.authorizedKeys.keys = lib.mkDefault cfg.sshAuthorizedKeys;
           };
 
           networking.hostName = lib.mkDefault cfg.vmName;
