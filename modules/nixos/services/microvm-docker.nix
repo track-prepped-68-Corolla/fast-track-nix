@@ -97,7 +97,7 @@ in
 
       imageTag = lib.mkOption {
         type = lib.types.str;
-        default = "2";
+        default = "latest";
         description = "Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.";
       };
 
