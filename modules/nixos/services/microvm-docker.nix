@@ -79,7 +79,8 @@ in
 
     hostInterface = lib.mkOption {
       type = lib.types.str;
-      description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access.";
+      default = "";
+      description = "Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -158,6 +159,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.hostInterface != "";
+        message = "ft.dockervm.hostInterface must be set to the host's external network interface (e.g. wlp194s0, enp3s0). Check `ip link` on the host.";
+      }
+    ];
+
     # Provide cloud-hypervisor and related host binaries from the microvm overlay.
     nixpkgs.overlays = [ inputs.microvm.overlay ];
 
