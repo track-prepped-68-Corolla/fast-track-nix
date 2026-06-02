@@ -353,14 +353,16 @@ in
           ];
 
           # /opt/komodo shared from the host via virtiofs.
-          microvm.shares = lib.mkIf cfg.komodo.enable (lib.mkDefault [
-            {
-              source = "/opt/komodo";
-              mountPoint = "/opt/komodo";
-              tag = "komodo";
-              proto = "virtiofs";
-            }
-          ]);
+          microvm.shares = lib.mkIf cfg.komodo.enable (
+            lib.mkDefault [
+              {
+                source = "/opt/komodo";
+                mountPoint = "/opt/komodo";
+                tag = "komodo";
+                proto = "virtiofs";
+              }
+            ]
+          );
 
           # ── Guest networking — static IP, gateway to host bridge ─────────
           systemd.network.enable = lib.mkDefault true;
