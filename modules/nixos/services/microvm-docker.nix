@@ -72,9 +72,9 @@ in
     };
 
     vsockCid = lib.mkOption {
-      type = lib.types.int;
-      default = 3;
-      description = "vsock context ID (CID) assigned to the VM. Enables systemd-notify support for cloud-hypervisor. Must be unique per host when running multiple microvms (valid range: 3–4294967293).";
+      type = lib.types.nullOr lib.types.int;
+      default = null;
+      description = "vsock context ID (CID) for the VM. When set, enables systemd-notify support for cloud-hypervisor and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).";
     };
 
     hostInterface = lib.mkOption {
@@ -318,7 +318,7 @@ in
           microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
           microvm.vcpu = lib.mkDefault cfg.vcpus;
           microvm.mem = lib.mkDefault cfg.mem;
-          microvm.vsock.cid = lib.mkDefault cfg.vsockCid;
+          microvm.vsock.cid = lib.mkIf (cfg.vsockCid != null) (lib.mkDefault cfg.vsockCid);
 
           microvm.interfaces = lib.mkDefault [
             {
