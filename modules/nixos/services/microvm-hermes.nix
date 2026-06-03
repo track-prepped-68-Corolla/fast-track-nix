@@ -6,14 +6,16 @@
 }:
 
 ################################################################################
-# MICROVM WITH NOUS RESEARCH HERMES (via Ollama)
+# MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES
 ################################################################################
 #
 # ft.services.hermesVm is three-level (new style) — generic enough for any
 # consumer, unlike the grandfathered two-level ft.dockervm.
 #
-# VM smoke test exempt: nested KVM is unavailable in CI, and first-boot model
-# pulls require outbound internet access. See ft-home CLAUDE.md exclusion table.
+# The guest is a minimal NixOS environment that points to an existing Ollama
+# instance on the host; it does not run its own Ollama server.
+#
+# VM smoke test exempt: nested KVM is unavailable in CI.
 
 let
   cfg = config.ft.services.hermesVm;
@@ -22,8 +24,8 @@ let
 in
 {
   options.ft.services.hermesVm = {
-    enable = lib.mkEnableOption "Nous Research Hermes microVM" // {
-      description = "Boots a Cloud Hypervisor microVM running NixOS with Ollama serving a Nous Research Hermes language model on an OpenAI-compatible API. The guest is a full NixOS environment reachable from the host bridge. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM and network-dependent model pulls are unavailable in CI.";
+    enable = lib.mkEnableOption "Nous Research Hermes NixOS microVM" // {
+      description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. The guest reaches the host's existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM is unavailable in CI.";
     };
 
     vmName = lib.mkOption {
@@ -34,14 +36,14 @@ in
 
     vcpus = lib.mkOption {
       type = lib.types.int;
-      default = 4;
-      description = "Number of vCPUs assigned to the VM. Nous Hermes 7B benefits from at least 2; larger models need more.";
+      default = 2;
+      description = "Number of vCPUs assigned to the VM.";
     };
 
     mem = lib.mkOption {
       type = lib.types.int;
-      default = 8192;
-      description = "Memory in MiB assigned to the VM. The default targets nous-hermes2 (7B); larger models such as hermes3 on Llama 3.1 70B require significantly more.";
+      default = 2048;
+      description = "Memory in MiB assigned to the VM.";
     };
 
     hostAddress = lib.mkOption {
@@ -71,25 +73,13 @@ in
     hostInterface = lib.mkOption {
       type = lib.types.str;
       default = "";
-      description = "Name of the host's external network interface (e.g. eth0, enp3s0). Required for NAT so the VM can reach the internet to pull Ollama models on first boot. Must be set when enable = true.";
+      description = "Host external network interface (e.g. eth0, enp3s0) for NAT. When set, the guest gets outbound internet access. Leave empty if only host–guest communication is needed.";
     };
 
-    ollamaPort = lib.mkOption {
-      type = lib.types.port;
-      default = 11434;
-      description = "Port on which Ollama listens inside the VM for OpenAI-compatible API requests. The API is reachable from the host at http://<vmAddress>:<ollamaPort>.";
-    };
-
-    hermesModel = lib.mkOption {
+    ollamaUrl = lib.mkOption {
       type = lib.types.str;
-      default = "nous-hermes2";
-      description = "Ollama model tag for the Nous Research Hermes model to pull and serve on first boot. Common choices: nous-hermes2 (7B, Mistral-based), nous-hermes2-mixtral (47B), hermes3 (8B, Llama 3.1-based).";
-    };
-
-    modelDataSize = lib.mkOption {
-      type = lib.types.int;
-      default = 10240;
-      description = "Size in MiB of the persistent Ollama data volume stored at /var/lib/microvm/<vmName>/ollama.img on the host. The nous-hermes2 7B Q4 model requires approximately 4 GiB; increase for larger models.";
+      default = "http://${cfg.hostAddress}:11434";
+      description = "URL of the Ollama instance on the host. Set as OLLAMA_HOST inside the guest so the ollama CLI and any agent tooling find it automatically. The default points to the host bridge address; adjust if Ollama listens elsewhere.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -100,13 +90,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.hostInterface != "";
-        message = "ft.services.hermesVm.hostInterface must be set to the host's external network interface (e.g. enp3s0, wlp3s0). Check `ip link` on the host.";
-      }
-    ];
-
     # Provide cloud-hypervisor and related host binaries from the microvm overlay.
     nixpkgs.overlays = [ inputs.microvm.overlay ];
 
@@ -140,90 +123,71 @@ in
       linkConfig.RequiredForOnline = "enslaved";
     };
 
-    # ── NAT — guest internet access (required for first-boot model pull) ──────
-    networking.nat = {
+    # NAT is optional — only configured when hostInterface is set.
+    networking.nat = lib.mkIf (cfg.hostInterface != "") {
       enable = lib.mkDefault true;
       externalInterface = lib.mkDefault cfg.hostInterface;
       internalInterfaces = [ bridgeName ];
     };
 
-    # ── Persistent storage directory on the host ──────────────────────────────
-    # microvm@.service runs as the microvm user created by the host module.
-    systemd.tmpfiles.rules = [
-      "d /var/lib/microvm/${cfg.vmName} 0750 microvm - -"
-    ];
-
     # ── VM definition ─────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
       autostart = lib.mkDefault true;
 
-      config = _: {
-        microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
-        microvm.vcpu = lib.mkDefault cfg.vcpus;
-        microvm.mem = lib.mkDefault cfg.mem;
+      config =
+        { pkgs, ... }:
+        {
+          microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
+          microvm.vcpu = lib.mkDefault cfg.vcpus;
+          microvm.mem = lib.mkDefault cfg.mem;
 
-        microvm.interfaces = lib.mkDefault [
-          {
-            type = "tap";
-            id = tapId;
-            mac = cfg.vmMac;
-          }
-        ];
+          microvm.interfaces = lib.mkDefault [
+            {
+              type = "tap";
+              id = tapId;
+              mac = cfg.vmMac;
+            }
+          ];
 
-        # Persistent disk image so downloaded model weights survive VM restarts.
-        microvm.volumes = lib.mkDefault [
-          {
-            image = "/var/lib/microvm/${cfg.vmName}/ollama.img";
-            mountPoint = "/var/lib/ollama";
-            size = cfg.modelDataSize;
-          }
-        ];
-
-        # ── Guest networking — static IP, gateway to host bridge ──────────────
-        systemd.network.enable = lib.mkDefault true;
-        systemd.network.networks."10-eth" = lib.mkDefault {
-          matchConfig.Name = "en* eth*";
-          networkConfig = {
-            Address = "${cfg.vmAddress}/${toString cfg.prefixLength}";
-            Gateway = cfg.hostAddress;
-            DNS = [
-              "1.1.1.1"
-              "8.8.8.8"
-            ];
+          # ── Guest networking — static IP, gateway to host bridge ────────────
+          systemd.network.enable = lib.mkDefault true;
+          systemd.network.networks."10-eth" = lib.mkDefault {
+            matchConfig.Name = "en* eth*";
+            networkConfig = {
+              Address = "${cfg.vmAddress}/${toString cfg.prefixLength}";
+              Gateway = cfg.hostAddress;
+              DNS = [
+                "1.1.1.1"
+                "8.8.8.8"
+              ];
+            };
           };
-        };
 
-        # ── Ollama serving Nous Hermes ────────────────────────────────────────
-        #
-        # Bound to 0.0.0.0 so the host can reach the OpenAI-compatible API at
-        # http://<vmAddress>:<ollamaPort>. loadModels pulls the model on first
-        # boot; subsequent starts are idempotent (ollama skips cached models).
-        services.ollama = {
-          enable = lib.mkDefault true;
-          host = lib.mkDefault "0.0.0.0";
-          port = lib.mkDefault cfg.ollamaPort;
-          loadModels = lib.mkDefault [ cfg.hermesModel ];
-        };
+          # Point the ollama CLI (and any agent tooling) at the host's server.
+          environment.variables.OLLAMA_HOST = lib.mkDefault cfg.ollamaUrl;
 
-        # ── Optional SSH access from the host ─────────────────────────────────
-        services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-          enable = lib.mkDefault true;
-          settings = {
-            PermitRootLogin = lib.mkDefault "yes";
-            PasswordAuthentication = lib.mkDefault false;
+          # ollama CLI for querying the host-side Ollama from within the guest.
+          environment.systemPackages = with pkgs; [ ollama ];
+
+          # ── Optional SSH access from the host ───────────────────────────────
+          services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
+            enable = lib.mkDefault true;
+            settings = {
+              PermitRootLogin = lib.mkDefault "yes";
+              PasswordAuthentication = lib.mkDefault false;
+            };
           };
+
+          users.users.root = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
+            openssh.authorizedKeys.keys = lib.mkDefault cfg.sshAuthorizedKeys;
+          };
+
+          networking.hostName = lib.mkDefault cfg.vmName;
+          networking.firewall.enable = lib.mkDefault false;
+
+          system.stateVersion = lib.mkDefault "25.05";
+          nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
         };
-
-        users.users.root = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-          openssh.authorizedKeys.keys = lib.mkDefault cfg.sshAuthorizedKeys;
-        };
-
-        networking.hostName = lib.mkDefault cfg.vmName;
-        networking.firewall.enable = lib.mkDefault false;
-
-        system.stateVersion = lib.mkDefault "25.05";
-        nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-      };
     };
   };
 }
