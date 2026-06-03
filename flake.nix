@@ -89,12 +89,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Steam Deck / Jovian UI support — used by ft.profiles.gaming.enableLeanbackUI.
-    jovian-nixos = {
-      url = "github:jovian-experiments/jovian-nixos";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # System-wide theming via Base16 schemes — used by ft.theme.
     stylix = {
       url = "github:danth/stylix";
