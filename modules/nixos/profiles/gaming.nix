@@ -49,8 +49,8 @@ in
     programs = {
       gamemode.enable = lib.mkDefault true;
 
-      gamescope = lib.mkIf cfg.gamescope.enable {
-        enable = true; # plain priority beats programs/steam.nix's mkDefault false
+      gamescope = {
+        enable = lib.mkDefault cfg.gamescope.enable;
         capSysNice = lib.mkDefault true;
         args = lib.mkDefault (lib.optionals cfg.gamescope.hdr [ "--hdr-enabled" ]);
       };
