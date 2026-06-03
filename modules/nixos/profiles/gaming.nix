@@ -48,7 +48,6 @@ in
   config = lib.mkIf cfg.enable {
     programs = {
       gamemode.enable = lib.mkDefault true;
-      mangohud.enable = lib.mkDefault true;
 
       gamescope = lib.mkIf cfg.gamescope.enable {
         enable = lib.mkDefault true;
@@ -67,6 +66,7 @@ in
     };
 
     environment.systemPackages = with pkgs; [
+      mangohud
       protonup-qt
       steamtinkerlaunch
       goverlay
