@@ -157,7 +157,7 @@ in
     microvm.vms.${cfg.vmName} = {
       autostart = lib.mkDefault true;
 
-      config = { ... }: {
+      config = _: {
         microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
         microvm.vcpu = lib.mkDefault cfg.vcpus;
         microvm.mem = lib.mkDefault cfg.mem;
