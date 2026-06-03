@@ -49,12 +49,8 @@ in
     programs = {
       gamemode.enable = lib.mkDefault true;
 
-      gamescope = {
-        # Plain assignment (priority 100) overrides programs/steam.nix's
-        # `lib.mkDefault false` (priority 1000) without a same-priority conflict.
-        # Use ft.gaming.gamescope.enable to control this; override with lib.mkForce
-        # if you need to force it off while ft.gaming is enabled.
-        enable = cfg.gamescope.enable;
+      gamescope = lib.mkIf cfg.gamescope.enable {
+        enable = true; # plain priority beats programs/steam.nix's mkDefault false
         capSysNice = lib.mkDefault true;
         args = lib.mkDefault (lib.optionals cfg.gamescope.hdr [ "--hdr-enabled" ]);
       };
