@@ -161,12 +161,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    users.groups.docker = lib.mkDefault { };
-
     # ── Host-side Komodo directories (shared into the VM via virtiofs) ───────
     systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
-      "d /opt/komodo 0770 root docker -"
-      "d /opt/komodo/backups 0770 root docker -"
+      "d /opt/komodo 0770 root container -"
+      "d /opt/komodo/backups 0770 root container -"
     ];
 
     # ── Infrastructure: delegate to ft.services.microvms ────────────────────

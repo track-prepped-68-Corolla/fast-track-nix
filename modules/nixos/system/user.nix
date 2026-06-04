@@ -12,10 +12,9 @@ let
     "render"
     "lp"
     "scanner"
+    "container"
   ]
-  ++ lib.optional config.networking.networkmanager.enable "networkmanager"
-  ++ lib.optional config.virtualisation.podman.enable "podman"
-  ++ lib.optional config.ft.dockervm.enable "docker";
+  ++ lib.optional config.networking.networkmanager.enable "networkmanager";
 in
 {
   options.ft.users = {
@@ -71,6 +70,8 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
+      users.groups.container = lib.mkDefault { };
+
       users.users = lib.mkMerge [
         # Hardcoded safety net — always present regardless of mainUser to prevent
         # complete lockout if the primary account becomes inaccessible.
