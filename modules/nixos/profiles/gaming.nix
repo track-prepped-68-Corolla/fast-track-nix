@@ -2,87 +2,78 @@
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 
 ################################################################################
-# UNIVERSAL GAMING PROFILE MODULE
+# GAMING PROFILE MODULE
 ################################################################################
 
 let
   cfg = config.ft.gaming;
 in
 {
-  # The module system deduplicates imports, so multiple profiles enabling this
-  # won't cause a conflict if both pull in jovian-nixos.nixosModules.default.
-  imports = [
-    inputs.jovian-nixos.nixosModules.default
-  ];
-
   options.ft.gaming = {
-    enable = lib.mkEnableOption "Universal Gaming Profile" // {
-      description = "Enables a complete gaming stack: Steam with LAN/remote-play firewall rules, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), and Jovian-NixOS integration. Set `ft.gaming.enableLeanbackUI = true` to boot directly into Steam Big Picture with Decky Loader.";
+    enable = lib.mkEnableOption "gaming stack" // {
+      description = "Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.";
     };
 
-    enableLeanbackUI = lib.mkOption {
+    openFirewall = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Open firewall ports for Steam Remote Play and local network game transfers.";
+    };
+
+    gamescope = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable the gamescope micro-compositor.";
+      };
+
+      hdr = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable HDR output in gamescope. Requires an HDR-capable display and a supporting GPU driver.";
+      };
+    };
+
+    bigPicture = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable Steam Deck-like UI (boots directly into Steam Big Picture).";
-    };
-
-    user = lib.mkOption {
-      type = lib.types.str;
-      default = config.ft.users.mainUser;
-      description = "The username for the gaming session.";
-    };
-
-    desktopEnvironment = lib.mkOption {
-      type = lib.types.str;
-      default = "plasma";
-      description = "Desktop environment for gaming sessions (e.g., plasma, gnome).";
-    };
-
-    gpuVendor = lib.mkOption {
-      type = lib.types.enum [
-        "amd"
-        "intel"
-        "nvidia"
-      ];
-      default = "amd";
-      description = "GPU vendor for hardware optimizations (amd, intel, nvidia).";
+      description = "Run Steam inside a gamescope session (Big Picture mode), replacing the desktop session on login.";
     };
   };
 
   config = lib.mkIf cfg.enable {
     programs = {
-      gamemode.enable = true;
+      gamemode.enable = lib.mkDefault true;
+
+      gamescope = {
+        enable = lib.mkDefault cfg.gamescope.enable;
+        capSysNice = lib.mkDefault true;
+        args = lib.mkDefault (lib.optionals cfg.gamescope.hdr [ "--hdr-enabled" ]);
+      };
+
       steam = {
-        enable = true;
-        remotePlay.openFirewall = true;
-        dedicatedServer.openFirewall = true;
-        localNetworkGameTransfers.openFirewall = true;
-        gamescopeSession.enable = false;
+        enable = lib.mkDefault true;
+        remotePlay.openFirewall = lib.mkDefault cfg.openFirewall;
+        dedicatedServer.openFirewall = lib.mkDefault cfg.openFirewall;
+        localNetworkGameTransfers.openFirewall = lib.mkDefault cfg.openFirewall;
+        gamescopeSession.enable = lib.mkDefault cfg.bigPicture;
+        extraCompatPackages = lib.mkDefault [ pkgs.proton-ge-bin ];
       };
     };
 
     environment.systemPackages = with pkgs; [
-      mangohud # in-game performance overlay
-      protonup-qt # GUI for managing Proton-GE versions
-      steamtinkerlaunch # per-game launch configurator
-      goverlay # GUI front-end for MangoHud profiles
-      heroic # launcher for Epic Games Store and GOG
+      mangohud
+      protonup-qt
+      steamtinkerlaunch
+      goverlay
+      heroic
+      steam-tui
+      steamcmd
+      steam-run
     ];
-
-    jovian = {
-      steam = {
-        enable = true;
-        autoStart = cfg.enableLeanbackUI;
-        inherit (cfg) user;
-        desktopSession = lib.mkIf cfg.enableLeanbackUI cfg.desktopEnvironment;
-      };
-      decky-loader.enable = cfg.enableLeanbackUI;
-      hardware.has.amd.gpu = cfg.gpuVendor == "amd";
-    };
   };
 }

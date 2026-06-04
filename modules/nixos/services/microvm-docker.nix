@@ -81,7 +81,14 @@ in
 
     hostInterface = lib.mkOption {
       type = lib.types.str;
-      description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access.";
+      default = "";
+      description = "Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.";
+    };
+
+    sshAuthorizedKeys = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
     };
 
     sshAuthorizedKeys = lib.mkOption {
