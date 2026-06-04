@@ -166,11 +166,10 @@ in
       "d /opt/komodo/backups 0750 root root -"
     ];
 
-    # ── Infrastructure: delegate to ft.services.microvm ─────────────────────
-    ft.services.microvm = {
+    # ── Infrastructure: delegate to ft.services.microvms ────────────────────
+    ft.services.microvms.${cfg.vmName} = {
       enable = lib.mkDefault true;
       inherit (cfg)
-        vmName
         vcpus
         mem
         hostAddress
