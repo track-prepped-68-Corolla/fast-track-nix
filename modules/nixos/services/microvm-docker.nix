@@ -1,17 +1,19 @@
 {
   config,
   lib,
-  inputs,
   ...
 }:
 
 ################################################################################
 # MICROVM WITH ROOTFUL DOCKER COMPOSE
+#
+# Thin wrapper that composes ft.services.microvm (host infrastructure) with
+# ft.services.ociStack (guest OCI runtime + Komodo) behind the existing
+# ft.dockervm option interface.
 ################################################################################
 
 let
   cfg = config.ft.dockervm;
-  tapId = "tap-${cfg.vmName}";
 in
 {
   # ft.dockervm uses a two-level name (like ft.cli, ft.keepass) because the
@@ -81,6 +83,12 @@ in
       type = lib.types.str;
       default = "";
       description = "Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.";
+    };
+
+    sshAuthorizedKeys = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -159,285 +167,69 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.hostInterface != "";
-        message = "ft.dockervm.hostInterface must be set to the host's external network interface (e.g. wlp194s0, enp3s0). Check `ip link` on the host.";
-      }
+    # ── Host-side Komodo directories (shared into the VM via virtiofs) ───────
+    systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
+      "d /opt/komodo 0750 root root -"
+      "d /opt/komodo/backups 0750 root root -"
     ];
 
-    # Provide cloud-hypervisor and related host binaries from the microvm overlay.
-    nixpkgs.overlays = [ inputs.microvm.overlay ];
-
-    # ── Host bridge (microvm0) ───────────────────────────────────────────────
-    #
-    # systemd-networkd manages the bridge and auto-attaches the TAP interface
-    # when microvm creates it at VM start.  Do not combine with networking.bridges
-    # on the same interface — pick one manager.
-    systemd.network.enable = lib.mkDefault true;
-
-    systemd.network.netdevs."10-microvm0" = lib.mkDefault {
-      netdevConfig = {
-        Kind = "bridge";
-        Name = "microvm0";
-      };
-    };
-
-    systemd.network.networks."10-microvm0" = lib.mkDefault {
-      matchConfig.Name = "microvm0";
-      networkConfig = {
-        Address = "${cfg.hostAddress}/${toString cfg.prefixLength}";
-        ConfigureWithoutCarrier = true;
-        IPv4Forwarding = true;
-      };
-      linkConfig.RequiredForOnline = "no";
-    };
-
-    # Attach the TAP interface (created by microvm at VM start) to the bridge.
-    systemd.network.networks."10-${tapId}" = lib.mkDefault {
-      matchConfig.Name = tapId;
-      networkConfig.Bridge = "microvm0";
-      linkConfig.RequiredForOnline = "enslaved";
-    };
-
-    # ── NAT — guest internet access ──────────────────────────────────────────
-    networking.nat = {
+    # ── Infrastructure: delegate to ft.services.microvms ────────────────────
+    ft.services.microvms.${cfg.vmName} = {
       enable = lib.mkDefault true;
-      externalInterface = lib.mkDefault cfg.hostInterface;
-      internalInterfaces = [ "microvm0" ];
-    };
+      inherit (cfg)
+        vcpus
+        mem
+        hostAddress
+        vmAddress
+        prefixLength
+        vmMac
+        vsockCid
+        hostInterface
+        sshAuthorizedKeys
+        ;
 
-    # ── Persistent storage directories on the host ───────────────────────────
-    systemd.tmpfiles.rules =
-      # microvm@.service runs as the microvm user created by the host module.
-      [ "d /var/lib/microvm/${cfg.vmName} 0750 microvm - -" ]
-      ++ lib.optionals cfg.komodo.enable [
-        "d /opt/komodo 0750 root root -"
-        "d /opt/komodo/backups 0750 root root -"
+      volumes = [
+        {
+          image = "/var/lib/microvm/${cfg.vmName}/docker.img";
+          mountPoint = "/var/lib/docker";
+          size = cfg.dockerVolumeSize;
+        }
       ];
 
-    # ── VM definition ────────────────────────────────────────────────────────
-    microvm.vms.${cfg.vmName} = {
-      autostart = lib.mkDefault true;
-
-      config =
-        { pkgs, ... }:
-        let
-          komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
-            services:
-              postgres:
-                image: ghcr.io/ferretdb/postgres-documentdb
-                labels:
-                  komodo.skip:
-                restart: unless-stopped
-                volumes:
-                  - postgres-data:/var/lib/postgresql/data
-                environment:
-                  POSTGRES_USER: ${cfg.komodo.dbUsername}
-                  POSTGRES_PASSWORD: ${cfg.komodo.dbPassword}
-                  POSTGRES_DB: postgres
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U ${cfg.komodo.dbUsername}"]
-                  interval: 5s
-                  timeout: 5s
-                  retries: 30
-                  start_period: 10s
-
-              ferretdb:
-                image: ghcr.io/ferretdb/ferretdb
-                labels:
-                  komodo.skip:
-                restart: unless-stopped
-                depends_on:
-                  postgres:
-                    condition: service_healthy
-                volumes:
-                  - ferretdb-state:/state
-                environment:
-                  FERRETDB_POSTGRESQL_URL: postgres://${cfg.komodo.dbUsername}:${cfg.komodo.dbPassword}@postgres:5432/postgres
-
-              core:
-                image: ghcr.io/moghtech/komodo-core:${cfg.komodo.imageTag}
-                init: true
-                restart: unless-stopped
-                depends_on:
-                  - ferretdb
-                ports:
-                  - 9120:9120
-                env_file: ./compose.env
-                environment:
-                  KOMODO_DATABASE_ADDRESS: ferretdb:27017
-                volumes:
-                  - keys:/config/keys
-                  - /opt/komodo/backups:/backups
-
-              periphery:
-                image: ghcr.io/moghtech/komodo-periphery:${cfg.komodo.imageTag}
-                init: true
-                restart: unless-stopped
-                depends_on:
-                  - core
-                env_file: ./compose.env
-                volumes:
-                  - keys:/config/keys
-                  - /var/run/docker.sock:/var/run/docker.sock
-                  - /proc:/proc
-                  - /etc/komodo:/etc/komodo
-
-            volumes:
-              postgres-data:
-              ferretdb-state:
-              keys:
-          '';
-
-          komodoEnv = pkgs.writeText "komodo-compose.env" ''
-            COMPOSE_KOMODO_IMAGE_TAG=${cfg.komodo.imageTag}
-            COMPOSE_KOMODO_BACKUPS_PATH=/opt/komodo/backups
-
-            KOMODO_DATABASE_USERNAME=${cfg.komodo.dbUsername}
-            KOMODO_DATABASE_PASSWORD=${cfg.komodo.dbPassword}
-
-            TZ=${cfg.komodo.timezone}
-
-            KOMODO_HOST=${cfg.komodo.host}
-            KOMODO_TITLE=Komodo
-            KOMODO_PERIPHERY_PUBLIC_KEY=file:/config/keys/periphery.pub
-            KOMODO_LOCAL_AUTH=true
-            KOMODO_INIT_ADMIN_USERNAME=${cfg.komodo.adminUsername}
-            KOMODO_INIT_ADMIN_PASSWORD=${cfg.komodo.adminPassword}
-            KOMODO_FIRST_SERVER_NAME=${cfg.komodo.serverName}
-            KOMODO_FIRST_SERVER=http://periphery:8120
-            KOMODO_DISABLE_CONFIRM_DIALOG=false
-            KOMODO_WEBHOOK_SECRET=${cfg.komodo.webhookSecret}
-            KOMODO_JWT_SECRET=${cfg.komodo.jwtSecret}
-            KOMODO_JWT_TTL=1-day
-            KOMODO_MONITORING_INTERVAL=15-sec
-            KOMODO_RESOURCE_POLL_INTERVAL=1-hr
-            KOMODO_DISABLE_USER_REGISTRATION=false
-            KOMODO_ENABLE_NEW_USERS=false
-            KOMODO_DISABLE_NON_ADMIN_CREATE=false
-            KOMODO_TRANSPARENT_MODE=false
-            KOMODO_OIDC_ENABLED=false
-            KOMODO_GITHUB_OAUTH_ENABLED=false
-            KOMODO_GOOGLE_OAUTH_ENABLED=false
-            KOMODO_AWS_ACCESS_KEY_ID=
-            KOMODO_AWS_SECRET_ACCESS_KEY=
-            KOMODO_LOGGING_PRETTY=false
-            KOMODO_PRETTY_STARTUP_CONFIG=false
-
-            PERIPHERY_CORE_ADDRESS=ws://core:9120
-            PERIPHERY_CONNECT_AS=${cfg.komodo.serverName}
-            PERIPHERY_CORE_PUBLIC_KEYS=file:/config/keys/core.pub
-            PERIPHERY_ROOT_DIRECTORY=/etc/komodo
-            PERIPHERY_DISABLE_TERMINALS=false
-            PERIPHERY_DISABLE_CONTAINER_TERMINALS=false
-            PERIPHERY_INCLUDE_DISK_MOUNTS=/etc/hostname
-            PERIPHERY_LOGGING_PRETTY=false
-            PERIPHERY_PRETTY_STARTUP_CONFIG=false
-          '';
-        in
+      shares = lib.optionals cfg.komodo.enable [
         {
-          microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
-          microvm.vcpu = lib.mkDefault cfg.vcpus;
-          microvm.mem = lib.mkDefault cfg.mem;
-          microvm.vsock.cid = lib.mkIf (cfg.vsockCid != null) (lib.mkDefault cfg.vsockCid);
+          source = "/opt/komodo";
+          mountPoint = "/opt/komodo";
+          tag = "komodo";
+          proto = "virtiofs";
+        }
+      ];
 
-          microvm.interfaces = lib.mkDefault [
-            {
-              type = "tap";
-              id = tapId;
-              mac = cfg.vmMac;
-            }
-          ];
-
-          # Persistent Docker data lives on a host-side disk image so container
-          # state survives VM restarts without requiring a full overlay2 rootfs.
-          microvm.volumes = lib.mkDefault [
-            {
-              image = "/var/lib/microvm/${cfg.vmName}/docker.img";
-              mountPoint = "/var/lib/docker";
-              size = cfg.dockerVolumeSize;
-            }
-          ];
-
-          # /opt/komodo shared from the host via virtiofs.
-          microvm.shares = lib.mkIf cfg.komodo.enable (
-            lib.mkDefault [
-              {
-                source = "/opt/komodo";
-                mountPoint = "/opt/komodo";
-                tag = "komodo";
-                proto = "virtiofs";
-              }
-            ]
-          );
-
-          # ── Guest networking — static IP, gateway to host bridge ─────────
-          systemd.network.enable = lib.mkDefault true;
-          systemd.network.networks."10-eth" = lib.mkDefault {
-            matchConfig.Name = "en* eth*";
-            networkConfig = {
-              Address = "${cfg.vmAddress}/${toString cfg.prefixLength}";
-              Gateway = cfg.hostAddress;
-              DNS = [
-                "1.1.1.1"
-                "8.8.8.8"
-              ];
-            };
+      # ── Application: inject ft.services.ociStack into the guest ──────────
+      extraGuestConfig = {
+        imports = [ ./oci-stack.nix ];
+        ft.services.ociStack = {
+          enable = lib.mkDefault true;
+          runtime = lib.mkDefault "docker";
+          komodo = {
+            inherit (cfg.komodo)
+              enable
+              imageTag
+              dbUsername
+              dbPassword
+              adminUsername
+              adminPassword
+              webhookSecret
+              jwtSecret
+              serverName
+              timezone
+              ;
+            host = cfg.komodo.host;
+            backupsPath = "/opt/komodo/backups";
+            requireMountUnit = lib.mkIf cfg.komodo.enable "opt-komodo.mount";
           };
-
-          # ── Rootful Docker with docker-compose ───────────────────────────
-          virtualisation.docker.enable = lib.mkDefault true;
-          virtualisation.docker.daemon.settings.storage-driver = lib.mkDefault "overlay2";
-
-          environment.systemPackages = with pkgs; [ docker-compose ];
-
-          # Working directory for compose projects.
-          systemd.tmpfiles.rules = [ "d /opt/compose 0750 root root -" ];
-
-          # ── Komodo stack ─────────────────────────────────────────────────
-          systemd.services.komodo = lib.mkIf cfg.komodo.enable {
-            description = "Komodo docker-compose stack";
-            after = [
-              "docker.service"
-              "network-online.target"
-              "opt-komodo.mount"
-            ];
-            requires = [ "opt-komodo.mount" ];
-            wants = [ "network-online.target" ];
-            wantedBy = [ "multi-user.target" ];
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-              ExecStartPre = [
-                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml"
-                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} /opt/komodo/compose.env"
-              ];
-              ExecStart = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml up -d --remove-orphans";
-              ExecStop = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml down";
-              StandardOutput = "append:/opt/komodo/komodo.log";
-              StandardError = "append:/opt/komodo/komodo.log";
-            };
-          };
-
-          services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-            enable = lib.mkDefault true;
-            settings = {
-              PermitRootLogin = lib.mkDefault "yes";
-              PasswordAuthentication = lib.mkDefault false;
-            };
-          };
-
-          users.users.root = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-            openssh.authorizedKeys.keys = lib.mkDefault cfg.sshAuthorizedKeys;
-          };
-
-          networking.hostName = lib.mkDefault cfg.vmName;
-          networking.firewall.enable = lib.mkDefault false;
-
-          system.stateVersion = lib.mkDefault "25.05";
-          nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
         };
+      };
     };
   };
 }
