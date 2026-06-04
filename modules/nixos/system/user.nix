@@ -14,7 +14,8 @@ let
     "scanner"
   ]
   ++ lib.optional config.networking.networkmanager.enable "networkmanager"
-  ++ lib.optional config.virtualisation.podman.enable "podman";
+  ++ lib.optional config.virtualisation.podman.enable "podman"
+  ++ lib.optional config.ft.dockervm.enable "docker";
 in
 {
   options.ft.users = {
