@@ -163,8 +163,8 @@ in
   config = lib.mkIf cfg.enable {
     # ── Host-side Komodo directories (shared into the VM via virtiofs) ───────
     systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
-      "d /opt/komodo 0750 root root -"
-      "d /opt/komodo/backups 0750 root root -"
+      "d /opt/komodo 0770 root docker -"
+      "d /opt/komodo/backups 0770 root docker -"
     ];
 
     # ── Infrastructure: delegate to ft.services.microvms ────────────────────
