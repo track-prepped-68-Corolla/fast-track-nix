@@ -270,7 +270,7 @@
               networking.hostName = lib.mkDefault vmName;
               networking.firewall.enable = lib.mkDefault false;
               system.stateVersion = lib.mkDefault "25.05";
-              nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+              nixpkgs.hostPlatform = lib.mkDefault config.nixpkgs.hostPlatform;
             };
         }
       ) vms;
