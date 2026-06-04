@@ -130,53 +130,95 @@
     description = "Set of microVM instances to provision on this host. Each attribute key becomes the VM name, systemd service suffix, guest hostname, and TAP interface suffix (tap-<name>).";
   };
 
-  config = lib.mkMerge (
-    lib.mapAttrsToList (
-      vmName: vmCfg:
-      let
-        tapId = "tap-${vmName}";
-      in
-      lib.mkIf vmCfg.enable {
-        nixpkgs.overlays = [ inputs.microvm.overlay ];
+  # IMPORTANT: config must be a plain attrset — not lib.mkMerge at the top
+  # level. lib.mkMerge (lib.mapAttrsToList ... config.ft.services.microvms)
+  # creates infinite recursion because NixOS must evaluate the list to discover
+  # which options this module sets, and that evaluation forces
+  # config.ft.services.microvms before it is available. Plain attrset values
+  # are thunks — NixOS reads the keys eagerly but forces the values only when
+  # the specific options are merged, at which point config.ft.services.microvms
+  # is already resolved.
+  config =
+    let
+      vms = config.ft.services.microvms;
+      anyEnabled = lib.any (vmCfg: vmCfg.enable) (lib.attrValues vms);
+    in
+    {
+      nixpkgs.overlays = lib.optional anyEnabled inputs.microvm.overlay;
 
-        # ── Host bridge (microvm0) — shared by all VMs ───────────────────────
-        systemd.network.enable = lib.mkDefault true;
+      # ── Host bridge (microvm0) — shared by all VMs ─────────────────────────
+      systemd.network.enable = lib.mkIf anyEnabled (lib.mkDefault true);
 
-        systemd.network.netdevs."10-microvm0" = lib.mkDefault {
-          netdevConfig = {
-            Kind = "bridge";
-            Name = "microvm0";
-          };
-        };
+      systemd.network.netdevs = lib.mkMerge (
+        lib.mapAttrsToList (
+          _vmName: vmCfg:
+          lib.mkIf vmCfg.enable {
+            "10-microvm0" = lib.mkDefault {
+              netdevConfig = {
+                Kind = "bridge";
+                Name = "microvm0";
+              };
+            };
+          }
+        ) vms
+      );
 
-        systemd.network.networks."10-microvm0" = lib.mkDefault {
-          matchConfig.Name = "microvm0";
-          networkConfig = {
-            Address = "${vmCfg.hostAddress}/${toString vmCfg.prefixLength}";
-            ConfigureWithoutCarrier = true;
-            IPv4Forwarding = true;
-          };
-          linkConfig.RequiredForOnline = "no";
-        };
+      systemd.network.networks = lib.mkMerge (
+        # Bridge network — contributed by each enabled VM, values must be identical
+        (lib.mapAttrsToList (
+          _vmName: vmCfg:
+          lib.mkIf vmCfg.enable {
+            "10-microvm0" = lib.mkDefault {
+              matchConfig.Name = "microvm0";
+              networkConfig = {
+                Address = "${vmCfg.hostAddress}/${toString vmCfg.prefixLength}";
+                ConfigureWithoutCarrier = true;
+                IPv4Forwarding = true;
+              };
+              linkConfig.RequiredForOnline = "no";
+            };
+          }
+        ) vms)
+        # Per-VM TAP — unique key per instance
+        ++ (lib.mapAttrsToList (
+          vmName: vmCfg:
+          lib.mkIf vmCfg.enable {
+            "10-tap-${vmName}" = lib.mkDefault {
+              matchConfig.Name = "tap-${vmName}";
+              networkConfig.Bridge = "microvm0";
+              linkConfig.RequiredForOnline = "enslaved";
+            };
+          }
+        ) vms)
+      );
 
-        # ── Per-VM TAP — attached to the shared bridge ───────────────────────
-        systemd.network.networks."10-${tapId}" = lib.mkDefault {
-          matchConfig.Name = tapId;
-          networkConfig.Bridge = "microvm0";
-          linkConfig.RequiredForOnline = "enslaved";
-        };
+      # ── NAT — guest internet access ────────────────────────────────────────
+      networking.nat = lib.mkMerge (
+        [
+          (lib.mkIf anyEnabled {
+            enable = lib.mkDefault true;
+            internalInterfaces = [ "microvm0" ];
+          })
+        ]
+        ++ lib.mapAttrsToList (
+          _vmName: vmCfg:
+          lib.mkIf vmCfg.enable {
+            externalInterface = lib.mkDefault vmCfg.hostInterface;
+          }
+        ) vms
+      );
 
-        # ── NAT — guest internet access ──────────────────────────────────────
-        networking.nat = {
-          enable = lib.mkDefault true;
-          externalInterface = lib.mkDefault vmCfg.hostInterface;
-          internalInterfaces = [ "microvm0" ];
-        };
+      systemd.tmpfiles.rules = lib.concatLists (
+        lib.mapAttrsToList (
+          vmName: vmCfg:
+          lib.optional vmCfg.enable "d /var/lib/microvm/${vmName} 0750 microvm - -"
+        ) vms
+      );
 
-        systemd.tmpfiles.rules = [ "d /var/lib/microvm/${vmName} 0750 microvm - -" ];
-
-        # ── VM definition ────────────────────────────────────────────────────
-        microvm.vms.${vmName} = {
+      # ── VM definitions ─────────────────────────────────────────────────────
+      microvm.vms = lib.mapAttrs (
+        vmName: vmCfg:
+        lib.mkIf vmCfg.enable {
           autostart = lib.mkDefault true;
 
           config =
@@ -192,7 +234,7 @@
               microvm.interfaces = lib.mkDefault [
                 {
                   type = "tap";
-                  id = tapId;
+                  id = "tap-${vmName}";
                   mac = vmCfg.vmMac;
                 }
               ];
@@ -200,7 +242,6 @@
               microvm.volumes = lib.mkDefault vmCfg.volumes;
               microvm.shares = lib.mkDefault vmCfg.shares;
 
-              # ── Guest networking ─────────────────────────────────────────
               systemd.network.enable = lib.mkDefault true;
               systemd.network.networks."10-eth" = lib.mkDefault {
                 matchConfig.Name = "en* eth*";
@@ -231,8 +272,7 @@
               system.stateVersion = lib.mkDefault "25.05";
               nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
             };
-        };
-      }
-    ) config.ft.services.microvms
-  );
+        }
+      ) vms;
+    };
 }
