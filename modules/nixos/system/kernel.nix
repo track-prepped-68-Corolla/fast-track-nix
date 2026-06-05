@@ -5,6 +5,9 @@
   inputs,
   ...
 }:
+let
+  cfg = config.ft.cachyos;
+in
 {
   options.ft.cachyos = {
     enable = lib.mkEnableOption "CachyOS optimized kernel" // {
@@ -56,10 +59,10 @@
     };
   };
 
-  config = lib.mkIf config.ft.cachyos.enable {
+  config = lib.mkIf cfg.enable {
     boot.kernelPackages =
       pkgs.linuxPackagesFor
-        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${config.ft.cachyos.variant}";
+        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${cfg.variant}";
 
     nix.settings = {
       extra-substituters = [ "https://attic.xuyh0120.win/lantian" ];

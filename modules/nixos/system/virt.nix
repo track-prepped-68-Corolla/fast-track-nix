@@ -48,7 +48,7 @@ in
       };
     };
     programs.virt-manager.enable = true;
-    users.groups.libvirtd.members = lib.mkDefault [ config.ft.users.mainUser ];
+    users.groups.libvirtd.members = [ config.ft.users.mainUser ];
     networking.nftables.enable = lib.mkDefault true;
   };
 }

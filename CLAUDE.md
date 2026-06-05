@@ -81,7 +81,7 @@ in
 Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub in each uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file is discovered and evaluated automatically on the next build.
 
 **Workflow for new modules:**
-1. Propose the option interface: namespace, option names, types, and defaults. Write no `config` yet.
+1. Propose the option interface: feature name, option names, types, and defaults. Write no `config` yet.
 2. Wait for explicit sign-off.
 3. Implement the `config` block.
 4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.

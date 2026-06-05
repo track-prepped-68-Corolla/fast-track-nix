@@ -80,16 +80,16 @@ _: {
   ft = {
     repoPath = "/home/alice/nixos-config"; # required when ft.cli.enable = true
 
-    boot.limine.enable    = true;
-    desktop.cosmic.enable = true;
-    kernel.cachyos.enable = true;
-    profiles.gaming = {
+    limine.enable  = true;
+    cosmic.enable  = true;
+    cachyos.enable = true;
+    gaming = {
       enable    = true;
       gpuVendor = "amd";
     };
-    security.sops.enable = true;
-    services.tailscale.enable = true;
-    cli.enable = true;
+    sops.enable      = true;
+    tailscale.enable = true;
+    cli.enable       = true;
   };
 }
 ```
