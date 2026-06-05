@@ -133,9 +133,11 @@ let
 in
 {
   options.ft.services.ociStack = {
-    enable = lib.mkEnableOption "OCI container runtime with docker-compose and optional Komodo stack" // {
-      description = "Enables a rootful OCI container runtime (Docker or Podman) with docker-compose, and optionally deploys a Komodo core + periphery + FerretDB stack. Designed for use inside a microVM guest; provision the Docker data volume separately via ft.services.microvm.volumes.";
-    };
+    enable =
+      lib.mkEnableOption "OCI container runtime with docker-compose and optional Komodo stack"
+      // {
+        description = "Enables a rootful OCI container runtime (Docker or Podman) with docker-compose, and optionally deploys a Komodo core + periphery + FerretDB stack. Designed for use inside a microVM guest; provision the Docker data volume separately via ft.services.microvm.volumes.";
+      };
 
     runtime = lib.mkOption {
       type = lib.types.enum [
@@ -245,12 +247,11 @@ in
 
     systemd.services.komodo = lib.mkIf cfg.komodo.enable {
       description = "Komodo docker-compose stack";
-      after =
-        [
-          runtimeService
-          "network-online.target"
-        ]
-        ++ lib.optional (cfg.komodo.requireMountUnit != null) cfg.komodo.requireMountUnit;
+      after = [
+        runtimeService
+        "network-online.target"
+      ]
+      ++ lib.optional (cfg.komodo.requireMountUnit != null) cfg.komodo.requireMountUnit;
       requires = lib.optional (cfg.komodo.requireMountUnit != null) cfg.komodo.requireMountUnit;
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
