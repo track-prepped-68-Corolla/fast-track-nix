@@ -91,7 +91,7 @@ Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `defa
 
 ## Option naming convention
 
-New modules should be exactly three levels deep: `ft.<namespace>.<feature>.enable`. Several existing modules predate this convention and use two levels (e.g., `ft.cli.enable`, `ft.keepass.enable`, `ft.theme.enable`, `ft.terminal.enable`) — these are grandfathered in and should not be renamed without a migration plan.
+Option depth is flexible — use `ft.<namespace>.<feature>.enable` (three levels) for most modules, but two-level options like `ft.cli.enable` are equally valid when the namespace itself is the feature.
 
 | Namespace | Domain |
 |---|---|
@@ -104,14 +104,14 @@ New modules should be exactly three levels deep: `ft.<namespace>.<feature>.enabl
 | `ft.services.*` | System services (printing, NFS, Tailscale, etc.) |
 | `ft.programs.*` | Program-level features (nix-index) |
 | `ft.security.*` | Security tooling and secrets |
-| `ft.cli` | The `ft` CLI helper (two-level; grandfathered) |
-| `ft.keepass` | KeePassXC secret service (two-level; grandfathered) |
-| `ft.theme` | System-wide theming via Stylix — Home Manager (two-level; grandfathered) |
-| `ft.terminal` | Terminal stack — Home Manager (two-level; grandfathered) |
-| `ft.lazyvim` | LazyVim Neovim config — Home Manager (two-level; grandfathered) |
-| `ft.dotfiles` | Dotfile symlinking — Home Manager (two-level; grandfathered) |
+| `ft.cli` | The `ft` CLI helper |
+| `ft.keepass` | KeePassXC secret service |
+| `ft.theme` | System-wide theming via Stylix — Home Manager |
+| `ft.terminal` | Terminal stack — Home Manager |
+| `ft.lazyvim` | LazyVim Neovim config — Home Manager |
+| `ft.dotfiles` | Dotfile symlinking — Home Manager |
 | `ft.home.sops` | Per-user sops age key — Home Manager |
-| `ft.cosmic` | COSMIC desktop theming — Home Manager (two-level; grandfathered) |
+| `ft.cosmic` | COSMIC desktop theming — Home Manager |
 
 New namespaces require a comment in the module justifying why none of the above apply.
 

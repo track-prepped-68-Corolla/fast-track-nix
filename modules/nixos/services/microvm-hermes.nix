@@ -9,8 +9,7 @@
 # MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES
 ################################################################################
 #
-# ft.services.hermesVm is three-level (new style) — generic enough for any
-# consumer, unlike the grandfathered two-level ft.dockervm.
+# ft.services.hermesVm — generic enough for any consumer.
 #
 # The guest is a minimal NixOS environment that points to an existing Ollama
 # instance on the host; it does not run its own Ollama server.

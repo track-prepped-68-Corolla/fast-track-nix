@@ -11,9 +11,8 @@
 
 {
   # ft.services.microvms is an attrsOf submodule — each instance has its own
-  # enable option at ft.services.microvms.<name>.enable (four levels), which is
-  # the standard NixOS pattern for multi-instance modules and takes precedence
-  # over the three-level convention for single-instance modules.
+  # enable option at ft.services.microvms.<name>.enable, following the standard
+  # NixOS pattern for multi-instance modules.
   options.ft.services.microvms = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.submodule {
