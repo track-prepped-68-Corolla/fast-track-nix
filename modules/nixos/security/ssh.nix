@@ -5,10 +5,10 @@
 }:
 
 let
-  cfg = config.ft.security.ssh;
+  cfg = config.ft.ssh;
 in
 {
-  options.ft.security.ssh = {
+  options.ft.ssh = {
     enable = lib.mkEnableOption "key-only SSH daemon" // {
       description = "Enables OpenSSH, forces password and keyboard-interactive authentication off, and provisions `authorizedKeys` for `user`. Password auth cannot be re-enabled while this module is active.";
     };
