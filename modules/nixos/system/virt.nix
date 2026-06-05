@@ -10,12 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.system.virt;
+  cfg = config.ft.virt;
 in
 {
-  options.ft.system.virt = {
+  options.ft.virt = {
     enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)" // {
-      description = "Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.system.virt.enableVmwareHost` for VMware Workstation, `ft.system.virt.enableIncus` for Incus containers, and `ft.system.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
+      description = "Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
     };
 
     enableVmwareHost = lib.mkOption {

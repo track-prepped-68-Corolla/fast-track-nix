@@ -7,8 +7,8 @@
 ################################################################################
 # MICROVM WITH ROOTFUL DOCKER COMPOSE
 #
-# Thin wrapper that composes ft.services.microvm (host infrastructure) with
-# ft.services.ociStack (guest OCI runtime + Komodo) behind the existing
+# Thin wrapper that composes ft.microvms (host infrastructure) with
+# ft.ociStack (guest OCI runtime + Komodo) behind the existing
 # ft.dockervm option interface.
 ################################################################################
 
@@ -167,8 +167,8 @@ in
       "d /opt/komodo/backups 0770 root container -"
     ];
 
-    # ── Infrastructure: delegate to ft.services.microvms ────────────────────
-    ft.services.microvms.${cfg.vmName} = {
+    # ── Infrastructure: delegate to ft.microvms ────────────────────
+    ft.microvms.${cfg.vmName} = {
       enable = lib.mkDefault true;
       inherit (cfg)
         vcpus
@@ -199,10 +199,10 @@ in
         }
       ];
 
-      # ── Application: inject ft.services.ociStack into the guest ──────────
+      # ── Application: inject ft.ociStack into the guest ──────────
       extraGuestConfig = {
         imports = [ ./oci-stack.nix ];
-        ft.services.ociStack = {
+        ft.ociStack = {
           enable = lib.mkDefault true;
           runtime = lib.mkDefault "docker";
           komodo = {

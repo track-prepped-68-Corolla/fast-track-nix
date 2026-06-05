@@ -9,10 +9,7 @@
 # WINE COMPATIBILITY MODULE
 ################################################################################
 #
-# ft.wine is two-level (grandfathered) — provides a self-contained Windows
-# application compatibility stack. ft.profiles.* targets compound gaming/desktop
-# profiles; ft.programs.* targets lightweight CLI tool installs. Neither fits
-# a full Wine+Bottles environment, so ft.wine stands alone.
+# ft.wine — self-contained Windows application compatibility stack.
 
 let
   cfg = config.ft.wine;

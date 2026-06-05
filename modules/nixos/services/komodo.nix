@@ -10,23 +10,23 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.komodo;
-  podmanUid = config.ft.services.podmanRootless.uid;
+  cfg = config.ft.komodo;
+  podmanUid = config.ft.podmanRootless.uid;
   rtDir = "XDG_RUNTIME_DIR=/run/user/${toString podmanUid}";
   homeEnv = "HOME=/home/podman";
 in
 {
-  options.ft.services.komodo = {
+  options.ft.komodo = {
     enable = lib.mkEnableOption "Komodo Core and Periphery" // {
-      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman containers under the podman service user. Requires ft.services.podmanRootless.enable = true. Populate the sops secret keys documented in NOTES.md before the first deploy.";
+      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman containers under the podman service user. Requires ft.podmanRootless.enable = true. Populate the sops secret keys documented in NOTES.md before the first deploy.";
     };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = config.ft.services.podmanRootless.enable;
-        message = "ft.services.komodo requires ft.services.podmanRootless.enable = true";
+        assertion = config.ft.podmanRootless.enable;
+        message = "ft.komodo requires ft.podmanRootless.enable = true";
       }
     ];
 

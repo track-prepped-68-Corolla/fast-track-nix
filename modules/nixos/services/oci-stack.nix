@@ -14,7 +14,7 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.ociStack;
+  cfg = config.ft.ociStack;
 
   komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
     services:
@@ -132,11 +132,11 @@ let
   runtimeService = if cfg.runtime == "podman" then "podman.service" else "docker.service";
 in
 {
-  options.ft.services.ociStack = {
+  options.ft.ociStack = {
     enable =
       lib.mkEnableOption "OCI container runtime with docker-compose and optional Komodo stack"
       // {
-        description = "Enables a rootful OCI container runtime (Docker or Podman) with docker-compose, and optionally deploys a Komodo core + periphery + FerretDB stack. Designed for use inside a microVM guest; provision the Docker data volume separately via ft.services.microvm.volumes.";
+        description = "Enables a rootful OCI container runtime (Docker or Podman) with docker-compose, and optionally deploys a Komodo core + periphery + FerretDB stack. Designed for use inside a microVM guest; provision the Docker data volume separately via ft.microvms.volumes.";
       };
 
     runtime = lib.mkOption {

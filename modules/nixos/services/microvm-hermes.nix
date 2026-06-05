@@ -9,7 +9,7 @@
 # MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES
 ################################################################################
 #
-# ft.services.hermesVm — generic enough for any consumer.
+# ft.hermesVm — generic enough for any consumer.
 #
 # The guest is a minimal NixOS environment that points to an existing Ollama
 # instance on the host; it does not run its own Ollama server.
@@ -17,12 +17,12 @@
 # VM smoke test exempt: nested KVM is unavailable in CI.
 
 let
-  cfg = config.ft.services.hermesVm;
+  cfg = config.ft.hermesVm;
   tapId = "tap-${cfg.vmName}";
   bridgeName = "hermes-br";
 in
 {
-  options.ft.services.hermesVm = {
+  options.ft.hermesVm = {
     enable = lib.mkEnableOption "Nous Research Hermes NixOS microVM" // {
       description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. The guest reaches the host's existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM is unavailable in CI.";
     };

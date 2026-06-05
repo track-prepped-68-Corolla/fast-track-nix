@@ -20,7 +20,7 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.bulkPool;
+  cfg = config.ft.bulkPool;
 
   drives =
     if cfg.drivesFile == null then
@@ -46,7 +46,7 @@ let
 
 in
 {
-  options.ft.services.bulkPool = {
+  options.ft.bulkPool = {
     enable = lib.mkEnableOption "mergerfs + snapraid-btrfs bulk storage pool" // {
       description = "Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.";
     };

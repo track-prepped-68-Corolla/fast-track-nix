@@ -1,11 +1,11 @@
 { lib, config, ... }:
 
 {
-  options.ft.boot.limine = {
+  options.ft.limine = {
     enable = lib.mkEnableOption "the Limine bootloader";
   };
 
-  config = lib.mkIf config.ft.boot.limine.enable {
+  config = lib.mkIf config.ft.limine.enable {
     boot.loader = {
       limine.enable = true;
       # Required for modern UEFI hardware like the Strix

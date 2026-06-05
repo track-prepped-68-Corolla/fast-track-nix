@@ -35,7 +35,7 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     # Vendor hardware quirk modules (AMD, Intel, Raspberry Pi, etc.).
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    # CachyOS-optimised kernel builds — used by ft.kernel.cachyos.
+    # CachyOS-optimised kernel builds — used by ft.cachyos.
     nix-cachyos.url = "github:xddxdd/nix-cachyos-kernel/release";
 
     home-manager = {
@@ -77,7 +77,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Age-encrypted secret management — used by ft.security.sops.
+    # Age-encrypted secret management — used by ft.sops.
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";

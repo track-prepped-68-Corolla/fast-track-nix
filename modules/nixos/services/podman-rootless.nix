@@ -10,10 +10,10 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.podmanRootless;
+  cfg = config.ft.podmanRootless;
 in
 {
-  options.ft.services.podmanRootless = {
+  options.ft.podmanRootless = {
     enable = lib.mkEnableOption "rootless Podman service user" // {
       description = "Creates a dedicated unprivileged 'podman' user with subuid/subgid mappings, enables cgroup v2, configures a persistent user-level Podman socket via systemd lingering, and provisions /opt/containers. Installs docker-compose pointed at the rootless socket.";
     };
