@@ -71,6 +71,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # NixOS module that consumes a facter.json report (hardware.facter.*).
+    # Lives in a separate, dependency-free repo from the nixos-facter CLI tool;
+    # required by ft.hardware.facter.
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
+
     # Nix User Repository — community overlays and packages.
     nur = {
       url = "github:nix-community/NUR";

@@ -18,7 +18,7 @@ let
   cfg = config.ft.hardware.facter;
 in
 {
-  imports = [ inputs.nixos-facter.nixosModules.facter ];
+  imports = [ inputs.nixos-facter-modules.nixosModules.facter ];
 
   options.ft.hardware.facter = {
     enable = lib.mkEnableOption "nixos-facter hardware detection" // {
