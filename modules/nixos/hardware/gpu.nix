@@ -234,18 +234,22 @@ in
     lib.mkMerge [
       {
         hardware.graphics = {
-          enable = true;
-          inherit (cfg) enable32Bit;
+          enable = lib.mkDefault true;
+          enable32Bit = lib.mkDefault cfg.enable32Bit;
         };
 
         services.xserver.videoDrivers =
           lib.optional isNvidia "nvidia" ++ lib.optional isAmd "amdgpu" ++ lib.optional isIntel "intel";
+      }
 
+      # Attach the main user to the render/video groups — only when ft.users is
+      # managing users, so we don't materialise the user just for GPU access.
+      (lib.mkIf config.ft.users.enable {
         users.users.${config.ft.users.mainUser}.extraGroups = [
           "render"
           "video"
         ];
-      }
+      })
 
       # --------------------------------------------------------------------------
       # NVIDIA Configuration
@@ -253,24 +257,25 @@ in
       (lib.mkIf isNvidia {
         hardware.nvidia = lib.mkMerge [
           {
-            modesetting.enable = true;
-            open = effectiveOpenKernelModules;
-            nvidiaSettings = cfg.nvidia.enableSettings;
-            powerManagement.enable = cfg.nvidia.enablePowerManagement;
-            powerManagement.finegrained = cfg.nvidia.finegrainedPowerManagement;
-            package =
+            modesetting.enable = lib.mkDefault true;
+            open = lib.mkDefault effectiveOpenKernelModules;
+            nvidiaSettings = lib.mkDefault cfg.nvidia.enableSettings;
+            powerManagement.enable = lib.mkDefault cfg.nvidia.enablePowerManagement;
+            powerManagement.finegrained = lib.mkDefault cfg.nvidia.finegrainedPowerManagement;
+            package = lib.mkDefault (
               if cfg.nvidia.driverPackage == "beta" then
                 config.boot.kernelPackages.nvidiaPackages.beta
               else
-                config.boot.kernelPackages.nvidiaPackages.stable;
+                config.boot.kernelPackages.nvidiaPackages.stable
+            );
           }
           # PRIME Offloading (for hybrid graphics)
           (lib.mkIf effectivePrimeEnable {
-            prime.offload.enable = true;
-            prime.offload.enableOffloadCmd = true;
-            prime.nvidiaBusId = effectivePrimeSecondaryBusId;
-            prime.amdgpuBusId = lib.mkIf effectivePrimeIsIgpuAmd effectivePrimePrimaryBusId;
-            prime.intelBusId = lib.mkIf effectivePrimeIsIgpuIntel effectivePrimePrimaryBusId;
+            prime.offload.enable = lib.mkDefault true;
+            prime.offload.enableOffloadCmd = lib.mkDefault true;
+            prime.nvidiaBusId = lib.mkDefault effectivePrimeSecondaryBusId;
+            prime.amdgpuBusId = lib.mkIf effectivePrimeIsIgpuAmd (lib.mkDefault effectivePrimePrimaryBusId);
+            prime.intelBusId = lib.mkIf effectivePrimeIsIgpuIntel (lib.mkDefault effectivePrimePrimaryBusId);
           })
         ];
       })
@@ -279,7 +284,7 @@ in
       # AMD Specific Enhancements
       # --------------------------------------------------------------------------
       (lib.mkIf isAmd {
-        hardware.amdgpu.opencl.enable = true;
+        hardware.amdgpu.opencl.enable = lib.mkDefault true;
       })
     ]
   );

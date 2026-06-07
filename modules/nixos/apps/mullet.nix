@@ -43,8 +43,8 @@ in
 
     sourcePath = lib.mkOption {
       type = lib.types.path;
-      default = ./mullet.txt;
-      description = "Path to the flat newline-delimited text file tracking imperatively-managed package attribute names.";
+      example = lib.literalExpression "./var/mullet.txt";
+      description = "Required: flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names. Set it in your machine config, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. No default is provided because a framework-relative default would resolve into the framework repo, not the consumer's.";
     };
   };
 

@@ -27,13 +27,15 @@ in
     mountPoint = lib.mkOption {
       type = lib.types.str;
       default = "GoogleDrive";
-      description = "Default mount-point name a consumer's rclone mount service can reference.";
+      example = "GoogleDrive";
+      description = "Mount-point name a consumer's per-user rclone mount service references (e.g. a home-manager systemd user service mounting under ~/<mountPoint>). Convention only — this module does not create the mount itself.";
     };
 
     remoteName = lib.mkOption {
       type = lib.types.str;
       default = "gdrive";
-      description = "Default rclone remote name a consumer's rclone mount service can reference.";
+      example = "gdrive";
+      description = "rclone remote name a consumer's per-user mount service references (e.g. `rclone mount <remoteName>: ...`). Convention only — this module does not create the mount itself.";
     };
   };
 
