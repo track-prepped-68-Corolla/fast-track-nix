@@ -105,6 +105,8 @@ New modules should be exactly three levels deep: `ft.<namespace>.<feature>.enabl
 | `ft.programs.*` | Program-level features (nix-index) |
 | `ft.security.*` | Security tooling and secrets |
 | `ft.cli` | The `ft` CLI helper (two-level; grandfathered) |
+| `ft.mullet` | Imperative package escape hatch (two-level; grandfathered from consumer) |
+| `ft.rclone` | rclone cloud storage tooling (two-level; grandfathered from consumer) |
 | `ft.keepass` | KeePassXC secret service (two-level; grandfathered) |
 | `ft.theme` | System-wide theming via Stylix — Home Manager (two-level; grandfathered) |
 | `ft.terminal` | Terminal stack — Home Manager (two-level; grandfathered) |
