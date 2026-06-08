@@ -36,9 +36,9 @@ _:
 
   # --- FEATURE TOGGLES ---
   ft = {
-    system.core.stateVersion = "25.05";
-    boot.limine.enable = true;
-    desktop.cosmic.enable = true;
+    core.stateVersion = "25.05";
+    limine.enable = true;
+    cosmic.enable = true;
     cli.enable = true;
     users.mainUser = "guest";
     users.superUsers = [ "admin" ];

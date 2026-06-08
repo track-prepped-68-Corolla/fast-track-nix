@@ -6,12 +6,12 @@
 }:
 
 let
-  cfg = config.ft.security.sops;
+  cfg = config.ft.sops;
 in
 {
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
-  options.ft.security.sops = {
+  options.ft.sops = {
     enable = lib.mkEnableOption "user-level sops-nix secrets";
   };
 

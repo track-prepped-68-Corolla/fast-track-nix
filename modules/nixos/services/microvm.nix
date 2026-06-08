@@ -10,11 +10,10 @@
 ################################################################################
 
 {
-  # ft.services.microvms is an attrsOf submodule — each instance has its own
-  # enable option at ft.services.microvms.<name>.enable (four levels), which is
-  # the standard NixOS pattern for multi-instance modules and takes precedence
-  # over the three-level convention for single-instance modules.
-  options.ft.services.microvms = lib.mkOption {
+  # ft.microvms is an attrsOf submodule — each instance has its own
+  # enable option at ft.microvms.<name>.enable, following the standard
+  # NixOS pattern for multi-instance modules.
+  options.ft.microvms = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.submodule {
         options = {
@@ -127,7 +126,7 @@
           extraGuestConfig = lib.mkOption {
             type = lib.types.deferredModule;
             default = { };
-            description = "Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.services.ociStack) without modifying this generic infrastructure module.";
+            description = "Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.ociStack) without modifying this generic infrastructure module.";
           };
         };
       }
@@ -137,16 +136,16 @@
   };
 
   # IMPORTANT: config must be a plain attrset — not lib.mkMerge at the top
-  # level. lib.mkMerge (lib.mapAttrsToList ... config.ft.services.microvms)
+  # level. lib.mkMerge (lib.mapAttrsToList ... config.ft.microvms)
   # creates infinite recursion because NixOS must evaluate the list to discover
   # which options this module sets, and that evaluation forces
-  # config.ft.services.microvms before it is available. Plain attrset values
+  # config.ft.microvms before it is available. Plain attrset values
   # are thunks — NixOS reads the keys eagerly but forces the values only when
-  # the specific options are merged, at which point config.ft.services.microvms
+  # the specific options are merged, at which point config.ft.microvms
   # is already resolved.
   config =
     let
-      vms = config.ft.services.microvms;
+      vms = config.ft.microvms;
       anyEnabled = lib.any (vmCfg: vmCfg.enable) (lib.attrValues vms);
     in
     {

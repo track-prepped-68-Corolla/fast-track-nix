@@ -70,7 +70,7 @@ The system architecture is read from `machines/<name>/var/facter.json` (`facter.
 
 ## Enabling features
 
-Four modules default to `enable = true`: `ft.system.core`, `ft.users`, `ft.terminal`, and `ft.programs.nixIndex`. All others default to `false` and must be explicitly enabled.
+Four modules default to `enable = true`: `ft.core`, `ft.users`, `ft.terminal`, and `ft.nixIndex`. All others default to `false` and must be explicitly enabled.
 
 ### Example machine file
 
@@ -80,16 +80,16 @@ _: {
   ft = {
     repoPath = "/home/alice/nixos-config"; # required when ft.cli.enable = true
 
-    boot.limine.enable    = true;
-    desktop.cosmic.enable = true;
-    kernel.cachyos.enable = true;
-    profiles.gaming = {
+    limine.enable  = true;
+    cosmic.enable  = true;
+    cachyos.enable = true;
+    gaming = {
       enable    = true;
       gpuVendor = "amd";
     };
-    security.sops.enable = true;
-    services.tailscale.enable = true;
-    cli.enable = true;
+    sops.enable      = true;
+    tailscale.enable = true;
+    cli.enable       = true;
   };
 }
 ```
@@ -117,22 +117,22 @@ _: {
 
 | Option | What it does |
 |--------|-------------|
-| `ft.system.core.enable` | NetworkManager, Bluetooth, CUPS/Avahi, nix flakes, timezone, locale, core CLI packages (**default on**) |
+| `ft.core.enable` | NetworkManager, Bluetooth, CUPS/Avahi, nix flakes, timezone, locale, core CLI packages (**default on**) |
 | `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F (**default on**) |
-| `ft.boot.limine.enable` | Limine bootloader |
-| `ft.kernel.cachyos.enable` | CachyOS-optimised kernel builds |
-| `ft.desktop.cosmic.enable` | COSMIC desktop environment + cosmic-greeter + system76-scheduler |
-| `ft.desktop.plasma.enable` | KDE Plasma 6 |
-| `ft.profiles.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), goverlay, Heroic, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
-| `ft.security.sops.enable` | sops-nix secret management via SSH host key (or TPM/YubiKey) |
-| `ft.hardware.yubikey.enable` | YubiKey udev rules and pcscd |
+| `ft.limine.enable` | Limine bootloader |
+| `ft.cachyos.enable` | CachyOS-optimised kernel builds |
+| `ft.cosmic.enable` | COSMIC desktop environment + cosmic-greeter + system76-scheduler |
+| `ft.plasma.enable` | KDE Plasma 6 |
+| `ft.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), goverlay, Heroic, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
+| `ft.sops.enable` | sops-nix secret management via SSH host key (or TPM/YubiKey) |
+| `ft.yubikey.enable` | YubiKey udev rules and pcscd |
 | `ft.keepass.enable` | KeePassXC as the system secret service |
-| `ft.services.printing.enable` | CUPS + Avahi network printing |
-| `ft.services.nfs.enable` | NFS client mounts |
-| `ft.services.tailscale.enable` | Tailscale VPN client |
-| `ft.programs.nixIndex.enable` | nix-index with pre-built database and `,` command-not-found handler (**default on**) |
+| `ft.printing.enable` | CUPS + Avahi network printing |
+| `ft.nfs.enable` | NFS client mounts |
+| `ft.tailscale.enable` | Tailscale VPN client |
+| `ft.nixIndex.enable` | nix-index with pre-built database and `,` command-not-found handler (**default on**) |
 | `ft.cli.enable` | The `ft` command-line helper — also requires `ft.repoPath` set to your consumer repo root |
-| `ft.system.virt.*` | libvirt/QEMU, Incus, VMware host |
+| `ft.virt.*` | libvirt/QEMU, Incus, VMware host |
 
 ### Home Manager modules
 
@@ -141,7 +141,7 @@ _: {
 | `ft.terminal.enable` | Kitty + Ghostty, Zsh + Starship, Zoxide, fzf, and the modern Unix CLI kit (bat, eza, btop, fd, ripgrep, dust, yazi, lazygit, tealdeer, and more) (**default on**) |
 | `ft.lazyvim.enable` | Custom LazyVim Neovim configuration |
 | `ft.dotfiles.enable` | Symlinks `users/<name>/dotfiles/` into `$HOME` |
-| `ft.home.sops.enable` | Per-user sops age key |
+| `ft.sops.enable` | Per-user sops age key |
 | `ft.theme.enable` | System-wide theming via Stylix / Base16; configure wallpaper and fonts with `ft.theme.*` sub-options |
 
 ---

@@ -16,10 +16,10 @@
 - [x] `ft.cli` module — installs `just` and thin `ft` wrapper pointing to consumer's `scripts/ft.just`
 - [x] treefmt + nixfmt + statix + deadnix wired into CI (`nix flake check`)
 - [x] `README.md` explaining framework consumption
-- [x] `ft.security.sops` — ssh-to-age pipeline: derives age key from `/etc/ssh/ssh_host_ed25519_key` silently on boot (`modules/nixos/system/sops.nix`)
-- [x] Graceful degradation for secrets via `ft.security.sops.enable` (`mkIf` guards entire sops config)
-- [x] No hardcoded U2F keys in framework — consumers supply their own via `ft.hardware.yubikey.u2fMapping`
-- [x] Create a user-level Komodo module — `modules/home/komodo.nix` (`ft.home.komodo.enable`)
+- [x] `ft.sops` — ssh-to-age pipeline: derives age key from `/etc/ssh/ssh_host_ed25519_key` silently on boot (`modules/nixos/system/sops.nix`)
+- [x] Graceful degradation for secrets via `ft.sops.enable` (`mkIf` guards entire sops config)
+- [x] No hardcoded U2F keys in framework — consumers supply their own via `ft.yubikey.u2fMapping`
+- [x] Create a user-level Komodo module — `modules/home/komodo.nix` (`ft.komodo.enable`)
 
 ### Consumer (ft-home)
 - [x] Wire up all flake inputs
@@ -56,11 +56,11 @@ Items currently in ft-home that belong in fast-track-nix as proper `ft.*` module
   - [ ] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
   - [ ] Update `mullet.just` hardcoded `MULLET_FILE` path to use the configured option path
   - [ ] Export `nixosModules.mullet` as a standalone flake output
-- [ ] **`ft.hardware.facter`** — port nixos-facter hardware report ingestion to framework
+- [ ] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
   - [ ] Move `facter.nix` from ft-home into fast-track-nix `modules/nixos/hardware/facter.nix`
-  - [ ] Expose `ft.hardware.facter.enable` and `ft.hardware.facter.reportPath` options
+  - [ ] Expose `ft.facter.enable` and `ft.facter.reportPath` options
   - [ ] Remove local copy from ft-home once framework version is stable
-- [ ] **`ft.hardware.gpu`** — port generic GPU vendor detection to framework
+- [ ] **`ft.gpu`** — port generic GPU vendor detection to framework
   - [ ] Move `gpu.nix` from ft-home into fast-track-nix `modules/nixos/hardware/gpu.nix`
   - [ ] Support AMD, Intel, NVIDIA, integrated; detect from facter output where possible
   - [ ] Remove local copy from ft-home once framework version is stable
@@ -165,8 +165,8 @@ See `ft-home/scripts/plan.md` for full architecture and development sequence.
 - [ ] Replace hardcoded user strings with variable references (e.g., `config.home.username`)
 - [ ] Move highly specific private modules out of the repo entirely
 - [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
-  - [ ] `ft.system.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
-  - [ ] `ft.system.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
+  - [ ] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
+  - [ ] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
   - [ ] `ft.users`: Remove `initialPassword` default from `user.nix` — require sops or an explicit consumer option
 - [ ] **Crucial:** Reset Git history right before publishing
 
