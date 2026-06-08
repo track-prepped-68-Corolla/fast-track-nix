@@ -10,9 +10,9 @@ in
 
   config = lib.mkIf cfg.enable {
     boot.loader = {
-      limine.enable = true;
+      limine.enable = lib.mkDefault true;
       # Required for modern UEFI hardware like the Strix
-      efi.canTouchEfiVariables = true;
+      efi.canTouchEfiVariables = lib.mkDefault true;
       # Ensure other bootloaders are disabled to prevent state conflicts
       systemd-boot.enable = lib.mkForce false;
     };

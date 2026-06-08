@@ -24,7 +24,7 @@ in
 
   config = lib.mkIf cfg.enable {
     programs.nix-index-database = {
-      comma.enable = cfg.comma;
+      comma.enable = lib.mkDefault cfg.comma;
     };
 
     nix.settings = {

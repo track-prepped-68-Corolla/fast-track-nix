@@ -32,8 +32,8 @@ in
     ++ lib.optional cfg.useTPM pkgs.age-plugin-tpm
     ++ lib.optional cfg.useYubikey pkgs.age-plugin-yubikey;
 
-    services.pcscd.enable = lib.mkIf cfg.useYubikey true;
-    security.tpm2.enable = lib.mkIf cfg.useTPM true;
+    services.pcscd.enable = lib.mkIf cfg.useYubikey (lib.mkDefault true);
+    security.tpm2.enable = lib.mkIf cfg.useTPM (lib.mkDefault true);
 
     sops = {
       defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
@@ -42,7 +42,7 @@ in
         sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
         keyFile = lib.mkIf (
           cfg.useTPM || cfg.useYubikey
-        ) "/var/lib/sops-nix/key.txt";
+        ) (lib.mkDefault "/var/lib/sops-nix/key.txt");
       };
       gnupg.sshKeyPaths = [ ];
     };

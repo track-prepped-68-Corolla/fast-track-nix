@@ -60,9 +60,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    boot.kernelPackages =
+    boot.kernelPackages = lib.mkDefault (
       pkgs.linuxPackagesFor
-        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${cfg.variant}";
+        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${cfg.variant}"
+    );
 
     nix.settings = {
       extra-substituters = [ "https://attic.xuyh0120.win/lantian" ];
