@@ -6,10 +6,10 @@
 }:
 
 let
-  cfg = config.ft.hardware.yubikey;
+  cfg = config.ft.yubikey;
 in
 {
-  options.ft.hardware.yubikey = {
+  options.ft.yubikey = {
     enable = lib.mkEnableOption "YubiKey support and PAM integration" // {
       description = "Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.";
     };

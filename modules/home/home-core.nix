@@ -8,11 +8,11 @@
 ################################################################################
 
 let
-  cfg = config.ft.home.core;
+  cfg = config.ft.core;
 in
 {
   options.ft = {
-    home.core = {
+    core = {
       enable = lib.mkEnableOption "home manager core settings" // {
         default = true;
         description = "Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";

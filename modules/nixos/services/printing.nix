@@ -5,10 +5,10 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.printing;
+  cfg = config.ft.printing;
 in
 {
-  options.ft.services.printing = {
+  options.ft.printing = {
     enable = lib.mkEnableOption "CUPS printing service" // {
       description = "Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.";
     };

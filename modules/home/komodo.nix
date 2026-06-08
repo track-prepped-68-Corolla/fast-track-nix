@@ -10,12 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.home.komodo;
+  cfg = config.ft.komodo;
 in
 {
-  options.ft.home.komodo = {
+  options.ft.komodo = {
     enable = lib.mkEnableOption "Komodo Core and Periphery (user-level)" // {
-      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman user services via systemd. Requires ft.security.sops.enable = true. Populate the sops secret keys documented in NOTES.md before first deploy.";
+      description = "Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman user services via systemd. Requires ft.sops.enable = true. Populate the sops secret keys documented in NOTES.md before first deploy.";
     };
 
     dataDir = lib.mkOption {
@@ -96,8 +96,8 @@ in
     {
       assertions = [
         {
-          assertion = config.ft.security.sops.enable;
-          message = "ft.home.komodo requires ft.security.sops.enable = true";
+          assertion = config.ft.sops.enable;
+          message = "ft.komodo requires ft.sops.enable = true";
         }
       ];
 

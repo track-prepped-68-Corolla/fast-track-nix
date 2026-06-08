@@ -93,10 +93,13 @@ in
           lib.nixosSystem {
             specialArgs = { inherit inputs; };
             modules = [
-              # Disko is captured in the closure here (not via module args) so it
-              # is available before any module imports are resolved, matching the
-              # same pattern used in nixosModules.default.
+              # Disko and microvm host module are captured in the closure here
+              # (not via module args) so they are available before any module
+              # imports are resolved.  Accessing inputs inside `imports` causes
+              # infinite recursion when inputs is provided via _module.args
+              # rather than specialArgs (e.g. in NixOS VM smoke tests).
               inputs.Disko.nixosModules.disko
+              inputs.microvm.nixosModules.host
               ../modules/nixos
               machine.path
               { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
