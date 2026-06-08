@@ -14,7 +14,7 @@ in
 
   options.ft.sops = {
     enable = lib.mkEnableOption "sops-nix secret management" // {
-      description = "Wires up sops-nix pointing at `ft.repoPath/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.sops.useTPM` or `ft.sops.useYubikey` for hardware-token decryption instead.";
+      description = "Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.";
     };
     useTPM = lib.mkEnableOption "TPM2 for decryption via age-plugin-tpm" // {
       description = "Adds age-plugin-tpm, enables the TPM2 subsystem, and configures sops to read the age identity from /var/lib/sops-nix/key.txt (populated by the TPM plugin).";
@@ -36,7 +36,7 @@ in
     security.tpm2.enable = lib.mkIf cfg.useTPM (lib.mkDefault true);
 
     sops = {
-      defaultSopsFile = "${config.ft.repoPath}/secrets/secrets.yaml";
+      defaultSopsFile = "${config.ft.repoPath}/var/secrets/secrets.yaml";
       validateSopsFiles = false;
       age = {
         sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
