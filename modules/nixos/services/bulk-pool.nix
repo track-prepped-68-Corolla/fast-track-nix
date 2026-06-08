@@ -22,6 +22,60 @@
 let
   cfg = config.ft.bulkPool;
 
+  # snapraid-btrfs is not in nixpkgs; package it inline from the maintained fork.
+  snapraidBtrfs = pkgs.callPackage (
+    {
+      stdenv,
+      fetchFromGitHub,
+      makeWrapper,
+      coreutils,
+      gnugrep,
+      gawk,
+      gnused,
+      snapraid,
+      snapper,
+      lib,
+    }:
+    stdenv.mkDerivation {
+      pname = "snapraid-btrfs";
+      version = "0-unstable-2024-01-01";
+      src = fetchFromGitHub {
+        owner = "D34DC3N73R";
+        repo = "snapraid-btrfs";
+        rev = "a43e9a40773772b881b1450edfef28c9937f5f27";
+        hash = "sha256-zOFc1/H2hgcZMeGUnLvuWL+SFvE5kvekm0F/dvhakWI=";
+      };
+      dontBuild = true;
+      nativeBuildInputs = [ makeWrapper ];
+      installPhase = ''
+        runHook preInstall
+        mkdir -p $out/bin
+        cp snapraid-btrfs $out/bin/
+        chmod +x $out/bin/snapraid-btrfs
+        patchShebangs $out/bin/snapraid-btrfs
+        wrapProgram $out/bin/snapraid-btrfs \
+          --prefix PATH : ${
+            lib.makeBinPath [
+              coreutils
+              gnugrep
+              gawk
+              gnused
+              snapraid
+              snapper
+            ]
+          }
+        runHook postInstall
+      '';
+      meta = {
+        description = "Wrapper script to ease using snapraid with btrfs snapshots";
+        homepage = "https://github.com/D34DC3N73R/snapraid-btrfs";
+        license = lib.licenses.gpl3Plus;
+        platforms = lib.platforms.linux;
+        mainProgram = "snapraid-btrfs";
+      };
+    }
+  ) { };
+
   drives =
     if cfg.drivesFile == null then
       {
@@ -82,15 +136,16 @@ in
 
     # ── Always install tools when enabled (needed before any drives are registered) ──
     (lib.mkIf cfg.enable {
-      environment.systemPackages = with pkgs; [
-        mergerfs
-        snapraid
-        snapraid-btrfs
-        btrfs-progs
-        util-linux
-        parted
-        jq
-      ];
+      environment.systemPackages =
+        (with pkgs; [
+          mergerfs
+          snapraid
+          btrfs-progs
+          util-linux
+          parted
+          jq
+        ])
+        ++ [ snapraidBtrfs ];
     })
 
     # ── Individual drive mounts (btrfs root, no subvol restriction) ────────────
@@ -158,7 +213,7 @@ in
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${pkgs.snapraid-btrfs}/bin/snapraid-btrfs sync";
+          ExecStart = "${snapraidBtrfs}/bin/snapraid-btrfs sync";
         };
       };
 
