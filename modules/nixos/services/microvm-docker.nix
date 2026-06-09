@@ -65,6 +65,12 @@ in
       description = "Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).";
     };
 
+    composeVolumeSize = lib.mkOption {
+      type = lib.types.int;
+      default = 10240;
+      description = "Size of the persistent compose project volume in MiB (image stored at /var/lib/microvm/<vmName>/compose.img on the host). Holds /opt/compose so stack files and bind-mount data survive VM rebuilds.";
+    };
+
     vmMac = lib.mkOption {
       type = lib.types.str;
       default = "02:00:00:00:00:01";
@@ -350,13 +356,20 @@ in
             }
           ];
 
-          # Persistent Docker data lives on a host-side disk image so container
+          # Persistent Docker data lives on host-side disk images so container
           # state survives VM restarts without requiring a full overlay2 rootfs.
+          # docker.img holds the Docker engine data (image layers, metadata).
+          # compose.img holds /opt/compose (stack files, bind-mount data).
           microvm.volumes = lib.mkDefault [
             {
               image = "/var/lib/microvm/${cfg.vmName}/docker.img";
               mountPoint = "/var/lib/docker";
               size = cfg.dockerVolumeSize;
+            }
+            {
+              image = "/var/lib/microvm/${cfg.vmName}/compose.img";
+              mountPoint = "/opt/compose";
+              size = cfg.composeVolumeSize;
             }
           ];
 
