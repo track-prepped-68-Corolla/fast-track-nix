@@ -51,7 +51,7 @@
 Items currently in ft-home that belong in fast-track-nix as proper `ft.*` modules.
 
 - [x] **`ft.mullet`** — port imperative package escape hatch to framework
-  - [x] Move `mullet.nix` from ft-home `modules/nixos/apps/` into fast-track-nix `modules/nixos/system/`
+  - [x] Move `mullet.nix` from ft-home `modules/nixos/apps/` into fast-track-nix `modules/nixos/apps/`
   - [x] Expose `ft.mullet.enable` and `ft.mullet.sourcePath` options
   - [x] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
   - [x] `mullet.just` runtime path convention (`users/$USER/var/mullet.txt`) matches `ft.mullet.sourcePath` pattern — no script change needed
