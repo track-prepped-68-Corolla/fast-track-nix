@@ -31,6 +31,11 @@
   inputs = {
     # Primary channel — all framework modules target nixos-unstable.
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # GPU manager using eBPF LSM hooks — used by ft.cardwire.
+    cardwire = {
+      url = "github:OpenGamingCollective/cardwire";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Stable channel — available to consumers who need pinned-version packages.
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     # Vendor hardware quirk modules (AMD, Intel, Raspberry Pi, etc.).
