@@ -194,107 +194,21 @@ in
           mountPoint = "/var/lib/docker";
           size = cfg.dockerVolumeSize;
         }
+        {
+          image = "/var/lib/microvm/${cfg.vmName}/compose.img";
+          mountPoint = "/opt/compose";
+          size = cfg.composeVolumeSize;
+        }
       ];
 
       shares = lib.optionals cfg.komodo.enable [
         {
-          microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
-          microvm.vcpu = lib.mkDefault cfg.vcpus;
-          microvm.mem = lib.mkDefault cfg.mem;
-          microvm.vsock.cid = lib.mkIf (cfg.vsockCid != null) (lib.mkDefault cfg.vsockCid);
-
-          microvm.interfaces = lib.mkDefault [
-            {
-              type = "tap";
-              id = tapId;
-              mac = cfg.vmMac;
-            }
-          ];
-
-          # Persistent Docker data lives on host-side disk images so container
-          # state survives VM restarts without requiring a full overlay2 rootfs.
-          # docker.img holds the Docker engine data (image layers, metadata).
-          # compose.img holds /opt/compose (stack files, bind-mount data).
-          microvm.volumes = lib.mkDefault [
-            {
-              image = "/var/lib/microvm/${cfg.vmName}/docker.img";
-              mountPoint = "/var/lib/docker";
-              size = cfg.dockerVolumeSize;
-            }
-            {
-              image = "/var/lib/microvm/${cfg.vmName}/compose.img";
-              mountPoint = "/opt/compose";
-              size = cfg.composeVolumeSize;
-            }
-          ];
-
-          # /opt/komodo shared from the host via virtiofs.
-          microvm.shares = lib.mkIf cfg.komodo.enable (
-            lib.mkDefault [
-              {
-                source = "/opt/komodo";
-                mountPoint = "/opt/komodo";
-                tag = "komodo";
-                proto = "virtiofs";
-              }
-            ]
-          );
-
-          # ── Guest networking — static IP, gateway to host bridge ─────────
-          systemd.network.enable = lib.mkDefault true;
-          systemd.network.networks."10-eth" = lib.mkDefault {
-            matchConfig.Name = "en* eth*";
-            networkConfig = {
-              Address = "${cfg.vmAddress}/${toString cfg.prefixLength}";
-              Gateway = cfg.hostAddress;
-              DNS = [
-                "1.1.1.1"
-                "8.8.8.8"
-              ];
-            };
-          };
-
-          # ── Rootful Docker with docker-compose ───────────────────────────
-          virtualisation.docker.enable = lib.mkDefault true;
-          virtualisation.docker.daemon.settings.storage-driver = lib.mkDefault "overlay2";
-
-          environment.systemPackages = with pkgs; [ docker-compose ];
-
-          # Working directory for compose projects.
-          systemd.tmpfiles.rules = [ "d /opt/compose 0750 root root -" ];
-
-          # ── Komodo stack ─────────────────────────────────────────────────
-          systemd.services.komodo = lib.mkIf cfg.komodo.enable {
-            description = "Komodo docker-compose stack";
-            after = [
-              "docker.service"
-              "network-online.target"
-              "opt-komodo.mount"
-            ];
-            requires = [ "opt-komodo.mount" ];
-            wants = [ "network-online.target" ];
-            wantedBy = [ "multi-user.target" ];
-            serviceConfig = {
-              Type = "oneshot";
-              RemainAfterExit = true;
-              ExecStartPre = [
-                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} /opt/komodo/compose.yaml"
-                "${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} /opt/komodo/compose.env"
-              ];
-              ExecStart = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml up -d --remove-orphans";
-              ExecStop = "${pkgs.docker-compose}/bin/docker-compose --env-file /opt/komodo/compose.env -f /opt/komodo/compose.yaml down";
-              StandardOutput = "append:/opt/komodo/komodo.log";
-              StandardError = "append:/opt/komodo/komodo.log";
-            };
-          };
-
-          services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-            enable = lib.mkDefault true;
-            settings = {
-              PermitRootLogin = lib.mkDefault "yes";
-              PasswordAuthentication = lib.mkDefault false;
-            };
-          };
+          source = "/opt/komodo";
+          mountPoint = "/opt/komodo";
+          tag = "komodo";
+          proto = "virtiofs";
+        }
+      ];
 
       # ── Application: inject ft.ociStack into the guest ──────────
       extraGuestConfig = {
