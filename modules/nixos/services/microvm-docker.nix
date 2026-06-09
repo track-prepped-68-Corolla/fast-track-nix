@@ -112,7 +112,7 @@ in
 
       port = lib.mkOption {
         type = lib.types.port;
-        default = 8080;
+        default = 8084;
         description = "Port inside the VM on which the Guacamole web interface listens.";
       };
 
@@ -245,7 +245,9 @@ in
         ft.guacamole = {
           enable = lib.mkDefault cfg.guacamole.enable;
           runtime = lib.mkDefault "docker";
-          inherit (cfg.guacamole) imageTag port dbPassword;
+          imageTag = lib.mkDefault cfg.guacamole.imageTag;
+          port = lib.mkDefault cfg.guacamole.port;
+          dbPassword = lib.mkDefault cfg.guacamole.dbPassword;
         };
         ft.ociStack = {
           enable = lib.mkDefault true;

@@ -35,7 +35,7 @@ in
 
     port = lib.mkOption {
       type = lib.types.port;
-      default = 8080;
+      default = 8084;
       description = "Host port mapped to the Guacamole web interface (container port 8080).";
     };
 
