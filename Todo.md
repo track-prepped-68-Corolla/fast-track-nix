@@ -51,17 +51,17 @@
 Items currently in ft-home that belong in fast-track-nix as proper `ft.*` modules.
 
 - [ ] **`ft.mullet`** — port imperative package escape hatch to framework
-  - [ ] Move `mullet.nix` from ft-home `modules/nixos/apps/` into fast-track-nix `modules/nixos/system/`
-  - [ ] Expose `ft.mullet.enable` and `ft.mullet.sourcePath` options
-  - [ ] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
+  - [x] Move `mullet.nix` from ft-home `modules/nixos/apps/` into fast-track-nix `modules/nixos/system/`
+  - [x] Expose `ft.mullet.enable` and `ft.mullet.sourcePath` options
+  - [x] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
   - [ ] Update `mullet.just` hardcoded `MULLET_FILE` path to use the configured option path
   - [ ] Export `nixosModules.mullet` as a standalone flake output
 - [ ] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
-  - [ ] Move `facter.nix` from ft-home into fast-track-nix `modules/nixos/hardware/facter.nix`
+  - [x] Move `facter.nix` from ft-home into fast-track-nix `modules/nixos/hardware/facter.nix`
   - [ ] Expose `ft.facter.enable` and `ft.facter.reportPath` options
   - [ ] Remove local copy from ft-home once framework version is stable
 - [ ] **`ft.gpu`** — port generic GPU vendor detection to framework
-  - [ ] Move `gpu.nix` from ft-home into fast-track-nix `modules/nixos/hardware/gpu.nix`
+  - [x] Move `gpu.nix` from ft-home into fast-track-nix `modules/nixos/hardware/gpu.nix`
   - [ ] Support AMD, Intel, NVIDIA, integrated; detect from facter output where possible
   - [ ] Remove local copy from ft-home once framework version is stable
 - [ ] **Convert applicable modules from system level to user level:**
@@ -247,9 +247,9 @@ The Nix module system's option declarations serve as the schema — no separate 
 - [ ] Replace hardcoded user strings with variable references (e.g., `config.home.username`)
 - [ ] Move highly specific private modules out of the repo entirely
 - [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
-  - [ ] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
-  - [ ] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
-  - [ ] `ft.users`: Remove `initialPassword` default from `user.nix` — require sops or an explicit consumer option
+  - [x] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
+  - [x] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
+  - [x] `ft.users`: Remove `initialPassword` default from `user.nix` — require sops or an explicit consumer option
 - [ ] **Crucial:** Reset Git history right before publishing
 
 ### 🔌 Flake API & Exports
