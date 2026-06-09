@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   ...
 }:
@@ -7,6 +8,8 @@ let
   cfg = config.ft.cardwire;
 in
 {
+  imports = [ inputs.cardwire.nixosModules.default ];
+
   options.ft.cardwire = {
     enable = lib.mkEnableOption "Cardwire GPU manager" // {
       description = "Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.";
@@ -36,9 +39,9 @@ in
       enable = lib.mkDefault true;
       settings = {
         auto_apply_gpu_state = lib.mkDefault cfg.autoApplyGpuState;
-        # Auto-enable when the NVIDIA driver is active via ft.hardware.gpu.
         experimental_nvidia_block = lib.mkDefault (
-          cfg.experimentalNvidiaBlock || builtins.elem "nvidia" config.services.xserver.videoDrivers
+          cfg.experimentalNvidiaBlock
+          || builtins.elem "nvidia" config.services.xserver.videoDrivers
         );
         battery_auto_switch = lib.mkDefault cfg.batteryAutoSwitch;
       };

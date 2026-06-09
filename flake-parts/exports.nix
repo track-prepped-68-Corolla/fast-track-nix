@@ -29,13 +29,11 @@
       let
         diskoModule = inputs.Disko.nixosModules.disko;
         microvmHostModule = inputs.microvm.nixosModules.host;
-        cardwireModule = inputs.cardwire.nixosModules.default;
       in
       {
         imports = [
           diskoModule
           microvmHostModule
-          cardwireModule
           (import ../modules/nixos)
         ];
       };
