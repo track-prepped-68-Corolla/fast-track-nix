@@ -97,6 +97,32 @@ in
       description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
     };
 
+    guacamole = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Deploy Apache Guacamole (guacd, web front-end, and PostgreSQL) inside the VM via OCI containers. The web interface is exposed on guacamole.port within the VM.";
+      };
+
+      imageTag = lib.mkOption {
+        type = lib.types.str;
+        default = "latest";
+        description = "Image tag for guacamole/guacd and guacamole/guacamole on Docker Hub.";
+      };
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 8080;
+        description = "Port inside the VM on which the Guacamole web interface listens.";
+      };
+
+      dbPassword = lib.mkOption {
+        type = lib.types.str;
+        default = "guacamole";
+        description = "PostgreSQL password for the Guacamole database. Stored in the Nix store — suitable only for local-only deployments.";
+      };
+    };
+
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -210,9 +236,17 @@ in
         }
       ];
 
-      # ── Application: inject ft.ociStack into the guest ──────────
+      # ── Application: inject ft.ociStack and ft.guacamole into the guest ─────
       extraGuestConfig = {
-        imports = [ ./oci-stack.nix ];
+        imports = [
+          ./oci-stack.nix
+          ./guacamole.nix
+        ];
+        ft.guacamole = {
+          enable = lib.mkDefault cfg.guacamole.enable;
+          runtime = lib.mkDefault "docker";
+          inherit (cfg.guacamole) imageTag port dbPassword;
+        };
         ft.ociStack = {
           enable = lib.mkDefault true;
           runtime = lib.mkDefault "docker";
