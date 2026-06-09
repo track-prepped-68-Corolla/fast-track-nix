@@ -10,10 +10,10 @@
 ################################################################################
 
 let
-  cfg = config.ft.desktop.plasma;
+  cfg = config.ft.plasma;
 in
 {
-  options.ft.desktop.plasma = {
+  options.ft.plasma = {
     enable = lib.mkEnableOption "KDE Plasma Desktop Environment" // {
       description = "Enables KDE Plasma 6 with X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.";
     };

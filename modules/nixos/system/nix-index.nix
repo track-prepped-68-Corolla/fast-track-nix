@@ -5,10 +5,13 @@
   ...
 }:
 
+let
+  cfg = config.ft.nixIndex;
+in
 {
   imports = [ inputs.nix-index-database.nixosModules.nix-index ];
 
-  options.ft.programs.nixIndex = {
+  options.ft.nixIndex = {
     enable = lib.mkEnableOption "nix-index with pre-built database and comma integration" // {
       default = true;
     };
@@ -19,9 +22,9 @@
     };
   };
 
-  config = lib.mkIf config.ft.programs.nixIndex.enable {
+  config = lib.mkIf cfg.enable {
     programs.nix-index-database = {
-      comma.enable = config.ft.programs.nixIndex.comma;
+      comma.enable = lib.mkDefault cfg.comma;
     };
 
     nix.settings = {

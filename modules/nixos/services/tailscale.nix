@@ -10,12 +10,12 @@
 ################################################################################
 
 let
-  cfg = config.ft.services.tailscale;
+  cfg = config.ft.tailscale;
 in
 {
-  options.ft.services.tailscale = {
+  options.ft.tailscale = {
     enable = lib.mkEnableOption "Tailscale VPN client" // {
-      description = "Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.services.tailscale.useRoutingFeatures = \"server\"` to run as an exit node.";
+      description = "Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = \"server\"` to run as an exit node.";
     };
 
     enableTrayApp = lib.mkOption {

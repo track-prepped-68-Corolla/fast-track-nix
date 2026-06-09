@@ -83,7 +83,7 @@ in
     };
 
     ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic" // {
-      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.desktop.cosmic.enable` when running the COSMIC desktop environment.";
+      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.cosmic.enable` (NixOS) when running the COSMIC desktop environment.";
     };
   };
 

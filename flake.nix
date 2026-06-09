@@ -35,7 +35,7 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     # Vendor hardware quirk modules (AMD, Intel, Raspberry Pi, etc.).
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    # CachyOS-optimised kernel builds — used by ft.kernel.cachyos.
+    # CachyOS-optimised kernel builds — used by ft.cachyos.
     nix-cachyos.url = "github:xddxdd/nix-cachyos-kernel/release";
 
     home-manager = {
@@ -71,13 +71,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # NixOS module that consumes a facter.json report (hardware.facter.*).
+    # Lives in a separate, dependency-free repo from the nixos-facter CLI tool;
+    # required by ft.hardware.facter.
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
+
     # Nix User Repository — community overlays and packages.
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Age-encrypted secret management — used by ft.security.sops.
+    # Age-encrypted secret management — used by ft.sops.
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -86,12 +91,6 @@
     # Pre-built nix-index database for fast comma and command-not-found lookups.
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Steam Deck / Jovian UI support — used by ft.profiles.gaming.enableLeanbackUI.
-    jovian-nixos = {
-      url = "github:jovian-experiments/jovian-nixos";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
