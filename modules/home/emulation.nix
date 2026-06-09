@@ -9,6 +9,13 @@
 let
   cfg = config.ft.emulation;
 
+  # On-disk directory that holds the live-editable EmuDeck config trees.
+  # Activation seeds it from the Nix store (once, non-destructively); all
+  # emulator config symlinks point here so users can edit without rebuilding.
+  configsDir = "${cfg.emulationPath}/.configs";
+
+  link = sub: config.lib.file.mkOutOfStoreSymlink "${configsDir}/${sub}";
+
   emudeckSrc = pkgs.fetchFromGitHub {
     owner = "dragoonDorise";
     repo = "EmuDeck";
@@ -16,11 +23,10 @@ let
     hash = cfg.emudeckHash;
   };
 
-  # Rewrite the Steam Deck SD card stem that EmuDeck hard-codes in every config
-  # file to the user's actual emulation root. A single sed pass covers all
-  # emulators because every hardcoded absolute path in the EmuDeck configs tree
-  # shares the same /run/media/mmcblk0p1/Emulation prefix.
-  emudeckConfigs = pkgs.runCommand "emudeck-configs" { } ''
+  # Substitute the Steam Deck SD card stem that EmuDeck hard-codes across its
+  # entire configs tree. Every absolute path uses /run/media/mmcblk0p1/Emulation
+  # as a prefix, so a single sed pass covers all emulators.
+  emudeckConfigsSrc = pkgs.runCommand "emudeck-configs" { } ''
     cp -r ${emudeckSrc}/configs $out
     chmod -R u+w $out
     find $out -type f -exec sed -i \
@@ -32,13 +38,13 @@ in
 
   options.ft.emulation = {
     enable = lib.mkEnableOption "EmuDeck-compatible emulation suite" // {
-      description = "Installs the EmuDeck emulator set as Flatpak packages via nix-flatpak, writes their default configurations from a pinned EmuDeck source tree, and provides Steam ROM Manager. Configs are copied on first activation so emulators can write settings back; subsequent activations are a no-op unless you remove a destination manually. Requires services.flatpak.enable = true at the NixOS system level.";
+      description = "Installs the EmuDeck emulator set as Flatpak packages via nix-flatpak, seeds live-editable emulator configurations from a pinned EmuDeck source tree into emulationPath/.configs/, and symlinks each emulator's config directory there using out-of-store symlinks. Configs are copied once on first activation and never overwritten, so in-app edits persist across rebuilds. Requires services.flatpak.enable = true at the NixOS system level.";
     };
 
     emulationPath = lib.mkOption {
       type = lib.types.str;
       default = "${config.home.homeDirectory}/Emulation";
-      description = "Root of the emulation library. The subdirectories roms/, bios/, saves/, and storage/ are created here on first activation, and all emulator configs are written with paths under this root.";
+      description = "Root of the emulation library. Subdirectories roms/, bios/, saves/, storage/, and .configs/ are created here on first activation. All emulator configs are written under .configs/ and referenced via out-of-store symlinks.";
       example = "/home/alice/Emulation";
     };
 
@@ -51,7 +57,7 @@ in
     emudeckHash = lib.mkOption {
       type = lib.types.str;
       default = lib.fakeHash;
-      description = "SHA-256 hash of the EmuDeck source tree at emudeckRev in SRI format. Compute with: nix-prefetch-github dragoonDorise EmuDeck --rev <rev>. The build error will print the correct value when the placeholder is used.";
+      description = "SHA-256 hash of the EmuDeck source tree at emudeckRev in SRI format. Compute with: nix-prefetch-github dragoonDorise EmuDeck --rev <rev>. The build error will show the correct value when the placeholder is used.";
     };
   };
 
@@ -98,14 +104,74 @@ in
     # ── Steam ROM Manager ─────────────────────────────────────────────────────
     home.packages = [ pkgs.steam-rom-manager ];
 
-    # ── Config installation ───────────────────────────────────────────────────
-    # Each emulator's config directory is copied from the substituted EmuDeck
-    # source tree on first activation. Subsequent activations skip destinations
-    # that already exist, preserving any in-app changes the user has made.
-    # To reset a single emulator's config, delete its destination and re-run
-    # home-manager switch.
-    home.activation.installEmudeckConfigs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      _emudeck_install() {
+    # ── Emulator config symlinks ──────────────────────────────────────────────
+    # Each entry links the emulator's expected config location to the matching
+    # subdirectory inside configsDir. Because configsDir is outside the Nix
+    # store, users can edit files there without triggering a rebuild.
+    # Note: Flatpak apps require home filesystem access (--filesystem=home or
+    # equivalent) to follow symlinks that resolve outside ~/.var/app/<id>/.
+    # Most emulator Flatpaks already request this for ROM loading.
+    home.file = {
+      # RetroArch
+      ".var/app/org.libretro.RetroArch/config/retroarch".source =
+        link "org.libretro.RetroArch/config/retroarch";
+      # Dolphin (GC / Wii)
+      ".var/app/org.DolphinEmu.dolphin-emu/config/dolphin-emu".source =
+        link "org.DolphinEmu.dolphin-emu/config/dolphin-emu";
+      # Primehack (Dolphin Metroid fork — same config layout as Dolphin)
+      ".var/app/io.github.shiiion.primehack/config/dolphin-emu".source =
+        link "io.github.shiiion.primehack/config/dolphin-emu";
+      # Ryujinx (Switch)
+      ".var/app/org.ryujinx.Ryujinx/config/Ryujinx".source =
+        link "org.ryujinx.Ryujinx/config/Ryujinx";
+      # Cemu (Wii U) — config lives under data/, not config/
+      ".var/app/info.cemu.Cemu/data/cemu".source =
+        link "info.cemu.Cemu/data/cemu";
+      # melonDS (DS / DSi)
+      ".var/app/net.kuribo64.melonDS/config/melonDS".source =
+        link "net.kuribo64.melonDS/config/melonDS";
+      # mGBA (GBA)
+      ".var/app/io.mgba.mGBA/config/mgba".source =
+        link "mgba";
+      # DuckStation (PS1) — exposes ~/.local/share/duckstation via home override
+      ".local/share/duckstation".source =
+        link "duckstation";
+      # PCSX2 (PS2) — Flatpak maps XDG_CONFIG_HOME/PCSX2 to the inis directory
+      ".var/app/net.pcsx2.PCSX2/config/PCSX2/inis".source =
+        link "pcsx2qt/.config/PCSX2/inis";
+      # RPCS3 (PS3)
+      ".var/app/net.rpcs3.RPCS3/config/rpcs3".source =
+        link "net.rpcs3.RPCS3/config/rpcs3";
+      # PPSSPP (PSP) — only the SYSTEM dir; saves and states live elsewhere
+      ".var/app/org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM".source =
+        link "org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM";
+      # xemu (Xbox OG) — config lives under data/, not config/
+      ".var/app/app.xemu.xemu/data/xemu".source =
+        link "app.xemu.xemu/data/xemu";
+      # Flycast (Dreamcast)
+      ".var/app/org.flycast.Flycast/config/flycast".source =
+        link "org.flycast.Flycast/config/flycast";
+      # ScummVM
+      ".var/app/org.scummvm.ScummVM/config/scummvm".source =
+        link "org.scummvm.ScummVM/config/scummvm";
+    };
+
+    xdg.configFile = {
+      # Vita3K — accesses ~/.config/Vita3K via home filesystem override
+      "Vita3K".source = link "Vita3K";
+      # ES-DE frontend — accesses ~/.config/ES-DE via home filesystem override
+      "ES-DE".source = link "emulationstation";
+      # Steam ROM Manager parsers and settings
+      "steam-rom-manager/userData".source = link "steam-rom-manager/userData";
+    };
+
+    # ── Config seeding and directory setup ────────────────────────────────────
+    # Copies EmuDeck config templates into configsDir on first activation.
+    # Existing entries are never overwritten, so in-app edits survive rebuilds.
+    # To reset a specific emulator to EmuDeck defaults, delete its subdirectory
+    # under emulationPath/.configs/ and re-run home-manager switch.
+    home.activation.seedEmudeckConfigs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      _emudeck_seed() {
         local src="$1" dest="$2"
         [ -e "$src" ] || return 0
         [ -e "$dest" ] && return 0
@@ -114,62 +180,62 @@ in
         chmod -R u+w "$dest"
       }
 
-      # ── Flatpak sandbox paths (~/.var/app/<id>/{config,data}/) ──────────────
-      _emudeck_install \
-        "${emudeckConfigs}/org.libretro.RetroArch/config/retroarch" \
-        "$HOME/.var/app/org.libretro.RetroArch/config/retroarch"
-      _emudeck_install \
-        "${emudeckConfigs}/org.DolphinEmu.dolphin-emu/config/dolphin-emu" \
-        "$HOME/.var/app/org.DolphinEmu.dolphin-emu/config/dolphin-emu"
-      _emudeck_install \
-        "${emudeckConfigs}/io.github.shiiion.primehack/config/dolphin-emu" \
-        "$HOME/.var/app/io.github.shiiion.primehack/config/dolphin-emu"
-      _emudeck_install \
-        "${emudeckConfigs}/org.ryujinx.Ryujinx/config/Ryujinx" \
-        "$HOME/.var/app/org.ryujinx.Ryujinx/config/Ryujinx"
-      _emudeck_install \
-        "${emudeckConfigs}/info.cemu.Cemu/data/cemu" \
-        "$HOME/.var/app/info.cemu.Cemu/data/cemu"
-      _emudeck_install \
-        "${emudeckConfigs}/net.kuribo64.melonDS/config/melonDS" \
-        "$HOME/.var/app/net.kuribo64.melonDS/config/melonDS"
-      _emudeck_install \
-        "${emudeckConfigs}/mgba" \
-        "$HOME/.var/app/io.mgba.mGBA/config/mgba"
-      _emudeck_install \
-        "${emudeckConfigs}/pcsx2qt/.config/PCSX2/inis" \
-        "$HOME/.var/app/net.pcsx2.PCSX2/config/PCSX2/inis"
-      _emudeck_install \
-        "${emudeckConfigs}/net.rpcs3.RPCS3/config/rpcs3" \
-        "$HOME/.var/app/net.rpcs3.RPCS3/config/rpcs3"
-      _emudeck_install \
-        "${emudeckConfigs}/org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM" \
-        "$HOME/.var/app/org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM"
-      _emudeck_install \
-        "${emudeckConfigs}/duckstation" \
-        "$HOME/.local/share/duckstation"
-      _emudeck_install \
-        "${emudeckConfigs}/app.xemu.xemu/data/xemu" \
-        "$HOME/.var/app/app.xemu.xemu/data/xemu"
-      _emudeck_install \
-        "${emudeckConfigs}/org.flycast.Flycast/config/flycast" \
-        "$HOME/.var/app/org.flycast.Flycast/config/flycast"
-      _emudeck_install \
-        "${emudeckConfigs}/org.scummvm.ScummVM/config/scummvm" \
-        "$HOME/.var/app/org.scummvm.ScummVM/config/scummvm"
+      # Flatpak sandbox paths → configsDir
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.libretro.RetroArch/config/retroarch" \
+        "${configsDir}/org.libretro.RetroArch/config/retroarch"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.DolphinEmu.dolphin-emu/config/dolphin-emu" \
+        "${configsDir}/org.DolphinEmu.dolphin-emu/config/dolphin-emu"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/io.github.shiiion.primehack/config/dolphin-emu" \
+        "${configsDir}/io.github.shiiion.primehack/config/dolphin-emu"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.ryujinx.Ryujinx/config/Ryujinx" \
+        "${configsDir}/org.ryujinx.Ryujinx/config/Ryujinx"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/info.cemu.Cemu/data/cemu" \
+        "${configsDir}/info.cemu.Cemu/data/cemu"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/net.kuribo64.melonDS/config/melonDS" \
+        "${configsDir}/net.kuribo64.melonDS/config/melonDS"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/mgba" \
+        "${configsDir}/mgba"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/duckstation" \
+        "${configsDir}/duckstation"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/pcsx2qt/.config/PCSX2/inis" \
+        "${configsDir}/pcsx2qt/.config/PCSX2/inis"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/net.rpcs3.RPCS3/config/rpcs3" \
+        "${configsDir}/net.rpcs3.RPCS3/config/rpcs3"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM" \
+        "${configsDir}/org.ppsspp.PPSSPP/config/ppsspp/PSP/SYSTEM"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/app.xemu.xemu/data/xemu" \
+        "${configsDir}/app.xemu.xemu/data/xemu"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.flycast.Flycast/config/flycast" \
+        "${configsDir}/org.flycast.Flycast/config/flycast"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/org.scummvm.ScummVM/config/scummvm" \
+        "${configsDir}/org.scummvm.ScummVM/config/scummvm"
 
-      # ── XDG config paths (~/.config/) ──────────────────────────────────────
-      _emudeck_install \
-        "${emudeckConfigs}/Vita3K" \
-        "$HOME/.config/Vita3K"
-      _emudeck_install \
-        "${emudeckConfigs}/emulationstation" \
-        "$HOME/.config/ES-DE"
-      _emudeck_install \
-        "${emudeckConfigs}/steam-rom-manager/userData" \
-        "$HOME/.config/steam-rom-manager/userData"
+      # XDG config paths
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/Vita3K" \
+        "${configsDir}/Vita3K"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/emulationstation" \
+        "${configsDir}/emulationstation"
+      _emudeck_seed \
+        "${emudeckConfigsSrc}/steam-rom-manager/userData" \
+        "${configsDir}/steam-rom-manager/userData"
 
-      # ── Emulation library directory structure ───────────────────────────────
+      # Emulation library directory structure
       mkdir -p "${cfg.emulationPath}"/{roms,bios,saves,storage}
     '';
   };
