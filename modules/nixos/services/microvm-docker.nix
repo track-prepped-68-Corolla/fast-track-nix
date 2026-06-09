@@ -67,6 +67,12 @@ in
       description = "Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).";
     };
 
+    composeVolumeSize = lib.mkOption {
+      type = lib.types.int;
+      default = 10240;
+      description = "Size of the /opt/compose volume in MiB (image stored at /var/lib/microvm/<vmName>/compose.img on the host).";
+    };
+
     vmMac = lib.mkOption {
       type = lib.types.str;
       default = "02:00:00:00:00:01";
@@ -187,6 +193,11 @@ in
           image = "/var/lib/microvm/${cfg.vmName}/docker.img";
           mountPoint = "/var/lib/docker";
           size = cfg.dockerVolumeSize;
+        }
+        {
+          image = "/var/lib/microvm/${cfg.vmName}/compose.img";
+          mountPoint = "/opt/compose";
+          size = cfg.composeVolumeSize;
         }
       ];
 
