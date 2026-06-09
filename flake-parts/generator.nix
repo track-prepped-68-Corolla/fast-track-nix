@@ -79,6 +79,9 @@ let
     if builtins.pathExists formatFile then lib.removeSuffix "\n" (builtins.readFile formatFile) else null;
 
   formattedMachines = builtins.filter (m: getMachineFormat m != null) nixosMachines;
+  # Image machines are not deployable NixOS systems — exclude them from
+  # nixosConfigurations so they don't fail the filesystem/bootloader assertions.
+  deployableMachines = builtins.filter (m: getMachineFormat m == null) nixosMachines;
 
   mkImagePackage =
     machine:
@@ -141,7 +144,7 @@ in
             ];
           }
         )
-      ) nixosMachines
+      ) deployableMachines
     );
 
     darwinConfigurations = builtins.listToAttrs (
