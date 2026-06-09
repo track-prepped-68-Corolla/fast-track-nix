@@ -121,6 +121,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.terminal` | Terminal stack — Home Manager |
 | `ft.lazyvim` | LazyVim Neovim config — Home Manager |
 | `ft.dotfiles` | Dotfile symlinking — Home Manager |
+| `ft.emulation` | EmuDeck-compatible emulation suite — Home Manager |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
 

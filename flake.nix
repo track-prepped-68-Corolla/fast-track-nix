@@ -48,6 +48,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Declarative Flatpak package management — used by ft.emulation.
+    nix-flatpak.url = "github:gmodena/nix-flatpak";
+
     # macOS support — only evaluated when darwinConfigurations are generated.
     darwin = {
       url = "github:LnL7/nix-darwin";
