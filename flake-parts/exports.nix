@@ -38,6 +38,8 @@
         ];
       };
 
+    nixosModules.mullet = import ../modules/nixos/apps/mullet.nix;
+
     homeManagerModules.default = import ../modules/home;
   };
 
@@ -46,6 +48,23 @@
     {
       packages = {
         inherit (pkgs) nixfmt deadnix;
+
+        default = pkgs.writeShellApplication {
+          name = "ft";
+          runtimeInputs = with pkgs; [
+            just
+            glow
+            nh
+            git
+            nvd
+            delta
+            trufflehog
+          ];
+          text = ''
+            REPO="''${FT_REPO:-$(pwd)}"
+            exec just --justfile "$REPO/scripts/ft.just" --working-directory "$REPO" "$@"
+          '';
+        };
       };
     };
 }

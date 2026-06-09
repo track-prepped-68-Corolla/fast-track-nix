@@ -12,14 +12,14 @@
 # graphics, along with PRIME offloading for hybrid graphics systems.
 # The goal is to offer a single, unified interface for GPU configuration.
 #
-# When ft.hardware.gpu.autodetect is true, vendor and Optimus/PRIME settings
-# are derived from the facter.json pointed at by ft.hardware.facter.reportPath.
+# When ft.gpu.autodetect is true, vendor and Optimus/PRIME settings
+# are derived from the facter.json pointed at by ft.facter.reportPath.
 ################################################################################
 
 let
-  cfg = config.ft.hardware.gpu;
+  cfg = config.ft.gpu;
 
-  facterPath = config.ft.hardware.facter.reportPath;
+  facterPath = config.ft.facter.reportPath;
 
   facter =
     if cfg.autodetect && facterPath != null && builtins.pathExists facterPath then
@@ -155,7 +155,7 @@ let
   effectivePrimeIsIgpuIntel = if isOptimus then isIntelCard optIgpuCard else isIntel;
 in
 {
-  options.ft.hardware.gpu = {
+  options.ft.gpu = {
     enable = lib.mkEnableOption "universal GPU configuration" // {
       description = "Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.";
     };
@@ -163,7 +163,7 @@ in
     autodetect = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Detect GPU vendor and Optimus configuration from ft.hardware.facter.reportPath. When true, sets ft.hardware.gpu.vendor and configures PRIME offloading automatically for Optimus setups. Set to false to use the vendor and prime options directly.";
+      description = "Detect GPU vendor and Optimus configuration from ft.facter.reportPath. When true, sets ft.gpu.vendor and configures PRIME offloading automatically for Optimus setups. Set to false to use the vendor and prime options directly.";
     };
 
     vendor = lib.mkOption {
