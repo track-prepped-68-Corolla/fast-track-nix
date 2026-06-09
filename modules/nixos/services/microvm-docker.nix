@@ -245,7 +245,9 @@ in
         ft.guacamole = {
           enable = lib.mkDefault cfg.guacamole.enable;
           runtime = lib.mkDefault "docker";
-          inherit (cfg.guacamole) imageTag port dbPassword;
+          imageTag = lib.mkDefault cfg.guacamole.imageTag;
+          port = lib.mkDefault cfg.guacamole.port;
+          dbPassword = lib.mkDefault cfg.guacamole.dbPassword;
         };
         ft.ociStack = {
           enable = lib.mkDefault true;
