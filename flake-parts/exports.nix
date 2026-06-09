@@ -1,4 +1,18 @@
 { inputs, ... }:
+let
+  makeLiveIso =
+    { extraModules ? [ ] }:
+    inputs.nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+        inputs.Disko.nixosModules.disko
+        inputs.microvm.nixosModules.host
+        (import ../modules/nixos)
+        { ft.liveIso.enable = true; }
+      ] ++ extraModules;
+    };
+in
 {
   flake = {
     lib.mkFlake =
@@ -19,6 +33,8 @@
           ./formatter.nix
         ];
       };
+
+    lib.mkLiveIso = makeLiveIso;
 
     # Capture disko and microvm host modules in the closure at flake-evaluation
     # time so that framework modules never need to reference inputs inside an
@@ -42,10 +58,15 @@
   };
 
   perSystem =
-    { pkgs, ... }:
+    { pkgs, system, ... }:
     {
-      packages = {
-        inherit (pkgs) nixfmt deadnix;
-      };
+      packages =
+        (
+          if system == "x86_64-linux" then
+            { liveIso = (makeLiveIso { }).config.system.build.isoImage; }
+          else
+            { }
+        )
+        // { inherit (pkgs) nixfmt deadnix; };
     };
 }
