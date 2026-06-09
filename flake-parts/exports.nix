@@ -4,6 +4,7 @@ let
     { extraModules ? [ ] }:
     inputs.nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
       modules = [
         "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
         inputs.Disko.nixosModules.disko
@@ -61,12 +62,9 @@ in
     { pkgs, system, ... }:
     {
       packages =
-        (
-          if system == "x86_64-linux" then
-            { liveIso = (makeLiveIso { }).config.system.build.isoImage; }
-          else
-            { }
-        )
-        // { inherit (pkgs) nixfmt deadnix; };
+        { inherit (pkgs) nixfmt deadnix; }
+        // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          liveIso = (makeLiveIso { }).config.system.build.isoImage;
+        };
     };
 }

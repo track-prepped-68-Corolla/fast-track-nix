@@ -21,7 +21,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; lib.mkDefault [
+    environment.systemPackages = with pkgs; [
       nixos-anywhere
       disko
       nixos-facter
