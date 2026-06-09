@@ -24,7 +24,7 @@ in
     experimentalNvidiaBlock = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable experimental blocking of NVIDIA-specific device files. Enabled automatically when ft.hardware.gpu is active with the NVIDIA driver.";
+      description = "Enable experimental blocking of NVIDIA-specific device files. Enabled automatically when ft.gpu is active with the NVIDIA driver.";
     };
 
     batteryAutoSwitch = lib.mkOption {

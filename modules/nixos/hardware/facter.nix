@@ -15,14 +15,14 @@
 ################################################################################
 
 let
-  cfg = config.ft.hardware.facter;
+  cfg = config.ft.facter;
 in
 {
   imports = [ inputs.nixos-facter-modules.nixosModules.facter ];
 
-  options.ft.hardware.facter = {
+  options.ft.facter = {
     enable = lib.mkEnableOption "nixos-facter hardware detection" // {
-      description = "Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.hardware.facter.reportPath = ./var/facter.json in the machine's default.nix.";
+      description = "Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.";
     };
 
     reportPath = lib.mkOption {
