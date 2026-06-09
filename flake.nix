@@ -105,6 +105,13 @@
       url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Multi-format NixOS image builder — used by the generator to build live ISOs
+    # from machines whose machines/<name>/var/format specifies a target format.
+    nixos-generators = {
+      url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
