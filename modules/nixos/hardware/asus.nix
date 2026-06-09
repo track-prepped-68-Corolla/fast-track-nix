@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -25,6 +26,6 @@ in
       enableUserService = lib.mkDefault cfg.enableUserService;
     };
 
-    programs.asusctl.enable = lib.mkDefault true;
+    environment.systemPackages = [ pkgs.asusctl ];
   };
 }
