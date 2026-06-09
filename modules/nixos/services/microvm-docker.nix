@@ -70,7 +70,7 @@ in
     composeVolumeSize = lib.mkOption {
       type = lib.types.int;
       default = 10240;
-      description = "Size of the persistent compose project volume in MiB (image stored at /var/lib/microvm/<vmName>/compose.img on the host). Holds /opt/compose so stack files and bind-mount data survive VM rebuilds.";
+      description = "Size of the /opt/compose volume in MiB (image stored at /var/lib/microvm/<vmName>/compose.img on the host).";
     };
 
     vmMac = lib.mkOption {
