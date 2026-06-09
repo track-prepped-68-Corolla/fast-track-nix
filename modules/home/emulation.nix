@@ -16,18 +16,11 @@ let
 
   link = sub: config.lib.file.mkOutOfStoreSymlink "${configsDir}/${sub}";
 
-  emudeckSrc = pkgs.fetchFromGitHub {
-    owner = "dragoonDorise";
-    repo = "EmuDeck";
-    rev = cfg.emudeckRev;
-    hash = cfg.emudeckHash;
-  };
-
-  # Substitute the Steam Deck SD card stem that EmuDeck hard-codes across its
-  # entire configs tree. Every absolute path uses /run/media/mmcblk0p1/Emulation
+  # Substitute the Steam Deck SD card stem that EmuDeck hard-codes across the
+  # bundled configs. Every absolute path uses /run/media/mmcblk0p1/Emulation
   # as a prefix, so a single sed pass covers all emulators.
   emudeckConfigsSrc = pkgs.runCommand "emudeck-configs" { } ''
-    cp -r ${emudeckSrc}/configs $out
+    cp -r ${./emulation/configs} $out
     chmod -R u+w $out
     find $out -type f -exec sed -i \
       's|/run/media/mmcblk0p1/Emulation|${cfg.emulationPath}|g' {} \;
@@ -38,7 +31,7 @@ in
 
   options.ft.emulation = {
     enable = lib.mkEnableOption "EmuDeck-compatible emulation suite" // {
-      description = "Installs the EmuDeck emulator set as Flatpak packages via nix-flatpak, seeds live-editable emulator configurations from a pinned EmuDeck source tree into emulationPath/.configs/, and symlinks each emulator's config directory there using out-of-store symlinks. Configs are copied once on first activation and never overwritten, so in-app edits persist across rebuilds. Requires services.flatpak.enable = true at the NixOS system level.";
+      description = "Installs the EmuDeck emulator set as Flatpak packages via nix-flatpak, seeds live-editable emulator configurations from bundled EmuDeck-compatible config files into emulationPath/.configs/, and symlinks each emulator's config directory there using out-of-store symlinks. Configs are copied once on first activation and never overwritten, so in-app edits persist across rebuilds. Requires services.flatpak.enable = true at the NixOS system level.";
     };
 
     emulationPath = lib.mkOption {
@@ -46,18 +39,6 @@ in
       default = "${config.home.homeDirectory}/Emulation";
       description = "Root of the emulation library. Subdirectories roms/, bios/, saves/, storage/, and .configs/ are created here on first activation. All emulator configs are written under .configs/ and referenced via out-of-store symlinks.";
       example = "/home/alice/Emulation";
-    };
-
-    emudeckRev = lib.mkOption {
-      type = lib.types.str;
-      default = "125a09a37f49c013338a9bb2811505b18844c988";
-      description = "EmuDeck git revision to source default configurations from. Bump together with emudeckHash to pull in newer upstream configs.";
-    };
-
-    emudeckHash = lib.mkOption {
-      type = lib.types.str;
-      default = lib.fakeHash;
-      description = "SHA-256 hash of the EmuDeck source tree at emudeckRev in SRI format. Compute with: nix-prefetch-github dragoonDorise EmuDeck --rev <rev>. The build error will show the correct value when the placeholder is used.";
     };
   };
 
