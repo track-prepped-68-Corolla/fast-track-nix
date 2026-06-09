@@ -112,7 +112,7 @@ in
 
       port = lib.mkOption {
         type = lib.types.port;
-        default = 8080;
+        default = 8084;
         description = "Port inside the VM on which the Guacamole web interface listens.";
       };
 
