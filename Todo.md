@@ -201,7 +201,7 @@ The Nix module system's option declarations serve as the schema — no separate 
 
 ## 💻 Hardware & Vendors
 
-- [ ] ASUS hardware support
+- [x] ASUS hardware support
 - [ ] **Support other vendors:**
   - [ ] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
   - [ ] Scaffold a generic vendor module structure for toggling vendor-specific quirks
