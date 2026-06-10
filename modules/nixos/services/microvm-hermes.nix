@@ -9,7 +9,7 @@
 # MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES AGENT
 ################################################################################
 #
-# ft.services.hermesVm is three-level (new style) — generic enough for any
+# ft.hermesVm is three-level (new style) — generic enough for any
 # consumer, unlike the grandfathered two-level ft.dockervm.
 #
 # hermes-agent is installed from inputs.llm-agents (github:numtide/llm-agents.nix)
@@ -20,7 +20,7 @@
 # the numtide binary cache. See ft-home CLAUDE.md exclusion table.
 
 let
-  cfg = config.ft.services.hermesVm;
+  cfg = config.ft.hermesVm;
   tapId = "tap-${cfg.vmName}";
   bridgeName = "hermes-br";
 in
