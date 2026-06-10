@@ -106,6 +106,11 @@
       url = "github:astro/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Nix packages for AI coding agents — provides hermes-agent (Nous Research).
+    # nixpkgs is intentionally not followed: overlays.default builds against the
+    # flake's own nixpkgs-unstable pin so packages hit cache.numtide.com.
+    llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
   outputs =
