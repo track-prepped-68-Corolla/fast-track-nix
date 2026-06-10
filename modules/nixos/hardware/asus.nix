@@ -19,13 +19,6 @@ in
       description = "Enable the asusd user service for per-user RGB lighting and anime matrix control.";
     };
   };
-
-  config = lib.mkIf cfg.enable {
-    services.asusd = {
-      enable = lib.mkDefault true;
-      enableUserService = lib.mkDefault cfg.enableUserService;
-    };
-
     environment.systemPackages = [ pkgs.asusctl ];
   };
 }
