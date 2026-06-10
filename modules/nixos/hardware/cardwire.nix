@@ -40,8 +40,7 @@ in
       settings = {
         auto_apply_gpu_state = lib.mkDefault cfg.autoApplyGpuState;
         experimental_nvidia_block = lib.mkDefault (
-          cfg.experimentalNvidiaBlock
-          || builtins.elem "nvidia" config.services.xserver.videoDrivers
+          cfg.experimentalNvidiaBlock || builtins.elem "nvidia" config.services.xserver.videoDrivers
         );
         battery_auto_switch = lib.mkDefault cfg.batteryAutoSwitch;
       };

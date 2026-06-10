@@ -76,7 +76,10 @@ let
     let
       formatFile = machine.path + "/var/format";
     in
-    if builtins.pathExists formatFile then lib.removeSuffix "\n" (builtins.readFile formatFile) else null;
+    if builtins.pathExists formatFile then
+      lib.removeSuffix "\n" (builtins.readFile formatFile)
+    else
+      null;
 
   formattedMachines = builtins.filter (m: getMachineFormat m != null) nixosMachines;
   # Image machines are not deployable NixOS systems — exclude them from
