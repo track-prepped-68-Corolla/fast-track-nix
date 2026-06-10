@@ -6,15 +6,18 @@
 }:
 
 ################################################################################
-# MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES
+# MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES AGENT
 ################################################################################
 #
-# ft.hermesVm — generic enough for any consumer.
+# ft.hermesVm is three-level (new style) — generic enough for any
+# consumer, unlike the grandfathered two-level ft.dockervm.
 #
-# The guest is a minimal NixOS environment that points to an existing Ollama
-# instance on the host; it does not run its own Ollama server.
+# hermes-agent is installed from inputs.llm-agents (github:numtide/llm-agents.nix)
+# via overlays.default. The guest connects to the host's existing Ollama instance
+# for inference; no Ollama server runs inside the VM.
 #
-# VM smoke test exempt: nested KVM is unavailable in CI.
+# VM smoke test exempt: nested KVM is unavailable in CI and hermes-agent requires
+# the numtide binary cache. See ft-home CLAUDE.md exclusion table.
 
 let
   cfg = config.ft.hermesVm;
@@ -78,7 +81,19 @@ in
     ollamaUrl = lib.mkOption {
       type = lib.types.str;
       default = "http://${cfg.hostAddress}:11434";
-      description = "URL of the Ollama instance on the host. Set as OLLAMA_HOST inside the guest so the ollama CLI and any agent tooling find it automatically. The default points to the host bridge address; adjust if Ollama listens elsewhere.";
+      description = "Base URL of the Ollama instance on the host. Exposed to the guest as OPENAI_BASE_URL with /v1 appended so hermes-agent uses it as the LLM backend. Requires Ollama to be bound to 0.0.0.0 or the bridge address on the host.";
+    };
+
+    openaiApiKey = lib.mkOption {
+      type = lib.types.str;
+      default = "ollama";
+      description = "Value for OPENAI_API_KEY inside the guest. Ollama ignores the key; set this when pointing at a provider that enforces authentication.";
+    };
+
+    hermesApiPort = lib.mkOption {
+      type = lib.types.port;
+      default = 8642;
+      description = "Port on which the Hermes gateway API server listens inside the VM. Reachable from the host at http://<vmAddress>:<hermesApiPort>.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -91,6 +106,16 @@ in
   config = lib.mkIf cfg.enable {
     # Provide cloud-hypervisor and related host binaries from the microvm overlay.
     nixpkgs.overlays = [ inputs.microvm.overlay ];
+
+    # numtide binary cache — required to substitute hermes-agent without a
+    # full Python + Node.js source build. Added to host nix.settings so the
+    # host Nix daemon can fetch the guest's hermes-agent closure from cache.
+    nix.settings = {
+      substituters = lib.mkDefault [ "https://cache.numtide.com" ];
+      trusted-public-keys = lib.mkDefault [
+        "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      ];
+    };
 
     # ── Host bridge (hermes-br) ───────────────────────────────────────────────
     #
@@ -136,6 +161,11 @@ in
       config =
         { pkgs, ... }:
         {
+          # Pull hermes-agent from the llm-agents.nix flake overlay.
+          # overlays.default builds against the flake's own nixpkgs-unstable pin
+          # so packages hit cache.numtide.com without a source rebuild.
+          nixpkgs.overlays = [ inputs.llm-agents.overlays.default ];
+
           microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
           microvm.vcpu = lib.mkDefault cfg.vcpus;
           microvm.mem = lib.mkDefault cfg.mem;
@@ -162,11 +192,30 @@ in
             };
           };
 
-          # Point the ollama CLI (and any agent tooling) at the host's server.
-          environment.variables.OLLAMA_HOST = lib.mkDefault cfg.ollamaUrl;
+          # ── Hermes agent gateway ─────────────────────────────────────────────
+          #
+          # Runs hermes in gateway mode, which exposes an API server and routes
+          # requests to the host's Ollama via the OpenAI-compatible endpoint.
+          environment.systemPackages = with pkgs; [ hermes-agent ];
 
-          # ollama CLI for querying the host-side Ollama from within the guest.
-          environment.systemPackages = with pkgs; [ ollama ];
+          systemd.services.hermes-gateway = {
+            description = "Hermes AI agent gateway";
+            wantedBy = [ "multi-user.target" ];
+            after = [ "network-online.target" ];
+            wants = [ "network-online.target" ];
+            environment = {
+              OPENAI_BASE_URL = "${cfg.ollamaUrl}/v1";
+              OPENAI_API_KEY = cfg.openaiApiKey;
+              API_SERVER_ENABLED = "true";
+              API_SERVER_PORT = toString cfg.hermesApiPort;
+              API_SERVER_HOST = "0.0.0.0";
+            };
+            serviceConfig = {
+              ExecStart = "${pkgs.hermes-agent}/bin/hermes gateway run";
+              Restart = "on-failure";
+              RestartSec = "5s";
+            };
+          };
 
           # ── Optional SSH access from the host ───────────────────────────────
           services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {

@@ -111,6 +111,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Nix packages for AI coding agents — provides hermes-agent (Nous Research).
+    # nixpkgs is intentionally not followed: overlays.default builds against the
+    # flake's own nixpkgs-unstable pin so packages hit cache.numtide.com.
+    llm-agents.url = "github:numtide/llm-agents.nix";
     # Multi-format NixOS image builder — used by the generator to build live ISOs
     # from machines whose machines/<name>/var/format specifies a target format.
     nixos-generators = {
