@@ -50,10 +50,10 @@ Every module follows this template exactly:
 ```nix
 { pkgs, lib, config, ... }:
 let
-  cfg = config.ft.<namespace>.<feature>;
+  cfg = config.ft.<feature>;
 in
 {
-  options.ft.<namespace>.<feature> = {
+  options.ft.<feature> = {
     enable = lib.mkEnableOption "<short label>" // {
       description = "<one sentence describing what enabling this does>";
     };
@@ -68,7 +68,7 @@ in
 
 ### Rules that apply to every module
 
-- Bind `cfg = config.ft.<namespace>.<feature>;` at the top with `let-in`. Never repeat the full attribute path inside the `config` block.
+- Bind `cfg = config.ft.<feature>;` at the top with `let-in`. Never repeat the full attribute path inside the `config` block.
 - Prefer `inherit (cfg) foo bar;` over `foo = cfg.foo; bar = cfg.bar;` repetition.
 - All `config` values use `lib.mkDefault` so consumers can override without `lib.mkForce`.
 - `lib.mkForce` is reserved exclusively for security or safety invariants that must not be overridden. Comment the reason when used.
@@ -81,7 +81,7 @@ in
 Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub in each uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file is discovered and evaluated automatically on the next build.
 
 **Workflow for new modules:**
-1. Propose the option interface: namespace, option names, types, and defaults. Write no `config` yet.
+1. Propose the option interface: feature name, option names, types, and defaults. Write no `config` yet.
 2. Wait for explicit sign-off.
 3. Implement the `config` block.
 4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.
@@ -91,31 +91,38 @@ Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `defa
 
 ## Option naming convention
 
-New modules should be exactly three levels deep: `ft.<namespace>.<feature>.enable`. Several existing modules predate this convention and use two levels (e.g., `ft.cli.enable`, `ft.keepass.enable`, `ft.theme.enable`, `ft.terminal.enable`) — these are grandfathered in and should not be renamed without a migration plan.
+All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a direct child of the `ft` attrset — there are no grouping namespaces.
 
-| Namespace | Domain |
+| Option | Domain |
 |---|---|
-| `ft.system.*` | Core OS baseline |
-| `ft.boot.*` | Bootloader configuration |
-| `ft.kernel.*` | Kernel variants |
-| `ft.desktop.*` | Desktop environments |
-| `ft.hardware.*` | Hardware support (GPU, YubiKey, disk layout) |
-| `ft.profiles.*` | Compound use-case profiles |
-| `ft.services.*` | System services (printing, NFS, Tailscale, etc.) |
-| `ft.programs.*` | Program-level features (nix-index) |
-| `ft.security.*` | Security tooling and secrets |
-| `ft.cli` | The `ft` CLI helper (two-level; grandfathered) |
-| `ft.keepass` | KeePassXC secret service (two-level; grandfathered) |
-| `ft.theme` | System-wide theming via Stylix — Home Manager (two-level; grandfathered) |
-| `ft.terminal` | Terminal stack — Home Manager (two-level; grandfathered) |
-| `ft.lazyvim` | LazyVim Neovim config — Home Manager (two-level; grandfathered) |
-| `ft.dotfiles` | Dotfile symlinking — Home Manager (two-level; grandfathered) |
-| `ft.home.sops` | Per-user sops age key — Home Manager |
-| `ft.cosmic` | COSMIC desktop theming — Home Manager (two-level; grandfathered) |
+| `ft.core` | System core baseline (NixOS) / Home Manager foundation (HM) |
+| `ft.limine` | Limine bootloader |
+| `ft.cachyos` | CachyOS optimised kernel |
+| `ft.cosmic` | COSMIC desktop environment (NixOS) / COSMIC theming (HM) |
+| `ft.plasma` | KDE Plasma desktop environment |
+| `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
+| `ft.asus` | ASUS ROG/TUF laptop hardware support |
+| `ft.yubikey` | YubiKey hardware support |
+| `ft.sops` | sops-nix secret management (NixOS) / per-user sops age key (HM) |
+| `ft.bulkPool` | mergerfs + snapraid-btrfs bulk storage pool |
+| `ft.hermesVm` | Hermes NixOS microVM |
+| `ft.komodo` | Komodo Core + Periphery (NixOS) / user-level Komodo (HM) |
+| `ft.microvms` | Generic microVM host infrastructure |
+| `ft.nfs` | NFS client mount management |
+| `ft.ociStack` | Guest-side OCI runtime with docker-compose |
+| `ft.podmanRootless` | Rootless Podman service user |
+| `ft.printing` | CUPS printing service |
+| `ft.tailscale` | Tailscale VPN client |
+| `ft.virt` | Libvirt/QEMU, Incus, VMware host |
+| `ft.nixIndex` | nix-index with pre-built database and comma integration |
+| `ft.cli` | The `ft` CLI helper |
+| `ft.keepass` | KeePassXC secret service |
+| `ft.theme` | System-wide theming via Stylix — Home Manager |
+| `ft.terminal` | Terminal stack — Home Manager |
+| `ft.lazyvim` | LazyVim Neovim config — Home Manager |
+| `ft.dotfiles` | Dotfile symlinking — Home Manager |
 
-New namespaces require a comment in the module justifying why none of the above apply.
-
-Every module must declare `options.ft.<namespace>.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
+Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
 
 ---
 
@@ -183,7 +190,7 @@ New machines are provisioned with nixos-anywhere + disko + nixos-facter. Facter 
 
 ## Secrets
 
-sops-nix, age-encrypted. The sops configuration and encrypted secrets files live under `var/secrets/` in the consumer repo. SSH host key is the default age recipient. `ft.security.sops.useTPM` and `ft.security.sops.useYubikey` are available for hardware-token decryption.
+sops-nix, age-encrypted. The sops configuration and encrypted secrets files live under `var/secrets/` in the consumer repo. SSH host key is the default age recipient. `ft.sops.useTPM` and `ft.sops.useYubikey` are available for hardware-token decryption.
 
 ---
 
@@ -226,7 +233,7 @@ All pull requests target `testing`, not `main`. Changes reach `main` only after 
 ## What Claude must never do
 
 - Commit any user-specific, machine-specific, or site-specific data to ft-home.
-- Create a module without a `ft.<namespace>.<feature>.enable` option.
+- Create a module without a `ft.<feature>.enable` option.
 - Use `lib.mkForce` except for an explicitly documented security or safety invariant.
 - Put logic in `flake.nix` (mix the flake/module boundary — dendritic pattern).
 - Refactor existing modules unless the task explicitly requires it.

@@ -31,6 +31,7 @@ let
   inherit (inputs) self nixpkgs home-manager;
   inherit (nixpkgs) lib;
   darwin = inputs.darwin or null;
+  nixos-generators = inputs.nixos-generators or null;
 
   getDirs =
     path:
@@ -62,6 +63,46 @@ let
   machineList = map mkMachineEntry machineNames;
   nixosMachines = builtins.filter (x: !x.isDarwin) machineList;
   darwinMachines = builtins.filter (x: x.isDarwin) machineList;
+
+  # ==========================================
+  # 1b. IMAGE FORMAT DETECTION
+  # ==========================================
+  # machines/<name>/var/format — optional file whose content names a
+  # nixos-generators format (e.g. "install-iso").  When present the
+  # generator emits packages.<system>.<name> for that machine in
+  # addition to nixosConfigurations.<name>.
+  getMachineFormat =
+    machine:
+    let
+      formatFile = machine.path + "/var/format";
+    in
+    if builtins.pathExists formatFile then
+      lib.removeSuffix "\n" (builtins.readFile formatFile)
+    else
+      null;
+
+  formattedMachines = builtins.filter (m: getMachineFormat m != null) nixosMachines;
+  # Image machines are not deployable NixOS systems — exclude them from
+  # nixosConfigurations so they don't fail the filesystem/bootloader assertions.
+  deployableMachines = builtins.filter (m: getMachineFormat m == null) nixosMachines;
+
+  mkImagePackage =
+    machine:
+    assert lib.assertMsg (
+      nixos-generators != null
+    ) "nixos-generators input is required to build image packages but was not found";
+    nixos-generators.nixosGenerate {
+      pkgs = nixpkgs.legacyPackages.${machine.system};
+      format = getMachineFormat machine;
+      specialArgs = { inherit inputs; };
+      modules = [
+        inputs.Disko.nixosModules.disko
+        inputs.microvm.nixosModules.host
+        ../modules/nixos
+        machine.path
+        { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
+      ];
+    };
 
   # ==========================================
   # 2. USERS DISCOVERY
@@ -106,7 +147,7 @@ in
             ];
           }
         )
-      ) nixosMachines
+      ) deployableMachines
     );
 
     darwinConfigurations = builtins.listToAttrs (
@@ -142,5 +183,13 @@ in
         )
       ) userMatrix
     );
+
+    # Machines with a var/format file are built as image packages in addition
+    # to their normal nixosConfiguration.  packages.<system>.<name> holds the
+    # nixos-generators output (e.g. the .iso file for "install-iso").
+    packages = lib.foldr (
+      machine: acc:
+      lib.recursiveUpdate acc { ${machine.system}.${machine.name} = mkImagePackage machine; }
+    ) { } formattedMachines;
   };
 }

@@ -22,8 +22,8 @@ in
 
       wallpaper = lib.mkOption {
         type = lib.types.either lib.types.path lib.types.str;
-        default = ../../homes/guest/wallpapers/default.png;
-        description = "Path to the primary desktop wallpaper.";
+        example = lib.literalExpression "./wallpapers/default.png";
+        description = "Required: path to the primary desktop wallpaper. Set this in your user config, e.g. ft.theme.wallpaper = ./wallpapers/default.png;. No framework default is provided because a framework-relative path would resolve into the framework repo, not the consumer's.";
       };
 
       schemePath = lib.mkOption {
@@ -83,7 +83,7 @@ in
     };
 
     ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic" // {
-      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.desktop.cosmic.enable` when running the COSMIC desktop environment.";
+      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.cosmic.enable` (NixOS) when running the COSMIC desktop environment.";
     };
   };
 

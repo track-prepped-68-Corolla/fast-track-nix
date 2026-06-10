@@ -5,10 +5,13 @@
   inputs,
   ...
 }:
+let
+  cfg = config.ft.cachyos;
+in
 {
-  options.ft.kernel.cachyos = {
+  options.ft.cachyos = {
     enable = lib.mkEnableOption "CachyOS optimized kernel" // {
-      description = "Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.kernel.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.";
+      description = "Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.";
     };
     variant = lib.mkOption {
       type = lib.types.enum [
@@ -56,10 +59,11 @@
     };
   };
 
-  config = lib.mkIf config.ft.kernel.cachyos.enable {
-    boot.kernelPackages =
+  config = lib.mkIf cfg.enable {
+    boot.kernelPackages = lib.mkDefault (
       pkgs.linuxPackagesFor
-        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${config.ft.kernel.cachyos.variant}";
+        inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${cfg.variant}"
+    );
 
     nix.settings = {
       extra-substituters = [ "https://attic.xuyh0120.win/lantian" ];

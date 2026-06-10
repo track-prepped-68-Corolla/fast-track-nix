@@ -25,9 +25,9 @@ let
   bridgeName = "hermes-br";
 in
 {
-  options.ft.services.hermesVm = {
-    enable = lib.mkEnableOption "Nous Research Hermes agent microVM" // {
-      description = "Boots a Cloud Hypervisor microVM running NixOS with the Nous Research Hermes agent (from github:numtide/llm-agents.nix). The guest runs hermes gateway, pointed at the host's existing Ollama instance. Requires KVM on the host. VM smoke test exempt: nested KVM unavailable in CI; hermes-agent requires the numtide binary cache.";
+  options.ft.hermesVm = {
+    enable = lib.mkEnableOption "Nous Research Hermes NixOS microVM" // {
+      description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. The guest reaches the host's existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM is unavailable in CI.";
     };
 
     vmName = lib.mkOption {

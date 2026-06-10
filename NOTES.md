@@ -65,11 +65,11 @@ Verify your `.sops.yaml` `creation_rules` covers `secrets/secrets.yaml`.
 In your machine's NixOS configuration:
 
 ```nix
-ft.services.podmanRootless.enable = true;
-ft.services.komodo.enable = true;
+ft.podmanRootless.enable = true;
+ft.komodo.enable = true;
 ```
 
-`ft.services.podmanRootless.uid` defaults to `2000`. Change it if that UID is
+`ft.podmanRootless.uid` defaults to `2000`. Change it if that UID is
 already taken on your system — the Podman socket path derives from it.
 
 ## Enabling the Home Manager module
@@ -77,17 +77,17 @@ already taken on your system — the Podman socket path derives from it.
 In your user profile (`users/<username>/default.nix`):
 
 ```nix
-ft.security.sops.enable = true;
-ft.home.komodo.enable = true;
+ft.sops.enable = true;
+ft.komodo.enable = true;
 ```
 
 The module reuses the same three sops secret keys above. For a standalone Home
 Manager deployment, store them in `users/<username>/var/secrets.yaml` (the
-default `sops.defaultSopsFile` set by `ft.security.sops`). Container data is
+default `sops.defaultSopsFile` set by `ft.sops`). Container data is
 written to `~/.local/share/komodo` by default; override with:
 
 ```nix
-ft.home.komodo.dataDir = "/path/to/custom/dir";
+ft.komodo.dataDir = "/path/to/custom/dir";
 ```
 
 After `home-manager switch`, reload the user daemon and start the stack:

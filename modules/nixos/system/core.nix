@@ -6,14 +6,14 @@
 }:
 
 let
-  cfg = config.ft.system.core;
+  cfg = config.ft.core;
 in
 {
   # -------------------------------------------------------------------------
   #  FAST TRACK NIX - BOILERPLATE & DEFAULTS
   # -------------------------------------------------------------------------
 
-  options.ft.system.core = {
+  options.ft.core = {
     enable = lib.mkEnableOption "system core baseline" // {
       default = true;
       description = "Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
