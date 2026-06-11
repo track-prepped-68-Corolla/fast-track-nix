@@ -1,4 +1,9 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 ################################################################################
 # VENDOR HARDWARE MODULE
@@ -40,8 +45,7 @@ let
 
   # USB device list for peripheral vendor detection.
   usbDevices = facter.hardware.usb or [ ];
-  hasUsbVendor =
-    vid: builtins.any (d: lib.toLower ((d.vendor or { }).hex or "") == vid) usbDevices;
+  hasUsbVendor = vid: builtins.any (d: lib.toLower ((d.vendor or { }).hex or "") == vid) usbDevices;
 
   # Brand detection predicates ---------------------------------------------------
 
@@ -72,9 +76,7 @@ let
   detectAsus = lib.hasInfix "asus" dmiMfr;
 
   # Resolve effective bool: explicit override wins; null falls through to autodetect.
-  resolve =
-    override: detected:
-    if override != null then override else (cfg.autodetect && detected);
+  resolve = override: detected: if override != null then override else (cfg.autodetect && detected);
 
   effLenovo = resolve cfg.lenovo detectLenovo;
   effRazer = resolve cfg.razer detectRazer;
@@ -154,9 +156,8 @@ in
       # Lenovo Legion Linux — out-of-tree kernel driver + userspace daemon/GUI.
       # -------------------------------------------------------------------------
       (lib.mkIf effLenovo {
-        boot.extraModulePackages = [ config.boot.kernelPackages.lenovoLegionLinux ];
-        environment.systemPackages = [ pkgs.lenovoLegionLinux ];
-        services.udev.packages = [ pkgs.lenovoLegionLinux ];
+        boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
+        environment.systemPackages = [ pkgs.lenovo-legion ];
       })
 
       # -------------------------------------------------------------------------

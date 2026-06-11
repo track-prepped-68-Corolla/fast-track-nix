@@ -273,7 +273,11 @@ in
           }
           # PRIME Offloading (for hybrid graphics)
           (lib.mkIf effectivePrimeEnable {
-            prime.offload.enable = lib.mkDefault true;
+            # nixpkgs' nvidia module defines prime.offload.enable itself with
+            # mkDefault (mirroring reverseSync), so a plain mkDefault here
+            # collides at equal priority. mkOverride 990 sits just above that
+            # while remaining overridable by any explicit consumer definition.
+            prime.offload.enable = lib.mkOverride 990 true;
             prime.offload.enableOffloadCmd = lib.mkDefault true;
             prime.nvidiaBusId = lib.mkDefault effectivePrimeSecondaryBusId;
             prime.amdgpuBusId = lib.mkIf effectivePrimeIsIgpuAmd (lib.mkDefault effectivePrimePrimaryBusId);
