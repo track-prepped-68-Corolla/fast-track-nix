@@ -209,7 +209,7 @@ in
       finegrainedPowerManagement = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems.";
+        description = "Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems. Only applied while PRIME offloading is active, since the upstream nvidia module asserts fine-grained power management requires offload.";
       };
     };
 
@@ -263,7 +263,12 @@ in
             open = lib.mkDefault effectiveOpenKernelModules;
             nvidiaSettings = lib.mkDefault cfg.nvidia.enableSettings;
             powerManagement.enable = lib.mkDefault cfg.nvidia.enablePowerManagement;
-            powerManagement.finegrained = lib.mkDefault cfg.nvidia.finegrainedPowerManagement;
+            # Gated on PRIME: nixpkgs' nvidia module asserts that fine-grained
+            # power management requires offloading, so applying it on a
+            # single-dGPU system would fail evaluation.
+            powerManagement.finegrained = lib.mkDefault (
+              cfg.nvidia.finegrainedPowerManagement && effectivePrimeEnable
+            );
             package = lib.mkDefault (
               if cfg.nvidia.driverPackage == "beta" then
                 config.boot.kernelPackages.nvidiaPackages.beta
