@@ -137,7 +137,7 @@ in
     asus = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) and supergfxctl (dGPU switching) for ASUS ROG/TUF laptops. Null uses autodetect via DMI manufacturer string.";
+      description = "Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) and ft.cardwire (eBPF dGPU switching) for ASUS ROG/TUF laptops. Null uses autodetect via DMI manufacturer string.";
     };
 
     handheld = lib.mkOption {
@@ -205,11 +205,11 @@ in
 
       # -------------------------------------------------------------------------
       # ASUS ROG/TUF — asusctl handles fan curves, AuraSync RGB, and platform
-      # profiles; supergfxctl manages discrete GPU switching on hybrid systems.
+      # profiles; ft.cardwire manages dGPU switching via eBPF LSM hooks.
       # -------------------------------------------------------------------------
       (lib.mkIf effAsus {
         services.asusd.enable = lib.mkDefault true;
-        services.supergfxd.enable = lib.mkDefault true;
+        ft.cardwire.enable = lib.mkDefault true;
         environment.systemPackages = [ pkgs.asusctl ];
       })
 
