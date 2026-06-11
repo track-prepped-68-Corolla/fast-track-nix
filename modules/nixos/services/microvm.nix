@@ -149,7 +149,11 @@
       anyEnabled = lib.any (vmCfg: vmCfg.enable) (lib.attrValues vms);
     in
     {
-      nixpkgs.overlays = lib.optional anyEnabled inputs.microvm.overlay;
+      # mkIf (not lib.optional) so the definition disappears entirely when no
+      # VM is enabled: the NixOS test framework's read-only.nix declares
+      # nixpkgs.overlays as a unique option, and even an empty [] definition
+      # here would conflict with it during VM smoke tests.
+      nixpkgs.overlays = lib.mkIf anyEnabled [ inputs.microvm.overlay ];
 
       # ── Host bridge (microvm0) — shared by all VMs ─────────────────────────
       systemd.network.enable = lib.mkIf anyEnabled (lib.mkDefault true);
