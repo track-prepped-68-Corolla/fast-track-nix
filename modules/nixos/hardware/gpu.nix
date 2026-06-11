@@ -288,6 +288,14 @@ in
       (lib.mkIf isAmd {
         hardware.amdgpu.opencl.enable = lib.mkDefault true;
       })
+
+      # --------------------------------------------------------------------------
+      # Cardwire — eBPF dGPU power control; enabled automatically when PRIME is
+      # active so the desktop can block/unblock the discrete GPU device nodes.
+      # --------------------------------------------------------------------------
+      (lib.mkIf effectivePrimeEnable {
+        ft.cardwire.enable = lib.mkDefault true;
+      })
     ]
   );
 }
