@@ -102,6 +102,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.plasma` | KDE Plasma desktop environment |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
 | `ft.asus` | ASUS ROG/TUF laptop hardware support |
+| `ft.vendorHw` | Vendor-specific hardware software (Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG, handhelds) |
 | `ft.yubikey` | YubiKey hardware support |
 | `ft.sops` | sops-nix secret management (NixOS) / per-user sops age key (HM) |
 | `ft.bulkPool` | mergerfs + snapraid-btrfs bulk storage pool |
