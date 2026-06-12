@@ -155,6 +155,8 @@ flake-parts/
   formatter.nix            # nix fmt entry-point
   generator.nix            # machine/user discovery → nixosConfigurations etc.
 modules/
+  darwin/
+    default.nix            # hub: listFilesRecursive — stub, no modules yet
   nixos/
     default.nix            # hub: listFilesRecursive — no manual imports
     desktops/
