@@ -18,7 +18,16 @@ Darwin support is declared in the generator but not yet implemented in the modul
 
 ### flake.nix is pure wiring
 
-`flake.nix` exposes two things: `lib.mkFlake` (delegates to `lib/generator.nix`) and the module hub entry-points (`nixosModules.default`, `homeManagerModules.default`). No evaluation logic, no config generation, no module code lives in `flake.nix`.
+`flake.nix` exposes the following top-level outputs. No evaluation logic, no config generation, no module code lives in `flake.nix`.
+
+| Export | Description |
+|---|---|
+| `lib.mkFlake` | Consumer entry point — delegates to the flake-parts generator |
+| `lib.mergeInputs` | Canonical merge function: `frameworkInputs // consumerInputs` |
+| `lib.mkVmTest` | Wraps `runNixOSTest` with the merged input set in `node.specialArgs` |
+| `lib.vmTestBase` | Base NixOS module for VM test nodes — same hub as real machines + sandbox-compatible disabled modules |
+| `nixosModules.default` | Framework NixOS module hub (disko + microvm + all `modules/nixos/`) |
+| `homeManagerModules.default` | Framework Home Manager module hub (`modules/home/`) |
 
 - Complex logic → `flake-parts/`
 - NixOS/HM configuration → `modules/`
