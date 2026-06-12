@@ -39,24 +39,26 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ pkgs.nfs-utils ];
-    services.rpcbind.enable = true;
-    boot.supportedFilesystems = [ "nfs" ];
+    environment.systemPackages = lib.mkDefault [ pkgs.nfs-utils ];
+    services.rpcbind.enable = lib.mkDefault true;
+    boot.supportedFilesystems = lib.mkDefault [ "nfs" ];
 
-    fileSystems = lib.mapAttrs' (
-      _name: value:
-      lib.nameValuePair "${value.mountPoint}" {
-        device = "${value.remotePath}";
-        fsType = "nfs";
-        options = [
-          "x-systemd.automount"
-          "noauto"
-          "x-systemd.idle-timeout=600"
-          "nfsvers=4.1"
-          "soft"
-          "intr"
-          "_netdev"
-        ];
+    systemd.automounts = lib.mapAttrsToList (
+      _name: value: {
+        where = value.mountPoint;
+        wantedBy = [ "multi-user.target" ];
+        automountConfig.TimeoutIdleSec = "600";
+      }
+    ) cfg.mounts;
+
+    systemd.mounts = lib.mapAttrsToList (
+      _name: value: {
+        what = value.remotePath;
+        where = value.mountPoint;
+        type = "nfs";
+        options = "nfsvers=4.1,soft,intr,_netdev";
+        after = [ "network-online.target" ];
+        wants = [ "network-online.target" ];
       }
     ) cfg.mounts;
   };
