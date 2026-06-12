@@ -31,7 +31,6 @@ let
   inherit (inputs) self nixpkgs home-manager;
   inherit (nixpkgs) lib;
   darwin = inputs.darwin or null;
-  nixos-generators = inputs.nixos-generators or null;
 
   getDirs =
     path:
@@ -67,10 +66,10 @@ let
   # ==========================================
   # 1b. IMAGE FORMAT DETECTION
   # ==========================================
-  # machines/<name>/var/format — optional file whose content names a
-  # nixos-generators format (e.g. "install-iso").  When present the
-  # generator emits packages.<system>.<name> for that machine in
-  # addition to nixosConfigurations.<name>.
+  # machines/<name>/var/format — optional file whose content names an image
+  # format (e.g. "install-iso").  When present the generator emits
+  # packages.<system>.<name> for that machine in addition to
+  # nixosConfigurations.<name>.
   getMachineFormat =
     machine:
     let
@@ -86,23 +85,38 @@ let
   # nixosConfigurations so they don't fail the filesystem/bootloader assertions.
   deployableMachines = builtins.filter (m: getMachineFormat m == null) nixosMachines;
 
+  # Maps var/format strings to the nixpkgs installer module and build attribute.
+  isoFormats = {
+    install-iso = {
+      module = "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix";
+      attr = "isoImage";
+    };
+    install-iso-graphical = {
+      module = "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix";
+      attr = "isoImage";
+    };
+  };
+
   mkImagePackage =
     machine:
-    assert lib.assertMsg (
-      nixos-generators != null
-    ) "nixos-generators input is required to build image packages but was not found";
-    nixos-generators.nixosGenerate {
-      pkgs = nixpkgs.legacyPackages.${machine.system};
+    let
       format = getMachineFormat machine;
-      specialArgs = { inherit inputs; };
-      modules = [
-        inputs.Disko.nixosModules.disko
-        inputs.microvm.nixosModules.host
-        ../modules/nixos
-        machine.path
-        { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
-      ];
-    };
+      formatSpec =
+        isoFormats.${format}
+          or (throw "Unknown image format '${format}' for machine '${machine.name}'. Supported: ${lib.concatStringsSep ", " (lib.attrNames isoFormats)}");
+      nixos = lib.nixosSystem {
+        specialArgs = { inherit inputs; };
+        modules = [
+          formatSpec.module
+          inputs.Disko.nixosModules.disko
+          inputs.microvm.nixosModules.host
+          ../modules/nixos
+          machine.path
+          { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
+        ];
+      };
+    in
+    nixos.config.system.build.${formatSpec.attr};
 
   # ==========================================
   # 2. USERS DISCOVERY
@@ -186,7 +200,7 @@ in
 
     # Machines with a var/format file are built as image packages in addition
     # to their normal nixosConfiguration.  packages.<system>.<name> holds the
-    # nixos-generators output (e.g. the .iso file for "install-iso").
+    # built image (e.g. the .iso for "install-iso").
     packages = lib.foldr (
       machine: acc:
       lib.recursiveUpdate acc { ${machine.system}.${machine.name} = mkImagePackage machine; }
