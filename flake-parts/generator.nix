@@ -150,13 +150,16 @@ in
           darwin != null
         ) "The 'darwin' input is missing, but a macOS machine (${machine.name}) was discovered!";
         lib.nameValuePair machine.name (
-          darwin.lib.darwinSystem {
-            specialArgs = { inherit inputs; };
-            modules = [
-              machine.path
-              { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
-            ];
-          }
+          lib.warn
+            "ft-home: Darwin module injection is not yet implemented — ft.* options are unavailable for machine '${machine.name}'. See modules/darwin/default.nix."
+            (darwin.lib.darwinSystem {
+              specialArgs = { inherit inputs; };
+              modules = [
+                ../modules/darwin
+                machine.path
+                { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
+              ];
+            })
         )
       ) darwinMachines
     );
