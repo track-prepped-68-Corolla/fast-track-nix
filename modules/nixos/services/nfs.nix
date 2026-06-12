@@ -43,23 +43,46 @@ in
     services.rpcbind.enable = lib.mkDefault true;
     boot.supportedFilesystems = lib.mkDefault [ "nfs" ];
 
-    systemd.automounts = lib.mapAttrsToList (
-      _name: value: {
-        where = value.mountPoint;
-        wantedBy = [ "multi-user.target" ];
-        automountConfig.TimeoutIdleSec = "600";
-      }
-    ) cfg.mounts;
+    systemd.units =
+      lib.mapAttrs' (
+        _name: value:
+        let
+          # Derive the systemd unit name from the mount point:
+          # strip leading "/" then replace remaining "/" with "-".
+          unitName = lib.replaceStrings [ "/" ] [ "-" ] (lib.removePrefix "/" value.mountPoint);
+        in
+        lib.nameValuePair "${unitName}.automount" {
+          wantedBy = [ "multi-user.target" ];
+          text = ''
+            [Unit]
+            Description=Automount ${value.mountPoint}
 
-    systemd.mounts = lib.mapAttrsToList (
-      _name: value: {
-        what = value.remotePath;
-        where = value.mountPoint;
-        type = "nfs";
-        options = "nfsvers=4.1,soft,intr,_netdev";
-        after = [ "network-online.target" ];
-        wants = [ "network-online.target" ];
-      }
-    ) cfg.mounts;
+            [Automount]
+            Where=${value.mountPoint}
+            TimeoutIdleSec=600
+          '';
+        }
+      ) cfg.mounts
+      //
+      lib.mapAttrs' (
+        _name: value:
+        let
+          unitName = lib.replaceStrings [ "/" ] [ "-" ] (lib.removePrefix "/" value.mountPoint);
+        in
+        lib.nameValuePair "${unitName}.mount" {
+          text = ''
+            [Unit]
+            Description=Mount ${value.mountPoint}
+            After=network-online.target
+            Wants=network-online.target
+
+            [Mount]
+            What=${value.remotePath}
+            Where=${value.mountPoint}
+            Type=nfs
+            Options=nfsvers=4.1,soft,intr,_netdev
+          '';
+        }
+      ) cfg.mounts;
   };
 }
