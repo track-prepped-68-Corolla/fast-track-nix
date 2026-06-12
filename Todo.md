@@ -56,14 +56,14 @@ Items currently in ft-home that belong in fast-track-nix as proper `ft.*` module
   - [x] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
   - [x] `mullet.just` runtime path convention (`users/$USER/var/mullet.txt`) matches `ft.mullet.sourcePath` pattern — no script change needed
   - [x] Export `nixosModules.mullet` as a standalone flake output
-- [ ] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
+- [x] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
   - [x] Move `facter.nix` from ft-home into fast-track-nix `modules/nixos/hardware/facter.nix`
   - [x] Expose `ft.facter.enable` and `ft.facter.reportPath` options
-  - [ ] Remove local copy from ft-home once framework version is stable *(pending ft-home lock update)*
-- [ ] **`ft.gpu`** — port generic GPU vendor detection to framework
+  - [x] Remove local copy from ft-home once framework version is stable
+- [x] **`ft.gpu`** — port generic GPU vendor detection to framework
   - [x] Move `gpu.nix` from ft-home into fast-track-nix `modules/nixos/hardware/gpu.nix`
   - [x] Support AMD, Intel, NVIDIA, integrated; detect from facter output where possible
-  - [ ] Remove local copy from ft-home once framework version is stable *(pending ft-home lock update)*
+  - [x] Remove local copy from ft-home once framework version is stable
 
 ---
 
