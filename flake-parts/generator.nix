@@ -64,50 +64,29 @@ let
   darwinMachines = builtins.filter (x: x.isDarwin) machineList;
 
   # ==========================================
-  # 1b. IMAGE FORMAT DETECTION
+  # 1b. IMAGE MACHINE DETECTION
   # ==========================================
-  # machines/<name>/var/format — optional file whose content names an image
-  # format (e.g. "install-iso").  When present the generator emits
-  # packages.<system>.<name> for that machine in addition to
-  # nixosConfigurations.<name>.
-  getMachineFormat =
-    machine:
-    let
-      formatFile = machine.path + "/var/format";
-    in
-    if builtins.pathExists formatFile then
-      lib.removeSuffix "\n" (builtins.readFile formatFile)
-    else
-      null;
+  # machines/<name>/var/format — presence of this file marks the machine as an
+  # ISO image build rather than a deployable system.  The generator emits
+  # packages.<system>.<name> for image machines and excludes them from
+  # nixosConfigurations so they don't fail filesystem/bootloader assertions.
+  isImageMachine = machine: builtins.pathExists (machine.path + "/var/format");
 
-  formattedMachines = builtins.filter (m: getMachineFormat m != null) nixosMachines;
+  imageMachines = builtins.filter isImageMachine nixosMachines;
   # Image machines are not deployable NixOS systems — exclude them from
   # nixosConfigurations so they don't fail the filesystem/bootloader assertions.
-  deployableMachines = builtins.filter (m: getMachineFormat m == null) nixosMachines;
-
-  # Maps var/format strings to the nixpkgs installer module and build attribute.
-  isoFormats = {
-    install-iso = {
-      module = "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix";
-      attr = "isoImage";
-    };
-    install-iso-graphical = {
-      module = "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix";
-      attr = "isoImage";
-    };
-  };
+  deployableMachines = builtins.filter (m: !isImageMachine m) nixosMachines;
 
   mkImagePackage =
     machine:
     let
-      format = getMachineFormat machine;
-      formatSpec =
-        isoFormats.${format}
-          or (throw "Unknown image format '${format}' for machine '${machine.name}'. Supported: ${lib.concatStringsSep ", " (lib.attrNames isoFormats)}");
       nixos = lib.nixosSystem {
         specialArgs = { inherit inputs; };
         modules = [
-          formatSpec.module
+          # Live-system base: squashfs rootfs, GRUB/EFI bootloader, autologin
+          # root — no NixOS installer layer.  The machine config supplies the
+          # rest (ft.liveIso, extra tools, SSH keys, etc.).
+          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-base.nix"
           inputs.Disko.nixosModules.disko
           inputs.microvm.nixosModules.host
           ../modules/nixos
@@ -116,7 +95,7 @@ let
         ];
       };
     in
-    nixos.config.system.build.${formatSpec.attr};
+    nixos.config.system.build.isoImage;
 
   # ==========================================
   # 2. USERS DISCOVERY
@@ -198,12 +177,11 @@ in
       ) userMatrix
     );
 
-    # Machines with a var/format file are built as image packages in addition
-    # to their normal nixosConfiguration.  packages.<system>.<name> holds the
-    # built image (e.g. the .iso for "install-iso").
+    # Machines with a var/format file are built as ISO image packages.
+    # packages.<system>.<name> is the bootable .iso derivation.
     packages = lib.foldr (
       machine: acc:
       lib.recursiveUpdate acc { ${machine.system}.${machine.name} = mkImagePackage machine; }
-    ) { } formattedMachines;
+    ) { } imageMachines;
   };
 }
