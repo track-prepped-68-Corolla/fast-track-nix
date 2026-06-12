@@ -13,8 +13,8 @@
 # also be forced on or off via a nullable-bool override option.
 #
 # Detection sources:
-#   Laptops (Lenovo Legion, MSI, ASUS) — SMBIOS/DMI manufacturer + product strings
-#   Handhelds (Legion Go, GPD, Ayaneo)  — SMBIOS chassis type 11 or DMI strings
+#   Laptops (Lenovo Legion, MSI, ASUS) — SMBIOS manufacturer + product strings
+#   Handhelds (Legion Go, GPD, Ayaneo)  — SMBIOS chassis type 11 or product strings
 #   USB peripherals (Razer, Logitech, Corsair) — USB vendor ID in hardware.usb[]
 #   OpenRGB — no autodetect; enable explicitly (universal, brand-agnostic)
 ################################################################################
@@ -30,18 +30,20 @@ let
     else
       { };
 
-  # nixos-facter v2 puts DMI at the top level; v1 nests it under hardware.
-  dmiRaw = facter.dmi or (facter.hardware or { }).dmi or { };
-  dmiSystem = dmiRaw.system or { };
-  dmiChassis = dmiRaw.chassis or { };
+  # nixos-facter serialises SMBIOS data under the top-level "smbios" key.
+  # smbios.system is a single object; smbios.chassis is an array — take the
+  # first entry, or an empty attrset if the array is absent.
+  smbiosSystem = (facter.smbios or { }).system or { };
+  smbiosChassisList = (facter.smbios or { }).chassis or [ ];
+  smbiosChassis = if smbiosChassisList != [ ] then builtins.head smbiosChassisList else { };
 
-  dmiMfr = lib.toLower (dmiSystem.manufacturer or "");
-  dmiFamily = lib.toLower (dmiSystem.family or "");
-  dmiProduct = lib.toLower (dmiSystem.product_name or "");
-  dmiVersion = lib.toLower (dmiSystem.version or "");
+  dmiMfr = lib.toLower (smbiosSystem.manufacturer or "");
+  dmiProduct = lib.toLower (smbiosSystem.product or "");
+  dmiVersion = lib.toLower (smbiosSystem.version or "");
 
   # SMBIOS chassis type 11 = "Hand Held" per DMTF spec.
-  chassisType = toString (dmiChassis.type or "");
+  # chassis_type.value is the integer from the SMBIOS record.
+  chassisType = toString ((smbiosChassis.chassis_type or { }).value or "");
 
   # USB device list for peripheral vendor detection.
   usbDevices = facter.hardware.usb or [ ];
@@ -52,16 +54,14 @@ let
   detectLenovo =
     dmiMfr == "lenovo"
     && (
-      lib.hasInfix "legion" dmiFamily
-      || lib.hasInfix "legion" dmiProduct
+      lib.hasInfix "legion" dmiProduct
       || lib.hasInfix "legion" dmiVersion
     );
 
-  # Chassis type 11 catches any vendor's handheld; named DMI strings cover
-  # devices that report a desktop chassis type despite being handhelds.
+  # Chassis type 11 catches any vendor's handheld; named product strings cover
+  # devices that report a non-handheld chassis type despite being handhelds.
   detectHandheld =
     chassisType == "11"
-    || lib.hasInfix "legion go" dmiFamily
     || lib.hasInfix "legion go" dmiProduct
     || lib.hasInfix "gpd" dmiMfr
     || lib.hasInfix "ayaneo" dmiMfr
