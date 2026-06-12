@@ -165,7 +165,6 @@ modules/
   home/
     default.nix            # hub: listFilesRecursive — no manual imports
     home-core.nix          # home modules live as flat files directly here
-    host-facts.nix
     sops.nix
 machines/
   computer/                # reference/template machine — no personal data
