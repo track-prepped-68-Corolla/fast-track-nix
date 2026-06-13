@@ -52,11 +52,7 @@ let
   # Brand detection predicates ---------------------------------------------------
 
   detectLenovo =
-    dmiMfr == "lenovo"
-    && (
-      lib.hasInfix "legion" dmiProduct
-      || lib.hasInfix "legion" dmiVersion
-    );
+    dmiMfr == "lenovo" && (lib.hasInfix "legion" dmiProduct || lib.hasInfix "legion" dmiVersion);
 
   # Chassis type 11 catches any vendor's handheld; named product strings cover
   # devices that report a non-handheld chassis type despite being handhelds.

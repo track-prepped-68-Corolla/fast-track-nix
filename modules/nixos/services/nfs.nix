@@ -63,8 +63,7 @@ in
           '';
         }
       ) cfg.mounts
-      //
-      lib.mapAttrs' (
+      // lib.mapAttrs' (
         _name: value:
         let
           unitName = lib.replaceStrings [ "/" ] [ "-" ] (lib.removePrefix "/" value.mountPoint);
