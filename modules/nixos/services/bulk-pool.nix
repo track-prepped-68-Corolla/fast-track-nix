@@ -99,21 +99,35 @@ let
   hasPool = poolDrives != [ ];
   hasSnapraid = drives.parity != [ ] && drives.data != [ ];
 
-  # Runs at boot; warns about missing drives but exits 0 so boot is not blocked.
+  # Runs at boot. Fails the unit (visible in systemctl --failed) and writes a
+  # login banner to /run/motd.d/ when any expected drive is absent. Cleans up
+  # the banner and exits 0 when all drives are present.
   driveCheckScript = pkgs.writeShellScript "bulk-pool-check" (
     ''
-      missing=0
+      MOTD=/run/motd.d/bulk-pool-warning
+      missing=()
     ''
     + lib.concatMapStrings (label: ''
       if [[ ! -e /dev/disk/by-label/${label} ]]; then
-        echo "WARNING: bulk drive ${label} is not present" >&2
-        missing=1
+        missing+=("${label}")
       fi
     '') allDrives
     + ''
-      if [[ $missing -eq 1 ]]; then
-        echo "WARNING: one or more bulk drives are missing — pool may be degraded" >&2
+      if [[ ''${#missing[@]} -gt 0 ]]; then
+        mkdir -p /run/motd.d
+        {
+          echo ""
+          echo "  !! BULK POOL WARNING !!"
+          echo "  Missing drives: ''${missing[*]}"
+          echo "  Snapraid sync is suspended until all drives are present."
+          echo "  Run: systemctl status bulk-pool-check"
+          echo "  Run: ft drives-sync"
+          echo ""
+        } > "$MOTD"
+        echo "ERROR: bulk pool — missing drives: ''${missing[*]}" >&2
+        exit 1
       fi
+      rm -f "$MOTD"
       exit 0
     ''
   );
@@ -195,6 +209,7 @@ in
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
+          RemainAfterExit = true;
           ExecStart = "${driveCheckScript}";
         };
       };
