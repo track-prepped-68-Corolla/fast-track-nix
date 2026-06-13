@@ -25,6 +25,20 @@ let
           "compress=zstd"
         ];
       };
+      "@nix" = {
+        mountpoint = "/nix";
+        mountOptions = [
+          "noatime"
+          "compress=zstd"
+        ];
+      };
+      "@snapshots" = {
+        mountpoint = "/.snapshots";
+        mountOptions = [
+          "noatime"
+          "compress=zstd"
+        ];
+      };
     };
   };
 in
@@ -34,7 +48,7 @@ in
 
   options.ft.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/) and @home (/home) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
+      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/), @home (/home), @nix (/nix), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
     };
 
     device = lib.mkOption {
