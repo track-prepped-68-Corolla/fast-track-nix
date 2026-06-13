@@ -240,7 +240,7 @@ The Nix module system's option declarations serve as the schema — no separate 
 - [x] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
   - [x] Fix hardcoded wallpaper path in `stylix.nix` — expose as a consumer-supplied option instead
 - [x] Replace hardcoded user strings with variable references (e.g., `config.home.username`) — no replacements needed; all "admin" strings are generic defaults or reference-config placeholders
-- [ ] Move highly specific private modules out of the repo entirely
+- [x] Move highly specific private modules out of the repo entirely
 - [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
   - [x] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
   - [x] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
