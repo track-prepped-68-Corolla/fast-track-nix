@@ -56,14 +56,14 @@ Items currently in ft-home that belong in fast-track-nix as proper `ft.*` module
   - [x] Consumer sets `ft.mullet.filePath`; remove local `mullet.nix` from ft-home
   - [x] `mullet.just` runtime path convention (`users/$USER/var/mullet.txt`) matches `ft.mullet.sourcePath` pattern — no script change needed
   - [x] Export `nixosModules.mullet` as a standalone flake output
-- [ ] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
+- [x] **`ft.facter`** — port nixos-facter hardware report ingestion to framework
   - [x] Move `facter.nix` from ft-home into fast-track-nix `modules/nixos/hardware/facter.nix`
   - [x] Expose `ft.facter.enable` and `ft.facter.reportPath` options
-  - [ ] Remove local copy from ft-home once framework version is stable *(pending ft-home lock update)*
-- [ ] **`ft.gpu`** — port generic GPU vendor detection to framework
+  - [x] Remove local copy from ft-home once framework version is stable
+- [x] **`ft.gpu`** — port generic GPU vendor detection to framework
   - [x] Move `gpu.nix` from ft-home into fast-track-nix `modules/nixos/hardware/gpu.nix`
   - [x] Support AMD, Intel, NVIDIA, integrated; detect from facter output where possible
-  - [ ] Remove local copy from ft-home once framework version is stable *(pending ft-home lock update)*
+  - [x] Remove local copy from ft-home once framework version is stable
 
 ---
 
@@ -84,7 +84,7 @@ See `ft-home/scripts/plan.md` for full architecture and development sequence.
 **Packaging:** Trolley (bundles libghostty into a portable application).  
 **Framework:** Python + Textual. Async subprocesses throughout.
 
-- [ ] **Option quality audit** — every `ft.*` option must have a concrete type and a `description`; replace `lib.types.anything` with specific types where possible
+- [x] **Option quality audit** — every `ft.*` option must have a concrete type and a `description`; replace `lib.types.anything` with specific types where possible
 - [ ] **`ui-settings.nix` overlay pattern**
   - [ ] Document in README that consumer machine configs should import an optional `./ui-settings.nix` for TUI-managed overrides
   - [ ] Add `import ./ui-settings.nix` to machine `default.nix` templates (update `add-machine` scaffold in `bootstrap.just`)
@@ -237,10 +237,10 @@ The Nix module system's option declarations serve as the schema — no separate 
 ## 🌐 Public Release
 
 ### 🧹 Sanitization & Security
-- [ ] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
+- [x] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
   - [x] Fix hardcoded wallpaper path in `stylix.nix` — expose as a consumer-supplied option instead
-- [ ] Replace hardcoded user strings with variable references (e.g., `config.home.username`)
-- [ ] Move highly specific private modules out of the repo entirely
+- [x] Replace hardcoded user strings with variable references (e.g., `config.home.username`) — no replacements needed; all "admin" strings are generic defaults or reference-config placeholders
+- [x] Move highly specific private modules out of the repo entirely
 - [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
   - [x] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
   - [x] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
@@ -265,7 +265,7 @@ The Nix module system's option declarations serve as the schema — no separate 
 
 ## 📖 Documentation
 
-- [ ] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
-- [ ] Consumer quickstart guide in `README.md` (machine + user + first switch)
-- [ ] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
-- [ ] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
+- [x] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
+- [x] Consumer quickstart guide in `README.md` (machine + user + first switch)
+- [x] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
+- [x] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)

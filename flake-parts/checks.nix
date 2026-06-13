@@ -23,6 +23,9 @@
               cp -r ${inputs.self}/. src
               find src \( -type f -o -type d \) -exec chmod u+w {} +
               find src -type f -name "*.nix" | sort | xargs -r nixfmt
+              # deadnix runs twice: removing a dead binding can expose another
+              # binding that was only referenced by the removed one.  A single
+              # pass is not guaranteed to be idempotent.
               find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
               find src -type f -name "*.nix" | sort | xargs -r deadnix --edit
               if ! diff -r -q src ref; then

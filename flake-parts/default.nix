@@ -1,3 +1,6 @@
+# Auto-imports every sibling *.nix except itself.  Uses builtins directly
+# because this file is evaluated before flake-parts is instantiated — no lib
+# is in scope at this point.
 let
   dir = builtins.readDir ./.;
   isModule = name: _: name != "default.nix" && builtins.match ".*\\.nix" name != null;
