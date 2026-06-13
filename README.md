@@ -19,10 +19,8 @@ The framework lives in the **`fast-track-nix`** GitHub repo and is aliased as `f
 ### 1. Copy the template
 
 ```bash
-nix flake init -t github:track-prepped-68-corolla/fast-track-nix
+nix flake init -t github:track-prepped-68-corolla/ft-template
 ```
-
-Or manually copy `template/` from this repo.
 
 ### 2. Rename placeholders
 

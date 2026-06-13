@@ -1,5 +1,0 @@
-# One package name per line.  These are installed imperatively via ft.mullet.
-# Packages added here survive system upgrades without touching your flake.
-# Example:
-#   spotify
-#   discord
