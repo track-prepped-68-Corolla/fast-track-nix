@@ -265,7 +265,7 @@ The Nix module system's option declarations serve as the schema — no separate 
 
 ## 📖 Documentation
 
-- [ ] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
-- [ ] Consumer quickstart guide in `README.md` (machine + user + first switch)
-- [ ] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
-- [ ] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
+- [x] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
+- [x] Consumer quickstart guide in `README.md` (machine + user + first switch)
+- [x] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
+- [x] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)

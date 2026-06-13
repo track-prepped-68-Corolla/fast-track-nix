@@ -12,6 +12,54 @@ The framework lives in the **`fast-track-nix`** GitHub repo and is aliased as `f
 
 ---
 
+## Quickstart
+
+**Five minutes from zero to a bootable config.**
+
+### 1. Copy the template
+
+```bash
+nix flake init -t github:track-prepped-68-corolla/fast-track-nix
+```
+
+Or manually copy `template/` from this repo.
+
+### 2. Rename placeholders
+
+- `template/machines/my-desktop/` → `machines/<your-hostname>/`
+- `template/users/myuser/` → `users/<your-username>/`
+- Update `networking.hostName`, `ft.users.mainUser`, and `home.username` to match.
+
+### 3. Generate hardware facts
+
+Boot the target into a NixOS live ISO, then:
+
+```bash
+sudo nixos-facter -o machines/<hostname>/var/facter.json
+```
+
+Commit `facter.json`. The generator reads it to determine the system architecture; without it, `x86_64-linux` is assumed.
+
+### 4. Set a disk layout
+
+Add a disko layout to `machines/<hostname>/modules/disko.nix` and import it from `machines/<hostname>/modules/default.nix`, or write a manual `fileSystems` block in `machines/<hostname>/default.nix`.
+
+### 5. Enable features
+
+Edit `machines/<hostname>/default.nix` and flip the `ft.*` flags you want. See [Available modules](#available-modules) below.
+
+### 6. First switch
+
+```bash
+# Install on a remote target via nixos-anywhere:
+nix run github:nix-community/nixos-anywhere -- --flake .#<hostname> root@<ip>
+
+# Or rebuild the running system:
+sudo nixos-rebuild switch --flake .#<hostname>
+```
+
+---
+
 ## How it works
 
 fast-track-nix is **consumed, not forked.** Your repo stays minimal — just your machines, your users, and the options you want enabled. fast-track-nix supplies all the modules.
