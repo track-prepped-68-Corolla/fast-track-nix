@@ -152,14 +152,16 @@ in
         lib.nameValuePair machine.name (
           lib.warn
             "ft-home: Darwin module injection is not yet implemented — ft.* options are unavailable for machine '${machine.name}'. See modules/darwin/default.nix."
-            (darwin.lib.darwinSystem {
-              specialArgs = { inherit inputs; };
-              modules = [
-                ../modules/darwin
-                machine.path
-                { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
-              ];
-            })
+            (
+              darwin.lib.darwinSystem {
+                specialArgs = { inherit inputs; };
+                modules = [
+                  ../modules/darwin
+                  machine.path
+                  { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
+                ];
+              }
+            )
         )
       ) darwinMachines
     );
