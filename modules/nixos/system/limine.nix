@@ -5,7 +5,9 @@ let
 in
 {
   options.ft.limine = {
-    enable = lib.mkEnableOption "the Limine bootloader";
+    enable = lib.mkEnableOption "the Limine bootloader" // {
+      description = "Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.";
+    };
   };
 
   config = lib.mkIf cfg.enable {

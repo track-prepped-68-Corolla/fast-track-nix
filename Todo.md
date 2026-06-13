@@ -84,7 +84,7 @@ See `ft-home/scripts/plan.md` for full architecture and development sequence.
 **Packaging:** Trolley (bundles libghostty into a portable application).  
 **Framework:** Python + Textual. Async subprocesses throughout.
 
-- [ ] **Option quality audit** — every `ft.*` option must have a concrete type and a `description`; replace `lib.types.anything` with specific types where possible
+- [x] **Option quality audit** — every `ft.*` option must have a concrete type and a `description`; replace `lib.types.anything` with specific types where possible
 - [ ] **`ui-settings.nix` overlay pattern**
   - [ ] Document in README that consumer machine configs should import an optional `./ui-settings.nix` for TUI-managed overrides
   - [ ] Add `import ./ui-settings.nix` to machine `default.nix` templates (update `add-machine` scaffold in `bootstrap.just`)
@@ -237,9 +237,9 @@ The Nix module system's option declarations serve as the schema — no separate 
 ## 🌐 Public Release
 
 ### 🧹 Sanitization & Security
-- [ ] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
+- [x] Audit all modules and reference configs for personal data (usernames, hostnames, paths, private IPs)
   - [x] Fix hardcoded wallpaper path in `stylix.nix` — expose as a consumer-supplied option instead
-- [ ] Replace hardcoded user strings with variable references (e.g., `config.home.username`)
+- [x] Replace hardcoded user strings with variable references (e.g., `config.home.username`) — no replacements needed; all "admin" strings are generic defaults or reference-config placeholders
 - [ ] Move highly specific private modules out of the repo entirely
 - [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
   - [x] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own

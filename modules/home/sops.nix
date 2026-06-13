@@ -12,7 +12,9 @@ in
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
   options.ft.sops = {
-    enable = lib.mkEnableOption "user-level sops-nix secrets";
+    enable = lib.mkEnableOption "user-level sops-nix secrets" // {
+      description = "Configures sops-nix for this user, pointing the age key at ~/.config/sops/age/keys.txt and the secrets file at the user's var/secrets.yaml in the consumer repo.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
