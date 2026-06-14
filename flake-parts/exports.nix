@@ -111,22 +111,26 @@ in
       packages = {
         inherit (pkgs) nixfmt deadnix;
 
-        default = pkgs.writeShellApplication {
-          name = "ft";
-          runtimeInputs = with pkgs; [
-            just
-            glow
-            nh
-            git
-            nvd
-            delta
-            trufflehog
-          ];
-          text = ''
-            REPO="''${FT_REPO:-$(pwd)}"
-            exec just --justfile "$REPO/scripts/ft.just" --working-directory "$REPO" "$@"
-          '';
-        };
+        default =
+          let
+            scriptsDir = ../scripts;
+          in
+          pkgs.writeShellApplication {
+            name = "ft";
+            runtimeInputs = with pkgs; [
+              just
+              glow
+              nh
+              git
+              nvd
+              delta
+              trufflehog
+            ];
+            text = ''
+              REPO="''${FT_REPO:-$(pwd)}"
+              exec just --justfile "${scriptsDir}/ft.just" --working-directory "$REPO" "$@"
+            '';
+          };
       };
     };
 }
