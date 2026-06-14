@@ -10,6 +10,7 @@
 #
 # Drives are prepared by `ft drives-format` (creates btrfs label bulk-*, @data
 # and @snapshots subvolumes) and registered in machines/<host>/var/bulk-drives.nix.
+# Use `ft drives-sync` to reconcile the file when the array changes.
 # This module reads that file, mounts btrfs roots, builds a mergerfs pool over
 # data+cache drives, and runs snapraid-btrfs nightly against parity drives.
 #
@@ -98,6 +99,58 @@ let
   hasPool = poolDrives != [ ];
   hasSnapraid = drives.parity != [ ] && drives.data != [ ];
 
+  # Runs at boot. Fails the unit (visible in systemctl --failed) and writes a
+  # login banner to /run/motd.d/ when any expected drive is absent. Cleans up
+  # the banner and exits 0 when all drives are present.
+  driveCheckScript = pkgs.writeShellScript "bulk-pool-check" (
+    ''
+      MOTD=/run/motd.d/bulk-pool-warning
+      missing=()
+    ''
+    + lib.concatMapStrings (label: ''
+      if [[ ! -e /dev/disk/by-label/${label} ]]; then
+        missing+=("${label}")
+      fi
+    '') allDrives
+    + ''
+      if [[ ''${#missing[@]} -gt 0 ]]; then
+        mkdir -p /run/motd.d
+        {
+          echo ""
+          echo "  !! BULK POOL WARNING !!"
+          echo "  Missing drives: ''${missing[*]}"
+          echo "  Snapraid sync is suspended until all drives are present."
+          echo "  Run: systemctl status bulk-pool-check"
+          echo "  Run: ft drives-sync"
+          echo ""
+        } > "$MOTD"
+        echo "ERROR: bulk pool — missing drives: ''${missing[*]}" >&2
+        exit 1
+      fi
+      rm -f "$MOTD"
+      exit 0
+    ''
+  );
+
+  # Wraps snapraid-btrfs sync; blocks if any expected drive is absent.
+  snapraidSyncScript = pkgs.writeShellScript "bulk-pool-snapraid-sync" (
+    ''
+      missing=()
+    ''
+    + lib.concatMapStrings (label: ''
+      if [[ ! -e /dev/disk/by-label/${label} ]]; then
+        missing+=("${label}")
+      fi
+    '') allDrives
+    + ''
+      if [[ ''${#missing[@]} -gt 0 ]]; then
+        echo "ERROR: snapraid sync blocked — missing bulk drives: ''${missing[*]}" >&2
+        exit 1
+      fi
+      exec ${snapraidBtrfs}/bin/snapraid-btrfs sync
+    ''
+  );
+
 in
 {
   options.ft.bulkPool = {
@@ -108,7 +161,7 @@ in
     drivesFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
-      description = "Path to the bulk-drives.nix file listing registered drive labels by role (parity, data, cache). Managed by ft drives-format and ft drives-scan in the consumer repo. When null or the file is absent, the module is a complete no-op.";
+      description = "Path to the bulk-drives.nix file listing registered drive labels by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When null or the file is absent, the module is a complete no-op.";
     };
 
     driveBase = lib.mkOption {
@@ -146,6 +199,20 @@ in
           jq
         ])
         ++ [ snapraidBtrfs ];
+    })
+
+    # ── Drive presence check — warns on missing drives, never blocks boot ───────
+    (lib.mkIf (cfg.enable && hasAny) {
+      systemd.services.bulk-pool-check = {
+        description = "Bulk storage pool drive presence check";
+        after = [ "local-fs.target" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${driveCheckScript}";
+        };
+      };
     })
 
     # ── Individual drive mounts (btrfs root, no subvol restriction) ────────────
@@ -213,7 +280,7 @@ in
         ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${snapraidBtrfs}/bin/snapraid-btrfs sync";
+          ExecStart = "${snapraidSyncScript}";
         };
       };
 
