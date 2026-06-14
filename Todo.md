@@ -190,6 +190,20 @@ The Nix module system's option declarations serve as the schema — no separate 
 
 ---
 
+## 🔁 Self-Hosted GitOps Stack
+
+- [ ] **`ft.forgejo`** — Forgejo Git forge + optional Actions runner for consumer repo hosting and GitOps push-to-deploy
+  - [ ] `services.forgejo` with sensible defaults (data dir, DB, domain)
+  - [ ] Optional Forgejo Actions runner (`ft.forgejo.runner.enable`) for `nixos-rebuild switch` on push
+- [ ] **`ft.netdata`** — Netdata monitoring agent with optional parent-node streaming
+  - [ ] `services.netdata` per-machine agent
+  - [ ] `ft.netdata.parentUrl` option for streaming metrics to a central Netdata parent node
+- [ ] **`ft.guacamole`** — Browser-based SSH/VNC/KVM console access via Apache Guacamole
+  - [ ] Verify nixpkgs `services.guacamole-server` / `services.guacamole-client` module state before implementing — historically had maintenance gaps
+  - [ ] KVM console access depends on `ft.virt` (libvirt VNC passthrough)
+
+---
+
 ## 🔐 Security & Secrets
 
 - [ ] Diceware generator for high-entropy initial user passphrases
