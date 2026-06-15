@@ -83,10 +83,12 @@ fast-track-nix is **consumed, not forked.** Your repo stays minimal — just you
 | Output | Source |
 |--------|--------|
 | `nixosConfigurations.<name>` | one per `machines/<name>/` |
-| `darwinConfigurations.<name>` | one per `machines/<name>/` whose system ends in `-darwin` |
+| `darwinConfigurations.<name>` | one per `machines/<name>/` whose system ends in `-darwin` — **stub, see note** |
 | `homeConfigurations.<user>@<arch>` | every `users/<username>/` × every machine architecture |
 
 All fast-track-nix modules are injected automatically. You never import module paths directly.
+
+> **Darwin support — stub only.** The generator discovers `-darwin` machines and emits `darwinConfigurations` via nix-darwin, and `modules/darwin/` is wired for auto-discovery. However, no `ft.*` module options exist for Darwin yet — a Darwin machine will build but receive no framework module configuration. Development requires Apple hardware that this project does not currently have access to. The scaffolding is intentionally kept in place so contributions are straightforward; see CONTRIBUTING.md.
 
 ---
 
@@ -158,6 +160,8 @@ _: {
 ---
 
 ## Available modules
+
+> **Darwin:** No `ft.*` modules exist for Darwin yet. See the note in [How it works](#how-it-works) above.
 
 ### NixOS modules
 

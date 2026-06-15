@@ -13,6 +13,7 @@ let
     "lp"
     "scanner"
     "container"
+    "dialout"
   ]
   ++ lib.optional config.networking.networkmanager.enable "networkmanager";
 in

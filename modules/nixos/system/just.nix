@@ -8,8 +8,10 @@
 let
   cfg = config.ft.cli;
   flakeDir = config.ft.repoPath;
+  scriptsDir = ../../../scripts;
   ftWrapper = pkgs.writeShellScriptBin "ft" ''
-    exec ${pkgs.just}/bin/just --justfile "${flakeDir}/scripts/ft.just" --working-directory "${flakeDir}" "$@"
+    export FT_REPO="${flakeDir}"
+    exec ${pkgs.just}/bin/just --justfile "${scriptsDir}/ft.just" --working-directory "${flakeDir}" "$@"
   '';
 in
 {
