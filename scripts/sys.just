@@ -16,10 +16,10 @@ clean:
 
 test: check
     #!/usr/bin/env bash
-    just --justfile "{{justfile()}}" _check-reqs
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _check-reqs
     echo ":: Staging & Diffs ::"
-    just --justfile "{{justfile()}}" _stage
-    just --justfile "{{justfile()}}" _diff-src
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _stage
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _diff-src
 
     echo ":: Running Test ::"
     nh os test . --ask
@@ -30,23 +30,23 @@ test: check
 switch: check
     #!/usr/bin/env bash
     set -e
-    just --justfile "{{justfile()}}" _check-reqs
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _check-reqs
 
     echo ":: Previewing Build ::"
-    just --justfile "{{justfile()}}" _stage
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _stage
     nh os test . --dry
 
     echo ":: Source Code Changes ::"
-    just --justfile "{{justfile()}}" _diff-src
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _diff-src
 
     read -p "Apply and commit? [y/N]: " choice
     if [[ "$choice" =~ ^[yY]$ ]]; then
-      OLD_GEN=$(just --justfile "{{justfile()}}" _current-gen)
+      OLD_GEN=$(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _current-gen)
 
-      just --justfile "{{justfile()}}" failover-switch
+      just --justfile "{{justfile()}}" --working-directory "$FT_REPO" failover-switch
 
-      GEN=$(just --justfile "{{justfile()}}" _current-gen)
-      NVD_DIFF=$(nvd --color never diff $(just --justfile "{{justfile()}}" _last-two-gens))
+      GEN=$(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _current-gen)
+      NVD_DIFF=$(nvd --color never diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens))
 
       if ! git diff --cached --quiet; then
           echo ""
@@ -57,7 +57,7 @@ switch: check
       fi
 
       if [ "$GEN" -gt "$OLD_GEN" ]; then
-          just --justfile "{{justfile()}}" clean
+          just --justfile "{{justfile()}}" --working-directory "$FT_REPO" clean
       else
           echo ":: System generation did not change. Skipping cleanup. ::"
       fi
@@ -87,7 +87,7 @@ pull:
     nh os switch . --ask
 
     echo ":: System Package Changes ::"
-    nvd diff $(just --justfile "{{justfile()}}" _last-two-gens)
+    nvd diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens)
 
 push:
     #!/usr/bin/env bash
@@ -105,7 +105,7 @@ sync: pull push
 rollback:
     #!/usr/bin/env bash
     echo ":: Current Generation ::"
-    just --justfile "{{justfile()}}" _current-gen
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _current-gen
 
     echo ":: Rolling back to previous generation ::"
     sudo nix-env --profile /nix/var/nix/profiles/system --rollback
