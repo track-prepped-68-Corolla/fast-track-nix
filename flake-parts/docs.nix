@@ -1,17 +1,20 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, system, ... }:
+    { pkgs, ... }:
     let
       lib = inputs.nixpkgs.lib;
 
       # Evaluate NixOS modules via the full nixosSystem so upstream imports
       # (disko, microvm, sops-nix, etc.) can declare their options freely.
+      # Pinned to x86_64-linux — option declarations don't vary by arch, and
+      # using `system` from perSystem would evaluate NixOS modules under darwin
+      # targets where they don't apply.
       # nixos-facter-modules/system.nix is disabled for the same reason as in
       # lib.vmTestBase: it unconditionally sets nixpkgs.hostPlatform, which
       # conflicts with the system argument passed here.
       nixosEval = lib.nixosSystem {
-        inherit system;
+        system = "x86_64-linux";
         modules = [
           inputs.self.nixosModules.default
           { disabledModules = [ "${inputs.nixos-facter-modules}/modules/nixos/system.nix" ]; }
@@ -30,7 +33,7 @@
       ftOptions = options: lib.filterAttrs (n: _: n == "ft") options;
       mkDocs = options: pkgs.nixosOptionsDoc { options = ftOptions options; };
     in
-    lib.optionalAttrs pkgs.stdenv.isLinux {
+    {
       packages = {
         module-docs-nixos = (mkDocs nixosEval.options).optionsCommonMark;
         module-docs-home = (mkDocs homeEval.options).optionsCommonMark;
