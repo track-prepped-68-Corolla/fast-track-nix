@@ -139,6 +139,28 @@ A configuration and management interface for consumers. The Nix module system's 
 
 ---
 
+## 🚀 Forgejo CI Migration
+
+Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers — the core Nix pipeline is portable; the GitHub-specific integrations need adaptation rather than replacement.
+
+### One-time infrastructure
+- [ ] Set up self-hosted `act_runner` and register against Forgejo instance
+- [ ] Configure KVM passthrough on runner host (required for `vm-tests.yml` in ft-testing)
+- [ ] Re-create all secrets (`ANTHROPIC_API_KEY`, `RENOVATE_TOKEN`) in Forgejo
+
+### Mechanical workflow ports
+- [ ] **`ci.yml` ×4** (fast-track-nix, ft-testing, ft-home, ft-template) — replace `actions/github-script` "Tag Claude on failure" step with a `curl` POST to Forgejo issues API; all nix steps unchanged
+- [ ] **`module-docs.yml`** (fast-track-nix) — works as-is; update runner label to match `act_runner` configuration
+- [ ] **`vm-tests.yml`** (ft-testing) — works as-is with KVM runner; update runner label
+- [ ] **`nix-update.yml`** (fast-track-nix) — replace `gh workflow run ci.yml` with a `curl` POST to Forgejo workflow dispatch API (`POST /api/v1/repos/{owner}/{repo}/actions/workflows/ci.yml/dispatches`)
+- [ ] **`renovate.yml`** (fast-track-nix) — drop the workflow; deploy Renovate as a standalone service pointing at the Forgejo instance (`platform: forgejo` in Renovate config); `renovate.json` carries over unchanged
+
+### Agent-dependent ports
+- [ ] **`claude.yml` ×2** (fast-track-nix, ft-home) — replace `anthropic/claude-code-action` step with self-hosted agent invocation; agent must handle Forgejo API for comment reads/writes and git push
+- [ ] **`claude-review-on-coderabbit.yml` ×2** (fast-track-nix, ft-home) — replace `actions/github-script` comment step with `curl` to Forgejo issues API; verify CodeRabbit bot username on Forgejo instance matches the `if:` condition
+
+---
+
 ## 🔐 Security & Secrets
 
 - [ ] Diceware generator for high-entropy initial user passphrases
