@@ -1,54 +1,79 @@
 {
   config,
   lib,
+  inputs,
   ...
 }:
 
 let
   cfg = config.ft.diskBtrfs;
 
+  commonSubvolumes = {
+    "@home" = {
+      mountpoint = "/home";
+      mountOptions = [
+        "noatime"
+        "compress=zstd"
+      ];
+    };
+    "@nix" = {
+      mountpoint = "/nix";
+      # nodatacow and compression are mutually exclusive in btrfs.
+      mountOptions = [
+        "noatime"
+        "nodatacow"
+      ];
+    };
+    "@snapshots" = {
+      mountpoint = "/.snapshots";
+      mountOptions = [
+        "noatime"
+        "compress=zstd"
+      ];
+    };
+    "@src" = {
+      mountpoint = "/src";
+      mountOptions = [
+        "noatime"
+        "compress=zstd"
+      ];
+    };
+  };
+
   btrfsContent = {
     type = "btrfs";
     extraArgs = [ "-f" ];
-    subvolumes = {
-      "@" = {
-        mountpoint = "/";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
+    subvolumes =
+      commonSubvolumes
+      // lib.optionalAttrs (!cfg.impermanence.enable) {
+        "@" = {
+          mountpoint = "/";
+          mountOptions = [
+            "noatime"
+            "compress=zstd"
+          ];
+        };
+      }
+      // lib.optionalAttrs cfg.impermanence.enable {
+        "@persist" = {
+          mountpoint = "/persist";
+          mountOptions = [
+            "noatime"
+            "compress=zstd"
+          ];
+        };
       };
-      "@home" = {
-        mountpoint = "/home";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
-      };
-      "@nix" = {
-        mountpoint = "/nix";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
-      };
-      "@snapshots" = {
-        mountpoint = "/.snapshots";
-        mountOptions = [
-          "noatime"
-          "compress=zstd"
-        ];
-      };
-    };
   };
 in
 {
+  imports = [ inputs.impermanence.nixosModules.impermanence ];
+
   # disko is injected by nixosModules.default in flake-parts/exports.nix;
   # no imports needed here.
 
   options.ft.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @ (/), @home (/home), @nix (/nix), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container.";
+      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state.";
     };
 
     device = lib.mkOption {
@@ -70,44 +95,82 @@ in
         description = "Name of the LUKS dm-crypt device (appears under /dev/mapper/).";
       };
     };
+
+    impermanence = {
+      enable = lib.mkEnableOption "impermanence (tmpfs root at / with @persist for durable state)" // {
+        description = "Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default.";
+      };
+
+      rootSize = lib.mkOption {
+        type = lib.types.str;
+        default = "2G";
+        description = "Size of the tmpfs ramdisk mounted at / when impermanence.enable is true.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    disko.devices = lib.mkDefault {
-      disk.main = {
-        type = "disk";
-        inherit (cfg) device;
-        content = {
-          type = "gpt";
-          partitions = {
-            ESP = {
-              size = "1G";
-              type = "EF00";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-                mountOptions = [
-                  "fmask=0077"
-                  "dmask=0077"
-                ];
+    disko.devices = lib.mkDefault (
+      {
+        disk.main = {
+          type = "disk";
+          inherit (cfg) device;
+          content = {
+            type = "gpt";
+            partitions = {
+              ESP = {
+                size = "1G";
+                type = "EF00";
+                content = {
+                  type = "filesystem";
+                  format = "vfat";
+                  mountpoint = "/boot";
+                  mountOptions = [
+                    "fmask=0077"
+                    "dmask=0077"
+                  ];
+                };
               };
-            };
-            root = {
-              size = "100%";
-              content =
-                if cfg.luks.enable then
-                  {
-                    type = "luks";
-                    name = cfg.luks.label;
-                    content = btrfsContent;
-                  }
-                else
-                  btrfsContent;
+              root = {
+                size = "100%";
+                content =
+                  if cfg.luks.enable then
+                    {
+                      type = "luks";
+                      name = cfg.luks.label;
+                      content = btrfsContent;
+                    }
+                  else
+                    btrfsContent;
+              };
             };
           };
         };
-      };
+      }
+      // lib.optionalAttrs cfg.impermanence.enable {
+        nodev."/" = {
+          fsType = "tmpfs";
+          mountOptions = [
+            "defaults"
+            "size=${cfg.impermanence.rootSize}"
+            "mode=755"
+          ];
+        };
+      }
+    );
+
+    # All users can read /src; wheel group members can write without sudo.
+    # setgid ensures new files/dirs inherit the wheel group.
+    systemd.tmpfiles.rules = [ "d /src 2775 root wheel - -" ];
+
+    environment.persistence."/persist" = lib.mkIf cfg.impermanence.enable {
+      hideMounts = lib.mkDefault true;
+      directories = [
+        "/var/lib"
+        "/var/log"
+        "/etc/ssh"
+      ];
+      files = [ "/etc/machine-id" ];
     };
   };
 }
