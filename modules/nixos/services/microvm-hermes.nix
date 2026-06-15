@@ -96,6 +96,12 @@ in
       description = "Port on which the Hermes gateway API server listens inside the VM. Reachable from the host at http://<vmAddress>:<hermesApiPort>.";
     };
 
+    hermesApiKey = lib.mkOption {
+      type = lib.types.str;
+      default = "hermes";
+      description = "Value for API_SERVER_KEY required by the Hermes gateway API server. The API server refuses to start without this set. The VM is only reachable from the host bridge, but consumers managing a shared host should set this to a unique value.";
+    };
+
     sshAuthorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -207,6 +213,7 @@ in
               OPENAI_BASE_URL = "${cfg.ollamaUrl}/v1";
               OPENAI_API_KEY = cfg.openaiApiKey;
               API_SERVER_ENABLED = "true";
+              API_SERVER_KEY = cfg.hermesApiKey;
               API_SERVER_PORT = toString cfg.hermesApiPort;
               API_SERVER_HOST = "0.0.0.0";
             };
