@@ -123,9 +123,14 @@ A configuration and management interface for consumers. The Nix module system's 
 - [ ] **`ft.netdata`** — Netdata monitoring agent with optional parent-node streaming
   - [ ] `services.netdata` per-machine agent
   - [ ] `ft.netdata.parentUrl` option for streaming metrics to a central Netdata parent node
+- [ ] **Non-Nix machine registry (`gitops/`)** — standardise a `gitops/` folder convention for consumer repos to register non-NixOS machines alongside their capture/restore scripts
+  - [ ] Define `gitops/<platform>/<name>/` directory structure: captured config blob + a `machine.nix` metadata file (hostname, address, platform tag, Guacamole connection type)
+  - [ ] `machine.nix` is the single source of truth consumed by both the gitops scripts and `ft.homepage` inventory generation — adding a device to `gitops/` is sufficient to surface it everywhere
+  - [ ] Publish the folder convention and `machine.nix` schema in `ft-testing` as a template consumers can adopt
 - [ ] **`ft.homepage`** — Homepage dashboard for machine inventory, service links, and system stats widgets
   - [ ] `services.homepage-dashboard` with configurable port and YAML config path
   - [ ] Auto-generate the services config from the consumer's machine inventory — each entry in `nixosConfigurations` becomes a Homepage service card with a Guacamole link, so adding a machine to `machines/` surfaces it in the dashboard without manual config
+  - [ ] Pull non-Nix machines from the consumer's `gitops/` registry (`machine.nix` entries) into the same inventory, so the dashboard reflects the full fleet regardless of platform
   - [ ] Link out to Guacamole per-machine connections via URL widgets
 - [ ] **`ft.guacamole`** — Clientless SSH / VNC / RDP remote access via Apache Guacamole (replaces need for a separate per-protocol web client)
   - [ ] Verify nixpkgs `services.guacamole-server` / `services.guacamole-client` module state before implementing — historically had maintenance gaps
