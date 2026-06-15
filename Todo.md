@@ -123,9 +123,13 @@ A configuration and management interface for consumers. The Nix module system's 
 - [ ] **`ft.netdata`** — Netdata monitoring agent with optional parent-node streaming
   - [ ] `services.netdata` per-machine agent
   - [ ] `ft.netdata.parentUrl` option for streaming metrics to a central Netdata parent node
-- [ ] **`ft.guacamole`** — Browser-based SSH/VNC/KVM console access via Apache Guacamole
+- [ ] **`ft.homepage`** — Homepage dashboard for machine inventory, service links, and system stats widgets
+  - [ ] `services.homepage-dashboard` with configurable port and YAML config path
+  - [ ] Link out to Guacamole per-machine connections via URL widgets
+- [ ] **`ft.guacamole`** — Clientless SSH / VNC / RDP remote access via Apache Guacamole (replaces need for a separate per-protocol web client)
   - [ ] Verify nixpkgs `services.guacamole-server` / `services.guacamole-client` module state before implementing — historically had maintenance gaps
-  - [ ] KVM console access depends on `ft.virt` (libvirt VNC passthrough)
+  - [ ] Requires PostgreSQL — document dependency on `services.postgresql`
+  - [ ] VM console access (VNC) depends on `ft.virt` (libvirt VNC passthrough)
 
 ---
 
