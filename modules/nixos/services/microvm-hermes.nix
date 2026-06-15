@@ -98,7 +98,7 @@ in
 
     hermesApiKey = lib.mkOption {
       type = lib.types.str;
-      default = "hermes";
+      default = "a3f8e2d1c4b5967804f3e2d1c4b59678a3f8e2d1c4b5967804f3e2d1c4b59678";
       description = "Value for API_SERVER_KEY required by the Hermes gateway API server. The API server refuses to start without this set. The VM is only reachable from the host bridge, but consumers managing a shared host should set this to a unique value.";
     };
 
