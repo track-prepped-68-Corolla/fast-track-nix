@@ -9,7 +9,7 @@
 # MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES AGENT
 ################################################################################
 #
-# ft.hermesVm is three-level (new style) — generic enough for any
+# ft.services.hermesVm is three-level (new style) — generic enough for any
 # consumer, unlike the grandfathered two-level ft.dockervm.
 #
 # hermes-agent is installed from inputs.llm-agents (github:numtide/llm-agents.nix)
@@ -20,14 +20,14 @@
 # the numtide binary cache. See ft-home CLAUDE.md exclusion table.
 
 let
-  cfg = config.ft.hermesVm;
+  cfg = config.ft.services.hermesVm;
   tapId = "tap-${cfg.vmName}";
   bridgeName = "hermes-br";
 in
 {
-  options.ft.hermesVm = {
-    enable = lib.mkEnableOption "Nous Research Hermes NixOS microVM" // {
-      description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. The guest reaches the host's existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM is unavailable in CI.";
+  options.ft.services.hermesVm = {
+    enable = lib.mkEnableOption "Nous Research Hermes agent microVM" // {
+      description = "Boots a Cloud Hypervisor microVM running NixOS with the Nous Research Hermes agent (from github:numtide/llm-agents.nix). The guest runs hermes gateway, pointed at the host's existing Ollama instance. Requires KVM on the host. VM smoke test exempt: nested KVM unavailable in CI; hermes-agent requires the numtide binary cache.";
     };
 
     vmName = lib.mkOption {
@@ -94,6 +94,12 @@ in
       type = lib.types.port;
       default = 8642;
       description = "Port on which the Hermes gateway API server listens inside the VM. Reachable from the host at http://<vmAddress>:<hermesApiPort>.";
+    };
+
+    hermesApiKey = lib.mkOption {
+      type = lib.types.str;
+      default = "hermes";
+      description = "Value for API_SERVER_KEY — Hermes requires this to be non-empty before it will start the API server. Clients must send this key as the Bearer token when calling the Hermes API.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -196,7 +202,7 @@ in
           #
           # Runs hermes in gateway mode, which exposes an API server and routes
           # requests to the host's Ollama via the OpenAI-compatible endpoint.
-          environment.systemPackages = [ pkgs.llm-agents.hermes-agent ];
+          environment.systemPackages = with pkgs; [ hermes-agent ];
 
           systemd.services.hermes-gateway = {
             description = "Hermes AI agent gateway";
@@ -207,11 +213,12 @@ in
               OPENAI_BASE_URL = "${cfg.ollamaUrl}/v1";
               OPENAI_API_KEY = cfg.openaiApiKey;
               API_SERVER_ENABLED = "true";
+              API_SERVER_KEY = cfg.hermesApiKey;
               API_SERVER_PORT = toString cfg.hermesApiPort;
               API_SERVER_HOST = "0.0.0.0";
             };
             serviceConfig = {
-              ExecStart = "${pkgs.llm-agents.hermes-agent}/bin/hermes gateway run";
+              ExecStart = "${pkgs.hermes-agent}/bin/hermes gateway run";
               Restart = "on-failure";
               RestartSec = "5s";
             };
