@@ -4,9 +4,9 @@
 store +ARGS="":
     #!/usr/bin/env bash
     if [[ "{{ARGS}}" == "-a" || "{{ARGS}}" == "--all" ]]; then
-        just --justfile "{{justfile()}}" _store_all
+        just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _store_all
     elif [[ -n "{{ARGS}}" ]]; then
-        just --justfile "{{justfile()}}" _store_single {{ARGS}}
+        just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _store_single {{ARGS}}
     else
         echo "Usage:"
         echo "  ft store <app-name>    (Store a specific app)"
@@ -43,7 +43,7 @@ store-custom APP_NAME +PATHS:
     done
     
     echo ":: Local config saved to $CFG_FILE ::"
-    just --justfile "{{justfile()}}" _store_single "$APP"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _store_single "$APP"
 
 # --- Private Worker Recipes ---
 
@@ -71,7 +71,7 @@ _store_single APP_NAME:
     fi
 
     # Pass the config file to the processor
-    just --justfile "{{justfile()}}" _process_cfg "$APP" "$CFG_FILE"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _process_cfg "$APP" "$CFG_FILE"
 
 # Scans the entire system for unmanaged configurations
 _store_all:
@@ -132,7 +132,7 @@ _store_all:
         # If flagged, hand it off to the processor
         if [ "$APP_NEEDS_SYNC" = true ]; then
             APPS_PROCESSED=$((APPS_PROCESSED + 1))
-            just --justfile "{{justfile()}}" _process_cfg "$APP" "$CFG_FILE"
+            just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _process_cfg "$APP" "$CFG_FILE"
         fi
     done
 

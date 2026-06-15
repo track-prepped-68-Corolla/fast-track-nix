@@ -121,7 +121,7 @@ add-machine name ip:
     git add "var/local/" "${MACHINE_DIR}/"
     git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
     echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
-    just --justfile "{{justfile()}}" generate-facts "${NAME}" "${IP}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" generate-facts "${NAME}" "${IP}"
 
 # Generate SSH host key + derive age pubkey; create var/secrets/.sops.yaml if absent.
 secrets-init name:
@@ -240,18 +240,18 @@ deploy-local name:
 bootstrap name ip:
     #!/usr/bin/env bash
     set -e
-    just --justfile "{{justfile()}}" git-init 2>/dev/null || true
-    just --justfile "{{justfile()}}" add-machine "{{name}}" "{{ip}}"
-    just --justfile "{{justfile()}}" secrets-init "{{name}}"
-    just --justfile "{{justfile()}}" deploy "{{name}}" "{{ip}}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init 2>/dev/null || true
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" add-machine "{{name}}" "{{ip}}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" secrets-init "{{name}}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" deploy "{{name}}" "{{ip}}"
     echo ":: Bootstrap complete for {{name}} ::"
 
 # Full local bootstrap (on live ISO): git-init → add-machine → secrets-init → deploy-local.
 bootstrap-local name:
     #!/usr/bin/env bash
     set -e
-    just --justfile "{{justfile()}}" git-init 2>/dev/null || true
-    just --justfile "{{justfile()}}" add-machine "{{name}}" "localhost"
-    just --justfile "{{justfile()}}" secrets-init "{{name}}"
-    just --justfile "{{justfile()}}" deploy-local "{{name}}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init 2>/dev/null || true
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" add-machine "{{name}}" "localhost"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" secrets-init "{{name}}"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" deploy-local "{{name}}"
     echo ":: Bootstrap complete for {{name}} ::"
