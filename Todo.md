@@ -125,6 +125,7 @@ A configuration and management interface for consumers. The Nix module system's 
   - [ ] `ft.netdata.parentUrl` option for streaming metrics to a central Netdata parent node
 - [ ] **`ft.homepage`** — Homepage dashboard for machine inventory, service links, and system stats widgets
   - [ ] `services.homepage-dashboard` with configurable port and YAML config path
+  - [ ] Auto-generate the services config from the consumer's machine inventory — each entry in `nixosConfigurations` becomes a Homepage service card with a Guacamole link, so adding a machine to `machines/` surfaces it in the dashboard without manual config
   - [ ] Link out to Guacamole per-machine connections via URL widgets
 - [ ] **`ft.guacamole`** — Clientless SSH / VNC / RDP remote access via Apache Guacamole (replaces need for a separate per-protocol web client)
   - [ ] Verify nixpkgs `services.guacamole-server` / `services.guacamole-client` module state before implementing — historically had maintenance gaps
