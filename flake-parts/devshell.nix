@@ -8,6 +8,9 @@ _: {
           nixfmt
           deadnix
           statix
+          conform
+          convco
+          lefthook
         ];
       };
     };
