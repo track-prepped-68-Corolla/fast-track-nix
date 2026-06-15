@@ -12,7 +12,7 @@ on the implementation steps.
 |---|---|---|
 | NixOS | `modules/nixos/<subdir>/` | `lib.filesystem.listFilesRecursive` in `modules/nixos/default.nix` |
 | Home Manager | `modules/home/` (flat) | `lib.filesystem.listFilesRecursive` in `modules/home/default.nix` |
-| Darwin | `modules/darwin/` (stub) | Same pattern — not yet implemented |
+| Darwin | `modules/darwin/` (stub) | Same pattern — not yet implemented. No Apple hardware is available to test and validate Darwin modules; PRs welcome. |
 
 Drop a `.nix` file anywhere in the appropriate tree. No import list to update.
 
