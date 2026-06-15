@@ -44,7 +44,12 @@
       };
 
       ftOptions = options: lib.filterAttrs (n: _: n == "ft") options;
-      mkDocs = options: pkgs.nixosOptionsDoc { options = ftOptions options; };
+      # warningsAreErrors = false: sub-options in submodules (e.g. ft.theme.fonts.*)
+      # may not carry descriptions; fail loudly on real errors, not style warnings.
+      mkDocs = options: pkgs.nixosOptionsDoc {
+        options = ftOptions options;
+        warningsAreErrors = false;
+      };
     in
     {
       packages = {
