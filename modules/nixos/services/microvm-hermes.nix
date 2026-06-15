@@ -196,7 +196,7 @@ in
           #
           # Runs hermes in gateway mode, which exposes an API server and routes
           # requests to the host's Ollama via the OpenAI-compatible endpoint.
-          environment.systemPackages = with pkgs; [ hermes-agent ];
+          environment.systemPackages = [ pkgs.llm-agents.hermes-agent ];
 
           systemd.services.hermes-gateway = {
             description = "Hermes AI agent gateway";
@@ -211,7 +211,7 @@ in
               API_SERVER_HOST = "0.0.0.0";
             };
             serviceConfig = {
-              ExecStart = "${pkgs.hermes-agent}/bin/hermes gateway run";
+              ExecStart = "${pkgs.llm-agents.hermes-agent}/bin/hermes gateway run";
               Restart = "on-failure";
               RestartSec = "5s";
             };
