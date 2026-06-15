@@ -84,6 +84,7 @@ in
 - `lib.optional` / `lib.optionals` / `lib.optionalAttrs` instead of `if … then … else []`.
 - `with pkgs;` is acceptable only inside list literals (e.g., `environment.systemPackages = with pkgs; [ … ]`). Never open `with pkgs;` at module scope.
 - No `imports` inside individual feature modules unless pulling in an upstream input module (e.g., `inputs.sops-nix.nixosModules.sops`). Internal cross-module dependencies are handled by the module system, not by explicit imports.
+- Every `lib.mkOption` call must include both `type` and `description` — this applies equally to top-level options and to sub-options declared as inline attributes under an option namespace (e.g. `ft.theme.fonts.sans.name`). Missing descriptions cause `nix flake check` to fail via the `option-docs-*` checks.
 
 ### Adding a module
 

@@ -44,17 +44,30 @@
       };
 
       ftOptions = options: lib.filterAttrs (n: _: n == "ft") options;
-      # warningsAreErrors = false: sub-options in submodules (e.g. ft.theme.fonts.*)
-      # may not carry descriptions; fail loudly on real errors, not style warnings.
+
+      # Docs packages: permissive — always produce output even if descriptions
+      # are missing (so the generate workflow doesn't block on style gaps).
       mkDocs = options: pkgs.nixosOptionsDoc {
         options = ftOptions options;
         warningsAreErrors = false;
+      };
+
+      # Strict evaluation used for checks — fails nix flake check if any ft.*
+      # option is missing a description, enforcing the module authoring rules.
+      mkStrictDocs = options: pkgs.nixosOptionsDoc {
+        options = ftOptions options;
+        warningsAreErrors = true;
       };
     in
     {
       packages = {
         module-docs-nixos = (mkDocs nixosEval.options).optionsCommonMark;
         module-docs-home = (mkDocs homeEval.options).optionsCommonMark;
+      };
+
+      checks = {
+        option-docs-nixos = (mkStrictDocs nixosEval.options).optionsJSON;
+        option-docs-home = (mkStrictDocs homeEval.options).optionsJSON;
       };
     };
 }
