@@ -43,40 +43,48 @@ in
           name = lib.mkOption {
             type = lib.types.str;
             default = "Atkinson Hyperlegible";
+            description = "Font family name for the sans-serif role.";
           };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.atkinson-hyperlegible;
+            description = "Package providing the sans-serif font.";
           };
         };
         mono = {
           name = lib.mkOption {
             type = lib.types.str;
             default = "AtkynsonMono Nerd Font Mono";
+            description = "Font family name for the monospace role.";
           };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.nerd-fonts.atkynson-mono;
+            description = "Package providing the monospace font.";
           };
         };
         serif = {
           name = lib.mkOption {
             type = lib.types.str;
             default = "IBM Plex Serif";
+            description = "Font family name for the serif role.";
           };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.ibm-plex;
+            description = "Package providing the serif font.";
           };
         };
         emoji = {
           name = lib.mkOption {
             type = lib.types.str;
             default = "Noto Color Emoji";
+            description = "Font family name for the emoji role.";
           };
           package = lib.mkOption {
             type = lib.types.package;
             default = pkgs.noto-fonts-color-emoji;
+            description = "Package providing the emoji font.";
           };
         };
       };

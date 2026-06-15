@@ -218,3 +218,4 @@ A configuration and management interface for consumers. The Nix module system's 
 - [x] Consumer quickstart guide in `README.md` (machine + user + first switch)
 - [x] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
 - [x] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
+- [ ] **Module docs custom formatter** — replace `nixosOptionsDoc`'s flat CommonMark output with a custom renderer that groups `ft.*` options by feature (`##` per feature), emits a table of contents, and adds one-line feature summaries; source from `optionsJSON` rather than `optionsCommonMark`
