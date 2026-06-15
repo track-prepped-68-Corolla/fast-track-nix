@@ -151,9 +151,9 @@ A configuration and management interface for consumers. The Nix module system's 
 ## 💻 Hardware & Vendors
 
 - [x] ASUS hardware support
-- [ ] **Support other vendors:**
-  - [ ] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
-  - [ ] Scaffold a generic vendor module structure for toggling vendor-specific quirks
+- [x] **Support other vendors:**
+  - [x] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
+  - [x] Scaffold a generic vendor module structure for toggling vendor-specific quirks
   - [ ] Implement and test at least one alternative vendor configuration
 
 ---
