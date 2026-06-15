@@ -166,6 +166,24 @@ in
 
       config =
         { pkgs, ... }:
+        let
+          # hermes-agent expects a writable FHS filesystem and installs npm
+          # dependencies at runtime. Wrap it in an FHS env so it sees a
+          # standard /usr, /lib, etc. without requiring a non-NixOS guest OS.
+          hermesEnv = pkgs.buildFHSEnv {
+            name = "hermes-fhs";
+            targetPkgs =
+              p: with p; [
+                nodejs
+                python3
+                stdenv.cc.cc.lib
+                zlib
+                openssl
+                curl
+              ];
+            runScript = "${pkgs.llm-agents.hermes-agent}/bin/hermes";
+          };
+        in
         {
           # Pull hermes-agent from the llm-agents.nix flake overlay.
           # overlays.default builds against the flake's own nixpkgs-unstable pin
@@ -202,7 +220,7 @@ in
           #
           # Runs hermes in gateway mode, which exposes an API server and routes
           # requests to the host's Ollama via the OpenAI-compatible endpoint.
-          environment.systemPackages = [ pkgs.llm-agents.hermes-agent ];
+          environment.systemPackages = [ hermesEnv ];
 
           systemd.services.hermes-gateway = {
             description = "Hermes AI agent gateway";
@@ -218,7 +236,7 @@ in
               API_SERVER_HOST = "0.0.0.0";
             };
             serviceConfig = {
-              ExecStart = "${pkgs.llm-agents.hermes-agent}/bin/hermes gateway run";
+              ExecStart = "${hermesEnv}/bin/hermes-fhs gateway run";
               Restart = "on-failure";
               RestartSec = "5s";
             };
