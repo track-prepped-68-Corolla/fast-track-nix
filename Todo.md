@@ -190,7 +190,7 @@ A configuration and management interface for consumers. The Nix module system's 
   - [x] Fix hardcoded wallpaper path in `stylix.nix` — expose as a consumer-supplied option instead
 - [x] Replace hardcoded user strings with variable references (e.g., `config.home.username`) — no replacements needed; all "admin" strings are generic defaults or reference-config placeholders
 - [x] Move highly specific private modules out of the repo entirely
-- [ ] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
+- [x] **Remove hard-coded defaults from framework modules** (`modules/nixos/system/core.nix`):
   - [x] `ft.core`: Remove `time.timeZone = "America/New_York"` default — require consumers to set their own
   - [x] `ft.core`: Remove hard-coded `system.stateVersion = "24.05"` — consumers must own this value
   - [x] `ft.users`: Remove `initialPassword` default from `user.nix` — require sops or an explicit consumer option
