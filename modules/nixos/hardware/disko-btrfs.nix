@@ -97,9 +97,7 @@ in
     };
 
     impermanence = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
+      enable = lib.mkEnableOption "impermanence (tmpfs root at / with @persist for durable state)" // {
         description = "Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default.";
       };
 
@@ -163,16 +161,16 @@ in
 
     # All users can read /src; wheel group members can write without sudo.
     # setgid ensures new files/dirs inherit the wheel group.
-    systemd.tmpfiles.rules = lib.mkDefault [ "d /src 2775 root wheel - -" ];
+    systemd.tmpfiles.rules = [ "d /src 2775 root wheel - -" ];
 
     environment.persistence."/persist" = lib.mkIf cfg.impermanence.enable {
       hideMounts = lib.mkDefault true;
-      directories = lib.mkDefault [
+      directories = [
         "/var/lib"
         "/var/log"
         "/etc/ssh"
       ];
-      files = lib.mkDefault [ "/etc/machine-id" ];
+      files = [ "/etc/machine-id" ];
     };
   };
 }
