@@ -1,7 +1,7 @@
 # Failover recipe — wraps nh os switch, clears and rebuilds stable-overrides.list
 # each session, retries until the build passes or no new overrides are found.
 
-_overrides := working_directory() / "var/stable-overrides.list"
+_overrides := env_var("FT_REPO") / "var/stable-overrides.list"
 _max_retries := "5"
 
 # Replaces `nh os switch .` in the switch workflow.
@@ -62,7 +62,7 @@ failover-switch:
         fi
 
         # Stage updated list so nix's source-tree copy picks up the change.
-        git -C "{{working_directory()}}" add "$OVERRIDES" 2>/dev/null || true
+        git -C "{{env_var('FT_REPO')}}" add "$OVERRIDES" 2>/dev/null || true
         echo "failover: retrying (attempt $attempt/$MAX)..." >&2
     done
 

@@ -127,8 +127,8 @@ in
               trufflehog
             ];
             text = ''
-              REPO="''${FT_REPO:-$(pwd)}"
-              exec just --justfile "${scriptsDir}/ft.just" --working-directory "$REPO" "$@"
+              export FT_REPO="''${FT_REPO:-$(pwd)}"
+              exec just --justfile "${scriptsDir}/ft.just" --working-directory "$FT_REPO" "$@"
             '';
           };
       };
