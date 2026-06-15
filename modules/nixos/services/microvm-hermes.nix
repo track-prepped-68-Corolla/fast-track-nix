@@ -143,8 +143,8 @@ in
     networking.nat = lib.mkIf (cfg.hostInterface != "") {
       enable = lib.mkDefault true;
       externalInterface = lib.mkDefault cfg.hostInterface;
-      internalInterfaces = [ bridgeName ];
     };
+    networking.nat.internalInterfaces = lib.optionals (cfg.hostInterface != "") [ bridgeName ];
 
     # ── VM definition ─────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
