@@ -24,9 +24,22 @@
 
       # Evaluate Home Manager modules via the full homeManagerConfiguration so
       # upstream imports (sops-nix, stylix, etc.) resolve without errors.
+      # The stub module satisfies two required options that have no defaults:
+      #   home.username       — required by HM and referenced in ft.dotfiles.path
+      #                         default, which would otherwise force config eval
+      #                         and cascade through the HM nixpkgs module.
+      #   ft.core.stateVersion — required by home-core.nix; ft.core.enable
+      #                          defaults to true so its config block always runs
+      #                          and sets home.stateVersion = cfg.stateVersion.
       homeEval = inputs.home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
-        modules = [ inputs.self.homeManagerModules.default ];
+        modules = [
+          inputs.self.homeManagerModules.default
+          {
+            home.username = "docs-eval";
+            ft.core.stateVersion = "25.05";
+          }
+        ];
         extraSpecialArgs = { inherit inputs; };
       };
 
