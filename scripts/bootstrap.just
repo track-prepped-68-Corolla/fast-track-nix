@@ -138,16 +138,16 @@ secrets-init name:
     AGE_KEY=$(ssh-to-age < "${TMPDIR}/ssh_host_ed25519_key.pub")
     echo ":: Age pubkey for ${NAME}: ${AGE_KEY} ::"
     if [ ! -f "$SOPS_YAML" ]; then
-      cat > "$SOPS_YAML" <<SOPSEOF
-keys:
-  - &${NAME} ${AGE_KEY}
-
-creation_rules:
-  - path_regex: var/secrets/.*\.yaml\$
-    key_groups:
-      - age:
-        - *${NAME}
-SOPSEOF
+      {
+        printf 'keys:\n'
+        printf '  - &%s %s\n' "$NAME" "$AGE_KEY"
+        printf '\n'
+        printf 'creation_rules:\n'
+        printf '  - path_regex: var/secrets/.*\\.yaml$\n'
+        printf '    key_groups:\n'
+        printf '      - age:\n'
+        printf '        - *%s\n' "$NAME"
+      } > "$SOPS_YAML"
       git add "$SOPS_YAML"
       git diff --cached --quiet || git commit -m "bootstrap: initialise sops config for ${NAME}"
       echo ":: Created ${SOPS_YAML} ::"
