@@ -216,7 +216,10 @@
         ]
         ++ lib.mapAttrsToList (
           _vmName: vmCfg:
-          lib.mkIf vmCfg.enable {
+          # An instance with hostInterface = "" wants no internet access and
+          # must not contribute here — otherwise it conflicts with any other
+          # enabled instance that does set a real interface.
+          lib.mkIf (vmCfg.enable && vmCfg.hostInterface != "") {
             externalInterface = lib.mkDefault vmCfg.hostInterface;
           }
         ) vms
