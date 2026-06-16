@@ -50,22 +50,10 @@ in
       description = "Memory in MiB assigned to the VM. Container mode needs more headroom than native mode; 4096 is a safe default.";
     };
 
-    hostAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.100.1";
-      description = "IP address of the host-side bridge interface (microvm0); becomes the VM's default gateway. Shared with every other ft.microvms-backed VM on the host (e.g. ft.dockervm) — all instances must agree on this value.";
-    };
-
-    vmAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.100.3";
-      description = "Static IP address assigned to the VM's primary network interface. Must be unique within the host bridge subnet (e.g. distinct from ft.dockervm's vmAddress).";
-    };
-
-    prefixLength = lib.mkOption {
-      type = lib.types.int;
-      default = 24;
-      description = "Subnet prefix length shared by the host bridge and VM interface (e.g. 24 for /24).";
+    vmAddressSuffix = lib.mkOption {
+      type = lib.types.ints.u8;
+      default = 3;
+      description = "Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host — distinct from ft.dockervm's vmAddressSuffix.";
     };
 
     vmMac = lib.mkOption {
@@ -82,7 +70,7 @@ in
 
     ollamaUrl = lib.mkOption {
       type = lib.types.str;
-      default = "http://${cfg.hostAddress}:11434";
+      default = "http://${config.ft.microvms.hostAddress}:11434";
       description = "Base URL of the Ollama instance on the host. Set as services.hermes-agent.settings.model.base_url (with /v1 appended) inside the guest. Requires Ollama to be bound to 0.0.0.0 or the bridge address on the host.";
     };
 
@@ -112,25 +100,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = lib.hasPrefix "10.0.100." cfg.hostAddress;
-        message = "ft.hermesVm.hostAddress must be in the 10.0.100.x range — it shares the microvm0 bridge with every other ft.microvms-backed VM (e.g. ft.dockervm), which all default to that subnet. Got: ${cfg.hostAddress}.";
-      }
-      {
-        assertion = lib.hasPrefix "10.0.100." cfg.vmAddress;
-        message = "ft.hermesVm.vmAddress must be in the 10.0.100.x range to be reachable on the shared microvm0 bridge. Got: ${cfg.vmAddress}.";
-      }
-    ];
-
-    ft.microvms.${cfg.vmName} = {
+    ft.microvms.instances.${cfg.vmName} = {
       enable = lib.mkDefault true;
       inherit (cfg)
         vcpus
         mem
-        hostAddress
-        vmAddress
-        prefixLength
+        vmAddressSuffix
         vmMac
         hostInterface
         sshAuthorizedKeys
