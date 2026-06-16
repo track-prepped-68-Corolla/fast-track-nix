@@ -146,7 +146,7 @@ A string option set at the machine level by the consumer pointing to the absolut
 ```nix
 # machines/my-desktop/default.nix
 _: {
-  ft.repoPath = "/home/alice/nixos-config";
+  ft.repoPath = "/home/alice/ft-home";
   ft.cli.enable = true;
 }
 ```
