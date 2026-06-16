@@ -47,17 +47,21 @@
 
       # Docs packages: permissive — always produce output even if descriptions
       # are missing (so the generate workflow doesn't block on style gaps).
-      mkDocs = options: pkgs.nixosOptionsDoc {
-        options = ftOptions options;
-        warningsAreErrors = false;
-      };
+      mkDocs =
+        options:
+        pkgs.nixosOptionsDoc {
+          options = ftOptions options;
+          warningsAreErrors = false;
+        };
 
       # Strict evaluation used for checks — fails nix flake check if any ft.*
       # option is missing a description, enforcing the module authoring rules.
-      mkStrictDocs = options: pkgs.nixosOptionsDoc {
-        options = ftOptions options;
-        warningsAreErrors = true;
-      };
+      mkStrictDocs =
+        options:
+        pkgs.nixosOptionsDoc {
+          options = ftOptions options;
+          warningsAreErrors = true;
+        };
     in
     {
       packages = {
