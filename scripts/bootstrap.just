@@ -14,7 +14,7 @@ git-init:
     }
     GIT_NAME=$(_rp "user-name"  "Git user name")
     GIT_EMAIL=$(_rp "user-email" "Git user email")
-    GIT_REMOTE=$(_rp "remote"    "Remote URL (e.g. git@github.com:you/nixos-config)")
+    GIT_REMOTE=$(_rp "remote"    "Remote URL (e.g. git@github.com:you/your-repo)")
     git init
     git config user.name  "$GIT_NAME"
     git config user.email "$GIT_EMAIL"
@@ -76,10 +76,10 @@ add-machine name ip:
       "  networking.hostName = \"${NAME}\";" \
       '' \
       '  ft.users = {' \
-      '    mainUser = "joe";' \
-      '    superUsers = [ "joe" ];' \
+      '    mainUser = "example";' \
+      '    superUsers = [ "example" ];' \
       '  };' \
-      '  users.users.joe.initialPassword = "nixos";' \
+      '  users.users.example.initialPassword = "nixos";' \
       '  users.mutableUsers = true;' \
       '' \
       '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
@@ -89,7 +89,7 @@ add-machine name ip:
       '' \
       '  ft.mullet = {' \
       '    enable     = true;' \
-      '    sourcePath = ../../users/joe/var/mullet.txt;' \
+      '    sourcePath = ../../users/example/var/mullet.txt;' \
       '  };' \
       '' \
       '  ft.sops = {' \

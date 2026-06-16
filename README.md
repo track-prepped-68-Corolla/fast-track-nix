@@ -126,7 +126,7 @@ Four modules default to `enable = true`: `ft.core`, `ft.users`, `ft.terminal`, a
 # machines/my-desktop/default.nix
 _: {
   ft = {
-    repoPath = "/home/alice/nixos-config"; # required when ft.cli.enable = true
+    repoPath = "/home/alice/ft-home"; # required when ft.cli.enable = true
 
     limine.enable  = true;
     cosmic.enable  = true;
