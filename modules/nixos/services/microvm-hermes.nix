@@ -140,11 +140,9 @@ in
       linkConfig.RequiredForOnline = "enslaved";
     };
 
-    networking.nat = lib.mkIf (cfg.hostInterface != "") {
-      enable = lib.mkDefault true;
-      externalInterface = lib.mkDefault cfg.hostInterface;
-      internalInterfaces = [ bridgeName ];
-    };
+    networking.nat.enable = lib.mkIf (cfg.hostInterface != "") (lib.mkDefault true);
+    networking.nat.externalInterface = lib.mkIf (cfg.hostInterface != "") (lib.mkDefault cfg.hostInterface);
+    networking.nat.internalInterfaces = lib.optionals (cfg.hostInterface != "") [ bridgeName ];
 
     # ── VM definition ─────────────────────────────────────────────────────────
     microvm.vms.${cfg.vmName} = {
