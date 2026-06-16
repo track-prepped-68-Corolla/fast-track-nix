@@ -43,22 +43,10 @@ in
       description = "Memory in MiB assigned to the VM.";
     };
 
-    hostAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.100.1";
-      description = "IP address of the host-side bridge interface (microvm0); becomes the VM's default gateway.";
-    };
-
-    vmAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.100.2";
-      description = "Static IP address assigned to the VM's primary network interface.";
-    };
-
-    prefixLength = lib.mkOption {
-      type = lib.types.int;
-      default = 24;
-      description = "Subnet prefix length shared by the host bridge and VM interface (e.g. 24 for /24).";
+    vmAddressSuffix = lib.mkOption {
+      type = lib.types.ints.u8;
+      default = 2;
+      description = "Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host.";
     };
 
     dockerVolumeSize = lib.mkOption {
@@ -174,7 +162,13 @@ in
 
       host = lib.mkOption {
         type = lib.types.str;
-        default = "http://${cfg.vmAddress}:9120";
+        default =
+          let
+            subnetPrefix = lib.concatStringsSep "." (
+              lib.take 3 (lib.splitString "." config.ft.microvms.hostAddress)
+            );
+          in
+          "http://${subnetPrefix}.${toString cfg.vmAddressSuffix}:9120";
         description = "Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.";
       };
 
@@ -200,14 +194,12 @@ in
     ];
 
     # ── Infrastructure: delegate to ft.microvms ────────────────────
-    ft.microvms.${cfg.vmName} = {
+    ft.microvms.instances.${cfg.vmName} = {
       enable = lib.mkDefault true;
       inherit (cfg)
         vcpus
         mem
-        hostAddress
-        vmAddress
-        prefixLength
+        vmAddressSuffix
         vmMac
         vsockCid
         hostInterface
