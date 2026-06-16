@@ -112,6 +112,17 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = lib.hasPrefix "10.0.100." cfg.hostAddress;
+        message = "ft.hermesVm.hostAddress must be in the 10.0.100.x range — it shares the microvm0 bridge with every other ft.microvms-backed VM (e.g. ft.dockervm), which all default to that subnet. Got: ${cfg.hostAddress}.";
+      }
+      {
+        assertion = lib.hasPrefix "10.0.100." cfg.vmAddress;
+        message = "ft.hermesVm.vmAddress must be in the 10.0.100.x range to be reachable on the shared microvm0 bridge. Got: ${cfg.vmAddress}.";
+      }
+    ];
+
     ft.microvms.${cfg.vmName} = {
       enable = lib.mkDefault true;
       inherit (cfg)
