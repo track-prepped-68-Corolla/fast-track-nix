@@ -77,7 +77,7 @@ in
     openaiApiKey = lib.mkOption {
       type = lib.types.str;
       default = "ollama";
-      description = "Value for OPENROUTER_API_KEY inside the guest. Ollama ignores the key; set this when pointing at a real provider that enforces authentication. For real secrets, use environmentFiles instead.";
+      description = "API key for the custom OpenAI-compatible provider (services.hermes-agent.settings.model.api_key and OPENAI_API_KEY inside the guest). Ollama ignores the key; set this when pointing at a real provider that enforces authentication. For real secrets, use environmentFiles instead.";
     };
 
     environmentFiles = lib.mkOption {
@@ -124,12 +124,16 @@ in
           addToSystemPackages = lib.mkDefault true;
           container.enable = lib.mkDefault true;
           environment = lib.mkDefault {
-            OPENROUTER_API_KEY = cfg.openaiApiKey;
+            OPENAI_API_KEY = cfg.openaiApiKey;
           };
           environmentFiles = lib.mkDefault cfg.environmentFiles;
           settings = lib.mkDefault (
             {
-              model.base_url = "${cfg.ollamaUrl}/v1";
+              model = {
+                provider = "custom";
+                base_url = "${cfg.ollamaUrl}/v1";
+                api_key = cfg.openaiApiKey;
+              };
             }
             // cfg.settings
           );
