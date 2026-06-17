@@ -231,6 +231,16 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 - [ ] Write a wrapper for the Lix fork of the Determinate Systems installer
 - [ ] **Graceful Degradation:** Wrap git integrations (`git diff`, `delta`, auto-commits) in `git rev-parse --is-inside-work-tree` checks
+- [ ] **`ft.jj` module** — optional, gated colocated Jujutsu setup for consumers who want jj ergonomics on top of the existing git-backed repo
+  - [ ] `ft.jj.enable` runs `jj git init --colocate` against `ft.repoPath` (idempotent — skip if `.jj/` already exists) and installs the `jj` package
+  - [ ] Configure `jj config` user name/email (reuse the same identity already set up for git via `bootstrap.just`'s `git-init`, rather than asking twice)
+  - [ ] Document the colocated requirement (`.git/` stays authoritative for GitHub/CI/trufflehog; `jj` is a layer on top, not a replacement)
+  - [ ] Decide on a bookmark-naming convention (jj bookmarks don't auto-follow `@` like git branches) and document the `jj bookmark set` + `jj git push --bookmark` flow
+- [ ] **jj-flavored `scripts/*.just` rework**, gated on `ft.jj.enable` (existing git-based recipes remain the default when disabled)
+  - [ ] `_stage`/`_diff-src` → `jj status`/`jj diff` equivalents (note: still needed as a forcing op so Nix's git-tracked-files source filter sees new files, not just for jj's own state)
+  - [ ] `sys.just`'s `switch` commit step → `jj describe -m` + `jj new` instead of `git commit`
+  - [ ] `pull`/`push` → `jj git fetch` + rebase onto the upstream bookmark, then explicit `jj bookmark set` + `jj git push --bookmark`
+  - [ ] Collapse `bootstrap.just`'s six repeated stage+conditional-commit call sites (`git-init`, `tailscale-init`, `add-machine`, `secrets-init`, `generate-facts`, the `deploy`/`deploy-local` disk-device correction) into a single `_checkpoint message +paths` helper built on `jj commit -- paths`
 
 ---
 
