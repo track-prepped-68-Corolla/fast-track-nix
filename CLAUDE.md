@@ -91,11 +91,12 @@ in
 Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub in each uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file is discovered and evaluated automatically on the next build.
 
 **Workflow for new modules:**
-1. Propose the option interface: feature name, option names, types, and defaults. Write no `config` yet.
-2. Wait for explicit sign-off.
-3. Implement the `config` block.
-4. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.
-5. Run all quality checks before committing.
+1. Determine placement: does the feature require system privileges, daemons, kernel modules, disk access, or system-level accounts? → NixOS (`modules/nixos/`). Is it purely per-user configuration, packages, or dotfiles with no privileged component? → Home Manager (`modules/home/`). Does it have both a privileged component and a per-user component? → Split: implement the privileged piece in `modules/nixos/` and the per-user piece in `modules/home/`, following the existing `ft.core` / `ft.sops` / `ft.cosmic` / `ft.komodo` pairing pattern. State the placement decision and reasoning before proceeding.
+2. Propose the option interface: feature name, option names, types, and defaults. Write no `config` yet.
+3. Wait for explicit sign-off.
+4. Implement the `config` block.
+5. Add a VM smoke test in `ft-home/tests/vm/` (see Testing section below). Hardware-dependent, binary cache-dependent, or secrets infrastructure modules are exempt — note the exemption in the module's description.
+6. Run all quality checks before committing.
 
 ---
 
