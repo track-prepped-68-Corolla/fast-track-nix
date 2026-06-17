@@ -26,6 +26,23 @@ let
     fi
   '';
 
+  # The nixpkgs-pinned conform release has no --config flag on `enforce`; it
+  # only ever reads ./.conform.yaml relative to cwd. Symlink our generated
+  # config into place at the repo root (excluded from git locally, never
+  # tracked) so `conform enforce` finds it regardless of which directory the
+  # hook is invoked from.
+  conformCheck = pkgs.writeShellScript "ft-conform-check" ''
+    set -e
+    toplevel="$(${pkgs.git}/bin/git rev-parse --show-toplevel)"
+    ln -sf ${conformConfig} "$toplevel/.conform.yaml"
+    excludeFile="$toplevel/.git/info/exclude"
+    if ! grep -qxF ".conform.yaml" "$excludeFile" 2>/dev/null; then
+      echo ".conform.yaml" >> "$excludeFile"
+    fi
+    cd "$toplevel"
+    exec ${pkgs.conform}/bin/conform enforce --commit-msg-file "$1"
+  '';
+
   lefthookConfig = pkgs.writeText "lefthook.yml" (
     "pre-commit:\n"
     + "  commands:\n"
@@ -37,7 +54,7 @@ let
     + "commit-msg:\n"
     + "  commands:\n"
     + "    conform:\n"
-    + "      run: \"${pkgs.conform}/bin/conform enforce --commit-msg-file {1} --config ${conformConfig}\"\n"
+    + "      run: \"${conformCheck} {1}\"\n"
   );
 in
 {

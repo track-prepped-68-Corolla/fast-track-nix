@@ -37,15 +37,6 @@
             mkdir repo && cd repo
             git init -q
 
-            echo "--- commit-msg hook wrapper ---"
-            cat ${commitMsgHook}
-            lefthookConfigPath=$(sed -n 's/^LEFTHOOK_CONFIG=\([^ ]*\).*/\1/p' ${commitMsgHook} | head -n1)
-            echo "--- lefthook.yml ($lefthookConfigPath) ---"
-            cat "$lefthookConfigPath"
-            conformConfigPath=$(sed -n 's/.*--config \([^"]*\)".*/\1/p' "$lefthookConfigPath" | head -n1)
-            echo "--- conform.yaml ($conformConfigPath) ---"
-            cat "$conformConfigPath"
-
             echo 'not a conventional commit' > bad-msg
             set +e
             ${commitMsgHook} bad-msg
@@ -63,14 +54,6 @@
             goodStatus=$?
             set -e
             echo "commit-msg hook exit status for good-msg: $goodStatus"
-
-            echo "--- direct conform invocation (bypassing lefthook TUI) ---"
-            set +e
-            ${pkgs.conform}/bin/conform enforce --commit-msg-file good-msg --config "$conformConfigPath"
-            directGoodStatus=$?
-            set -e
-            echo "direct conform exit status for good-msg: $directGoodStatus"
-
             if [ "$goodStatus" -ne 0 ]; then
               echo "expected commit-msg hook to accept a conventional message" >&2
               exit 1
