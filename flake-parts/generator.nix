@@ -21,6 +21,14 @@
 #   bootstrap). This ensures home configs exist for standalone HM users
 #   who have no machines/ entry.
 #
+# PROFILE DISCOVERY
+#   Scans inputs.self/users/<username>/profiles/<name>/ for directories.
+#   Every non-empty combination of a user's profiles gets its own
+#   homeConfiguration, named "<user>+<profile1>+<profile2>...@<system>"
+#   (profile names always alphabetical in the combo name), layered on top
+#   of the user's base config. "<user>@<system>" with no profiles still
+#   works unchanged.
+#
 # MODULE INJECTION
 #   ../modules/nixos is prepended to every nixosConfiguration so consumer
 #   machine files never need explicit ft-home imports.
@@ -117,6 +125,47 @@ let
   userMatrix = lib.flatten (
     map (user: map (system: { inherit user system; }) supportedSystems) userNames
   );
+
+  # ==========================================
+  # 2b. PROFILE DISCOVERY
+  # ==========================================
+  # users/<user>/profiles/<name>/ — optional extra Home Manager modules layered
+  # on top of the base user config. Every non-empty combination of a user's
+  # profiles is generated as its own homeConfiguration, named
+  # "<user>+<profile1>+<profile2>...@<system>". getDirs returns names in
+  # alphabetical order and the powerset below preserves relative order, so
+  # combo names are always in alphabetical order regardless of how the
+  # profiles/ directory was populated.
+  profilesOf = user: getDirs (usersDir + "/${user}/profiles");
+
+  powerset = list: lib.foldl' (acc: x: acc ++ map (s: s ++ [ x ]) acc) [ [ ] ] list;
+
+  profileCombos = user: builtins.filter (combo: combo != [ ]) (powerset (profilesOf user));
+
+  userProfileMatrix = lib.flatten (
+    map (
+      user:
+      map (combo: map (system: { inherit user combo system; }) supportedSystems) (profileCombos user)
+    ) userNames
+  );
+
+  mkHomeConfiguration =
+    {
+      user,
+      system,
+      profileModules ? [ ],
+    }:
+    home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.${system};
+      extraSpecialArgs = {
+        inherit inputs;
+        ftUserPath = usersDir + "/${user}";
+      };
+      modules = [
+        ../modules/home
+        (usersDir + "/${user}")
+      ] ++ profileModules;
+    };
 in
 {
   flake = {
@@ -169,20 +218,17 @@ in
     homeConfigurations = builtins.listToAttrs (
       map (
         { user, system }:
-        lib.nameValuePair "${user}@${system}" (
-          home-manager.lib.homeManagerConfiguration {
-            pkgs = nixpkgs.legacyPackages.${system};
-            extraSpecialArgs = {
-              inherit inputs;
-              ftUserPath = usersDir + "/${user}";
-            };
-            modules = [
-              ../modules/home
-              (usersDir + "/${user}")
-            ];
+        lib.nameValuePair "${user}@${system}" (mkHomeConfiguration { inherit user system; })
+      ) userMatrix
+      ++ map (
+        { user, combo, system }:
+        lib.nameValuePair "${user}+${lib.concatStringsSep "+" combo}@${system}" (
+          mkHomeConfiguration {
+            inherit user system;
+            profileModules = map (profile: usersDir + "/${user}/profiles/${profile}") combo;
           }
         )
-      ) userMatrix
+      ) userProfileMatrix
     );
 
     # Machines with a var/format file are built as ISO image packages.
