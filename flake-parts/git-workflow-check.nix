@@ -18,8 +18,8 @@
             home = {
               username = "tester";
               homeDirectory = "/home/tester";
-              stateVersion = "25.05";
             };
+            ft.core.stateVersion = "25.05";
             ft.gitWorkflow.enable = true;
           }
         ];
