@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   inputs,
   ...
 }:
@@ -38,6 +39,7 @@ in
   config = lib.mkIf cfg.enable {
     programs.nix-index-database.comma.enable = lib.mkDefault cfg.comma;
 
+    nix.package = lib.mkDefault pkgs.nix;
     nix.settings = {
       extra-substituters = lib.mkDefault [ "https://nix-community.cachix.org" ];
       extra-trusted-public-keys = lib.mkDefault [
