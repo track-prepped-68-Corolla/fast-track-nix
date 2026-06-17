@@ -81,12 +81,12 @@ in
     home.file = {
       ".config/git/hooks/pre-commit" = lib.mkDefault {
         source = pkgs.writeShellScript "ft-pre-commit" ''
-          exec ${pkgs.lefthook}/bin/lefthook run pre-commit --config ${lefthookConfig}
+          LEFTHOOK_CONFIG=${lefthookConfig} exec ${pkgs.lefthook}/bin/lefthook run pre-commit
         '';
       };
       ".config/git/hooks/commit-msg" = lib.mkDefault {
         source = pkgs.writeShellScript "ft-commit-msg" ''
-          exec ${pkgs.lefthook}/bin/lefthook run commit-msg --config ${lefthookConfig} "$@"
+          LEFTHOOK_CONFIG=${lefthookConfig} exec ${pkgs.lefthook}/bin/lefthook run commit-msg "$@"
         '';
       };
       ".config/git/hooks/prepare-commit-msg" = lib.mkDefault {
