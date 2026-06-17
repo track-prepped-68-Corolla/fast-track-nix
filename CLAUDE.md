@@ -45,6 +45,7 @@ The generator (`flake-parts/generator.nix`) uses a flat directory structure:
 
 - `machines/<name>/` — one directory per machine. System is read from `machines/<name>/var/facter.json` (`facter.system`). Falls back to `x86_64-linux` if absent. Names whose system ends in `-darwin` produce `darwinConfigurations`; all others produce `nixosConfigurations`.
 - `users/<username>/` — one directory per user. Cross-producted with every system found in `machines/`, plus the local system from `var/local/system` (written by bootstrap).
+- `users/<username>/profiles/<name>/` — optional extra Home Manager modules layered on top of a user's base config. Every non-empty combination of a user's profiles is generated as its own `homeConfigurations` entry, named `<user>+<profile1>+<profile2>...@<system>` with profile names in alphabetical order (e.g. `joe+gaming@x86_64-linux`, `joe+gaming+work@x86_64-linux`). The base `<user>@<system>` entry is unaffected.
 
 Consumers never need to declare the system manually; facter.json is the source of truth.
 
