@@ -172,7 +172,10 @@ in
         lib.nameValuePair "${user}@${system}" (
           home-manager.lib.homeManagerConfiguration {
             pkgs = nixpkgs.legacyPackages.${system};
-            extraSpecialArgs = { inherit inputs; };
+            extraSpecialArgs = {
+              inherit inputs;
+              ftUserPath = usersDir + "/${user}";
+            };
             modules = [
               ../modules/home
               (usersDir + "/${user}")
