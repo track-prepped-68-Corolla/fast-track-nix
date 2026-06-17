@@ -142,7 +142,7 @@ Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOptio
 
 ### `ft.repoPath`
 
-A string option set at the machine level by the consumer pointing to the absolute path of their consumer repo root on disk. Required by `ft.cli.enable` to locate `scripts/ft.just` at runtime. Consumers must set this if they enable `ft.cli`:
+A string option set at the machine level by the consumer pointing to the absolute path of their consumer repo root on disk. `scripts/ft.just` is bundled inside fast-track-nix itself (`modules/nixos/system/just.nix` resolves it via `../../../scripts`); `ft.repoPath` is passed to `just` as `--working-directory` so recipes run against the consumer repo, not the framework. Consumers must set this if they enable `ft.cli`:
 
 ```nix
 # machines/my-desktop/default.nix
@@ -189,7 +189,17 @@ users/
 staging/                   # WIP modules not yet promoted to modules/
                            # Files here are drafts; do not import from staging/
                            # in production code. Graduate to modules/ after review.
+scripts/                   # ft CLI just-recipes, bundled into the framework
+  ft.just                   # entry point: imports all sub-modules
+  sys.just                  # daily driver: switch, pull, rollback, clean, fmt, check
+  bootstrap.just             # provisioning: git-init, add-machine, secrets-init, deploy
+  failover.just              # retry-with-overrides helper invoked by sys.just's switch
+  mullet.just                 # package escape hatch: add/remove/list packages
+  store.just                  # dotfile store management (experimental)
+  drives.just                  # drive/disk utilities (mount, format, SMART checks)
 ```
+
+`scripts/` is the single canonical copy of the `ft` CLI justfiles, baked into the Nix store at build time and run by the `ft.cli` wrapper (`modules/nixos/system/just.nix`) against whichever consumer repo `ft.repoPath` names. Consumer repos do not keep their own copies.
 
 `modules/nixos/` organises modules into feature subdirectories. `modules/home/` is flat — Home Manager modules live directly as `.nix` files with no subdirectory grouping.
 
