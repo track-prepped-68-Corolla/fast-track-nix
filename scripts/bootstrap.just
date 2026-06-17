@@ -14,7 +14,7 @@ git-init:
     }
     GIT_NAME=$(_rp "user-name"  "Git user name")
     GIT_EMAIL=$(_rp "user-email" "Git user email")
-    GIT_REMOTE=$(_rp "remote"    "Remote URL (e.g. git@github.com:you/nixos-config)")
+    GIT_REMOTE=$(_rp "remote"    "Remote URL (e.g. git@github.com:you/your-repo)")
     git init
     git config user.name  "$GIT_NAME"
     git config user.email "$GIT_EMAIL"
@@ -49,11 +49,13 @@ tailscale-init:
     echo ":: Tailscale configured for tailnet: $TS_TAILNET ::"
 
 # Scaffold a new machine in machines/<name>/.
-add-machine name ip:
+# Pass the primary username as the third argument (defaults to "example").
+add-machine name ip user="example":
     #!/usr/bin/env bash
     set -e
     NAME="{{name}}"
     IP="{{ip}}"
+    USER="{{user}}"
     MACHINE_DIR="machines/${NAME}"
     if [ -d "$MACHINE_DIR" ]; then
       echo ":: Machine ${NAME} already exists at ${MACHINE_DIR} ::"
@@ -76,10 +78,10 @@ add-machine name ip:
       "  networking.hostName = \"${NAME}\";" \
       '' \
       '  ft.users = {' \
-      '    mainUser = "joe";' \
-      '    superUsers = [ "joe" ];' \
+      "    mainUser = \"${USER}\";" \
+      "    superUsers = [ \"${USER}\" ];" \
       '  };' \
-      '  users.users.joe.initialPassword = "nixos";' \
+      "  users.users.${USER}.initialPassword = \"nixos\";" \
       '  users.mutableUsers = true;' \
       '' \
       '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
@@ -89,7 +91,7 @@ add-machine name ip:
       '' \
       '  ft.mullet = {' \
       '    enable     = true;' \
-      '    sourcePath = ../../users/joe/var/mullet.txt;' \
+      "    sourcePath = ../../users/${USER}/var/mullet.txt;" \
       '  };' \
       '' \
       '  ft.sops = {' \

@@ -52,7 +52,7 @@ in
       │  ft-home provisioning ISO                                       │
       │  nixos-anywhere  disko  nixos-facter  sops  age  just  git      │
       ├─────────────────────────────────────────────────────────────────┤
-      │  1. git clone <your-nixos-config> /root/config                  │
+      │  1. git clone <your-consumer-repo> /root/config                 │
       │  2. cd /root/config                                             │
       │  3a. just bootstrap <name> <ip>      # remote install           │
       │  3b. just bootstrap-local <name>     # install on this machine  │

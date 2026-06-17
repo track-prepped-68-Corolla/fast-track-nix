@@ -9,25 +9,27 @@
 # MICROVM — NixOS SANDBOX FOR NOUS RESEARCH HERMES AGENT
 ################################################################################
 #
-# ft.hermesVm is three-level (new style) — generic enough for any
-# consumer, unlike the grandfathered two-level ft.dockervm.
+# Thin wrapper that composes ft.microvms (host infrastructure) with the
+# official hermes-agent NixOS module (github:NousResearch/hermes-agent),
+# following the same pattern as ft.dockervm. Delegating to ft.microvms means
+# this VM shares the host's microvm0 bridge and NAT setup instead of
+# maintaining its own — no bespoke bridge/NAT plumbing belongs here.
 #
-# hermes-agent is installed from inputs.llm-agents (github:numtide/llm-agents.nix)
-# via overlays.default. The guest connects to the host's existing Ollama instance
-# for inference; no Ollama server runs inside the VM.
+# The guest runs hermes in container mode so npm/pip installs inside the
+# agent have a writable Ubuntu layer.
 #
-# VM smoke test exempt: nested KVM is unavailable in CI and hermes-agent requires
-# the numtide binary cache. See ft-home CLAUDE.md exclusion table.
+# The guest connects to the host's existing Ollama instance for inference via
+# settings.model.base_url — no Ollama server runs inside the VM.
+#
+# VM smoke test exempt: nested KVM is unavailable in CI.
 
 let
   cfg = config.ft.hermesVm;
-  tapId = "tap-${cfg.vmName}";
-  bridgeName = "hermes-br";
 in
 {
   options.ft.hermesVm = {
     enable = lib.mkEnableOption "Nous Research Hermes NixOS microVM" // {
-      description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. The guest reaches the host's existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix). VM smoke test exempt: nested KVM is unavailable in CI.";
+      description = "Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent. Uses the official hermes-agent NixOS module with container mode enabled so the agent can install runtime dependencies. The guest reaches the host's existing Ollama instance via ollamaUrl. Requires KVM on the host. VM smoke test exempt: nested KVM is unavailable in CI.";
     };
 
     vmName = lib.mkOption {
@@ -44,32 +46,20 @@ in
 
     mem = lib.mkOption {
       type = lib.types.int;
-      default = 2048;
-      description = "Memory in MiB assigned to the VM.";
+      default = 4096;
+      description = "Memory in MiB assigned to the VM. Container mode needs more headroom than native mode; 4096 is a safe default.";
     };
 
-    hostAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.102.1";
-      description = "IP address of the host-side bridge interface (hermes-br); becomes the VM's default gateway.";
-    };
-
-    vmAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "10.0.102.2";
-      description = "Static IP address assigned to the VM's primary network interface.";
-    };
-
-    prefixLength = lib.mkOption {
-      type = lib.types.int;
-      default = 24;
-      description = "Subnet prefix length shared by the host bridge and VM interface (e.g. 24 for /24).";
+    vmAddressSuffix = lib.mkOption {
+      type = lib.types.ints.u8;
+      default = 3;
+      description = "Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host — distinct from ft.dockervm's vmAddressSuffix.";
     };
 
     vmMac = lib.mkOption {
       type = lib.types.str;
       default = "02:00:00:00:01:01";
-      description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02). Change this if running alongside ft.dockervm to avoid collisions.";
+      description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02) and unique per host — distinct from ft.dockervm's vmMac.";
     };
 
     hostInterface = lib.mkOption {
@@ -80,20 +70,26 @@ in
 
     ollamaUrl = lib.mkOption {
       type = lib.types.str;
-      default = "http://${cfg.hostAddress}:11434";
-      description = "Base URL of the Ollama instance on the host. Exposed to the guest as OPENAI_BASE_URL with /v1 appended so hermes-agent uses it as the LLM backend. Requires Ollama to be bound to 0.0.0.0 or the bridge address on the host.";
+      default = "http://${config.ft.microvms.hostAddress}:11434";
+      description = "Base URL of the Ollama instance on the host. Set as services.hermes-agent.settings.model.base_url (with /v1 appended) inside the guest. Requires Ollama to be bound to 0.0.0.0 or the bridge address on the host.";
     };
 
     openaiApiKey = lib.mkOption {
       type = lib.types.str;
       default = "ollama";
-      description = "Value for OPENAI_API_KEY inside the guest. Ollama ignores the key; set this when pointing at a provider that enforces authentication.";
+      description = "API key for the custom OpenAI-compatible provider (services.hermes-agent.settings.model.api_key and OPENAI_API_KEY inside the guest). Ollama ignores the key; set this when pointing at a real provider that enforces authentication. For real secrets, use environmentFiles instead.";
     };
 
-    hermesApiPort = lib.mkOption {
-      type = lib.types.port;
-      default = 8642;
-      description = "Port on which the Hermes gateway API server listens inside the VM. Reachable from the host at http://<vmAddress>:<hermesApiPort>.";
+    environmentFiles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Paths to env files containing secrets (e.g. real API keys). Passed directly to services.hermes-agent.environmentFiles inside the guest. Paths must be accessible inside the VM — use microvm volumes to mount host files if needed.";
+    };
+
+    settings = lib.mkOption {
+      type = lib.types.attrs;
+      default = { };
+      description = "Arbitrary hermes-agent settings merged into services.hermes-agent.settings inside the guest. See the hermes-agent NixOS module options reference for available keys.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
@@ -104,138 +100,45 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Provide cloud-hypervisor and related host binaries from the microvm overlay.
-    nixpkgs.overlays = [ inputs.microvm.overlay ];
-
-    # numtide binary cache — required to substitute hermes-agent without a
-    # full Python + Node.js source build. Added to host nix.settings so the
-    # host Nix daemon can fetch the guest's hermes-agent closure from cache.
-    nix.settings = {
-      substituters = lib.mkDefault [ "https://cache.numtide.com" ];
-      trusted-public-keys = lib.mkDefault [
-        "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-      ];
-    };
-
-    # ── Host bridge (hermes-br) ───────────────────────────────────────────────
-    #
-    # Uses a dedicated bridge rather than sharing microvm0 with ft.dockervm so
-    # the two modules can coexist without conflicting bridge address assignments.
-    systemd.network.enable = lib.mkDefault true;
-
-    systemd.network.netdevs."10-${bridgeName}" = lib.mkDefault {
-      netdevConfig = {
-        Kind = "bridge";
-        Name = bridgeName;
-      };
-    };
-
-    systemd.network.networks."10-${bridgeName}" = lib.mkDefault {
-      matchConfig.Name = bridgeName;
-      networkConfig = {
-        Address = "${cfg.hostAddress}/${toString cfg.prefixLength}";
-        ConfigureWithoutCarrier = true;
-        IPv4Forwarding = true;
-      };
-      linkConfig.RequiredForOnline = "no";
-    };
-
-    # Auto-attach the TAP interface (created by microvm at VM start) to the bridge.
-    systemd.network.networks."10-${tapId}" = lib.mkDefault {
-      matchConfig.Name = tapId;
-      networkConfig.Bridge = bridgeName;
-      linkConfig.RequiredForOnline = "enslaved";
-    };
-
-    # NAT is optional — only configured when hostInterface is set.
-    networking.nat = lib.mkIf (cfg.hostInterface != "") {
+    ft.microvms.instances.${cfg.vmName} = {
       enable = lib.mkDefault true;
-      externalInterface = lib.mkDefault cfg.hostInterface;
-      internalInterfaces = [ bridgeName ];
-    };
+      inherit (cfg)
+        vcpus
+        mem
+        vmAddressSuffix
+        vmMac
+        hostInterface
+        sshAuthorizedKeys
+        ;
 
-    # ── VM definition ─────────────────────────────────────────────────────────
-    microvm.vms.${cfg.vmName} = {
-      autostart = lib.mkDefault true;
+      extraGuestConfig = {
+        imports = [ inputs.hermes-agent.nixosModules.default ];
 
-      config =
-        { pkgs, ... }:
-        {
-          # Pull hermes-agent from the llm-agents.nix flake overlay.
-          # overlays.default builds against the flake's own nixpkgs-unstable pin
-          # so packages hit cache.numtide.com without a source rebuild.
-          nixpkgs.overlays = [ inputs.llm-agents.overlays.default ];
-
-          microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
-          microvm.vcpu = lib.mkDefault cfg.vcpus;
-          microvm.mem = lib.mkDefault cfg.mem;
-
-          microvm.interfaces = lib.mkDefault [
+        # ── Hermes agent service (official NixOS module) ─────────────────────
+        #
+        # container.enable gives hermes a persistent Ubuntu writable layer so
+        # npm/pip/apt installs work — the same isolation the microvm provides
+        # for the host, the container provides for the NixOS guest filesystem.
+        services.hermes-agent = {
+          enable = lib.mkDefault true;
+          addToSystemPackages = lib.mkDefault true;
+          container.enable = lib.mkDefault true;
+          environment = lib.mkDefault {
+            OPENAI_API_KEY = cfg.openaiApiKey;
+          };
+          environmentFiles = lib.mkDefault cfg.environmentFiles;
+          settings = lib.mkDefault (
             {
-              type = "tap";
-              id = tapId;
-              mac = cfg.vmMac;
+              model = {
+                provider = "custom";
+                base_url = "${cfg.ollamaUrl}/v1";
+                api_key = cfg.openaiApiKey;
+              };
             }
-          ];
-
-          # ── Guest networking — static IP, gateway to host bridge ────────────
-          systemd.network.enable = lib.mkDefault true;
-          systemd.network.networks."10-eth" = lib.mkDefault {
-            matchConfig.Name = "en* eth*";
-            networkConfig = {
-              Address = "${cfg.vmAddress}/${toString cfg.prefixLength}";
-              Gateway = cfg.hostAddress;
-              DNS = [
-                "1.1.1.1"
-                "8.8.8.8"
-              ];
-            };
-          };
-
-          # ── Hermes agent gateway ─────────────────────────────────────────────
-          #
-          # Runs hermes in gateway mode, which exposes an API server and routes
-          # requests to the host's Ollama via the OpenAI-compatible endpoint.
-          environment.systemPackages = [ pkgs.llm-agents.hermes-agent ];
-
-          systemd.services.hermes-gateway = {
-            description = "Hermes AI agent gateway";
-            wantedBy = [ "multi-user.target" ];
-            after = [ "network-online.target" ];
-            wants = [ "network-online.target" ];
-            environment = {
-              OPENAI_BASE_URL = "${cfg.ollamaUrl}/v1";
-              OPENAI_API_KEY = cfg.openaiApiKey;
-              API_SERVER_ENABLED = "true";
-              API_SERVER_PORT = toString cfg.hermesApiPort;
-              API_SERVER_HOST = "0.0.0.0";
-            };
-            serviceConfig = {
-              ExecStart = "${pkgs.llm-agents.hermes-agent}/bin/hermes gateway run";
-              Restart = "on-failure";
-              RestartSec = "5s";
-            };
-          };
-
-          # ── Optional SSH access from the host ───────────────────────────────
-          services.openssh = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-            enable = lib.mkDefault true;
-            settings = {
-              PermitRootLogin = lib.mkDefault "yes";
-              PasswordAuthentication = lib.mkDefault false;
-            };
-          };
-
-          users.users.root = lib.mkIf (cfg.sshAuthorizedKeys != [ ]) {
-            openssh.authorizedKeys.keys = lib.mkDefault cfg.sshAuthorizedKeys;
-          };
-
-          networking.hostName = lib.mkDefault cfg.vmName;
-          networking.firewall.enable = lib.mkDefault false;
-
-          system.stateVersion = lib.mkDefault "25.05";
-          nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+            // cfg.settings
+          );
         };
+      };
     };
   };
 }

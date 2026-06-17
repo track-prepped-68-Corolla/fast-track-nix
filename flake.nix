@@ -114,10 +114,8 @@
     # Opt-in state persistence on tmpfs root systems — used by ft.diskBtrfs.impermanence.
     impermanence.url = "github:nix-community/impermanence";
 
-    # Nix packages for AI coding agents — provides hermes-agent (Nous Research).
-    # nixpkgs is intentionally not followed: overlays.default builds against the
-    # flake's own nixpkgs-unstable pin so packages hit cache.numtide.com.
-    llm-agents.url = "github:numtide/llm-agents.nix";
+    # Official Nous Research hermes-agent flake — provides nixosModules.default.
+    hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
   outputs =

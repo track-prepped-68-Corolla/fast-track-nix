@@ -31,6 +31,13 @@
       #   ft.core.stateVersion — required by home-core.nix; ft.core.enable
       #                          defaults to true so its config block always runs
       #                          and sets home.stateVersion = cfg.stateVersion.
+      # ftUserPath is normally injected by the generator (flake-parts/generator.nix)
+      # via extraSpecialArgs; this standalone eval has no consumer users/<name>
+      # directory to derive it from, so it's stubbed to null here — same value a
+      # consumer would get using homeManagerModules.default directly outside the
+      # generator. The module system requires every declared module argument to
+      # resolve to something even when unused, so this must be passed explicitly
+      # rather than relying on modules/home/mullet.nix's own `ftUserPath ? null`.
       homeEval = inputs.home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [
@@ -40,24 +47,31 @@
             ft.core.stateVersion = "25.05";
           }
         ];
-        extraSpecialArgs = { inherit inputs; };
+        extraSpecialArgs = {
+          inherit inputs;
+          ftUserPath = null;
+        };
       };
 
       ftOptions = options: lib.filterAttrs (n: _: n == "ft") options;
 
       # Docs packages: permissive — always produce output even if descriptions
       # are missing (so the generate workflow doesn't block on style gaps).
-      mkDocs = options: pkgs.nixosOptionsDoc {
-        options = ftOptions options;
-        warningsAreErrors = false;
-      };
+      mkDocs =
+        options:
+        pkgs.nixosOptionsDoc {
+          options = ftOptions options;
+          warningsAreErrors = false;
+        };
 
       # Strict evaluation used for checks — fails nix flake check if any ft.*
       # option is missing a description, enforcing the module authoring rules.
-      mkStrictDocs = options: pkgs.nixosOptionsDoc {
-        options = ftOptions options;
-        warningsAreErrors = true;
-      };
+      mkStrictDocs =
+        options:
+        pkgs.nixosOptionsDoc {
+          options = ftOptions options;
+          warningsAreErrors = true;
+        };
     in
     {
       packages = {
