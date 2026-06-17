@@ -33,17 +33,31 @@
             nativeBuildInputs = [ pkgs.git ];
           }
           ''
+            export HOME="$TMPDIR"
             mkdir repo && cd repo
             git init -q
 
             echo 'not a conventional commit' > bad-msg
-            if ${commitMsgHook} bad-msg; then
+            set +e
+            ${commitMsgHook} bad-msg
+            badStatus=$?
+            set -e
+            echo "commit-msg hook exit status for bad-msg: $badStatus"
+            if [ "$badStatus" -eq 0 ]; then
               echo "expected commit-msg hook to reject a non-conventional message" >&2
               exit 1
             fi
 
             echo 'fix: a valid conventional commit message' > good-msg
+            set +e
             ${commitMsgHook} good-msg
+            goodStatus=$?
+            set -e
+            echo "commit-msg hook exit status for good-msg: $goodStatus"
+            if [ "$goodStatus" -ne 0 ]; then
+              echo "expected commit-msg hook to accept a conventional message" >&2
+              exit 1
+            fi
 
             touch $out
           '';
