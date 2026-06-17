@@ -241,6 +241,9 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
   - [ ] `sys.just`'s `switch` commit step → `jj describe -m` + `jj new` instead of `git commit`
   - [ ] `pull`/`push` → `jj git fetch` + rebase onto the upstream bookmark, then explicit `jj bookmark set` + `jj git push --bookmark`
   - [ ] Collapse `bootstrap.just`'s six repeated stage+conditional-commit call sites (`git-init`, `tailscale-init`, `add-machine`, `secrets-init`, `generate-facts`, the `deploy`/`deploy-local` disk-device correction) into a single `_checkpoint message +paths` helper built on `jj commit -- paths`
+- [ ] **Convert `flake-parts/devshell.nix` to devenv** — replace `pkgs.mkShell` with `devenv.flakeModule` so per-repo `.envrc`/`devenv.nix` can export dev-only markers (e.g. the jj/git auto-refresh marker below) without touching the OS-scoped `ft.cli`/`ft.jj` modules; project-scoped (devenv) vs OS-scoped (`ft.cli`/`ft.jj`) tooling stay deliberately parallel, not merged
+  - [ ] While converting, fix devShell package drift: `convco` is unused (no `sys.just` recipe calls it); `trufflehog` is required by the quality-check gate but currently excluded
+  - [ ] Refine the marker-consuming auto-refresh function (a global dotfiles `precmd` hook riding on direnv's existing per-line hook, gated on the `FT_VCS_AUTOREFRESH` marker exported by each opted-in repo's `.envrc`) for git/jj robustness — must no-op during an in-progress rebase/merge and run non-blocking
 
 ---
 
