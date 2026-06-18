@@ -164,7 +164,8 @@ let
       modules = [
         ../modules/home
         (usersDir + "/${user}")
-      ] ++ profileModules;
+      ]
+      ++ profileModules;
     };
 in
 {
@@ -218,16 +219,20 @@ in
     homeConfigurations = builtins.listToAttrs (
       map (
         { user, system }:
-        lib.nameValuePair "${user}@${system}" (mkHomeConfiguration { inherit user system; })
+        lib.nameValuePair "${user}@${system}" (mkHomeConfiguration {
+          inherit user system;
+        })
       ) userMatrix
       ++ map (
-        { user, combo, system }:
-        lib.nameValuePair "${user}+${lib.concatStringsSep "+" combo}@${system}" (
-          mkHomeConfiguration {
-            inherit user system;
-            profileModules = map (profile: usersDir + "/${user}/profiles/${profile}") combo;
-          }
-        )
+        {
+          user,
+          combo,
+          system,
+        }:
+        lib.nameValuePair "${user}+${lib.concatStringsSep "+" combo}@${system}" (mkHomeConfiguration {
+          inherit user system;
+          profileModules = map (profile: usersDir + "/${user}/profiles/${profile}") combo;
+        })
       ) userProfileMatrix
     );
 

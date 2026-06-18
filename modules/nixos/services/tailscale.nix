@@ -61,9 +61,7 @@ in
     services.tailscale = {
       enable = true;
       inherit (cfg) useRoutingFeatures;
-      authKeyFile = lib.mkIf cfg.autoJoin (
-        lib.mkDefault config.sops.secrets."tailscale/authkey".path
-      );
+      authKeyFile = lib.mkIf cfg.autoJoin (lib.mkDefault config.sops.secrets."tailscale/authkey".path);
     };
 
     sops.secrets."tailscale/authkey" = lib.mkIf cfg.autoJoin { };
