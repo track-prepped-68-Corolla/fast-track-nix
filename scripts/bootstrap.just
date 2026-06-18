@@ -21,7 +21,11 @@ git-init:
     git remote add origin "$GIT_REMOTE" 2>/dev/null || git remote set-url origin "$GIT_REMOTE"
     mkdir -p var/local
     printf '%s' "$(nix eval --impure --expr 'builtins.currentSystem' --raw)" > var/local/system
-    printf '%s' "$PWD" > var/local/repoPath
+    # repoPath is fixed to the @src convention (see disko-btrfs.nix), not the
+    # transient $PWD bootstrap happens to run from — deploy/deploy-local bundle
+    # this repo onto /src/<name> via nixos-anywhere --extra-files, so this value
+    # must already reflect where the repo will live once the target is installed.
+    printf '%s' "/src/$(basename "$PWD")" > var/local/repoPath
     git add var/git/ -f var/local/
     git diff --cached --quiet || git commit -m "chore: store git config and local state in var"
     echo ":: Git initialised. Remote: $GIT_REMOTE ::"
@@ -57,72 +61,81 @@ add-machine name ip user="example":
     IP="{{ip}}"
     USER="{{user}}"
     MACHINE_DIR="machines/${NAME}"
-    if [ -d "$MACHINE_DIR" ]; then
-      echo ":: Machine ${NAME} already exists at ${MACHINE_DIR} ::"
-      exit 0
-    fi
+    # var/local state is global bootstrap bookkeeping, not part of the
+    # machine's own scaffold — write and commit it unconditionally so it's
+    # still recorded even when MACHINE_DIR already exists (e.g. a prebuilt,
+    # hand-written machine config rather than one from add-machine's template).
     SYSTEM="$(nix eval --impure --expr 'builtins.currentSystem' --raw)"
     mkdir -p var/local
     printf '%s' "$NAME"   > var/local/machineName
     printf '%s' "$SYSTEM" > var/local/system
-    mkdir -p "${MACHINE_DIR}/modules"
-    mkdir -p "${MACHINE_DIR}/var"
-    printf '%s\n' \
-      '{ lib, ... }:' \
-      '{' \
-      '  imports = [' \
-      '    ./modules' \
-      '    ../../modules/nixos' \
-      '  ];' \
-      '' \
-      "  networking.hostName = \"${NAME}\";" \
-      '' \
-      '  ft.users = {' \
-      "    mainUser = \"${USER}\";" \
-      "    superUsers = [ \"${USER}\" ];" \
-      '  };' \
-      "  users.users.${USER}.initialPassword = \"nixos\";" \
-      '  users.mutableUsers = true;' \
-      '' \
-      '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
-      '  ft.limine.enable = true;' \
-      '  ft.cosmic.enable = true;' \
-      '  ft.cli.enable = true;' \
-      '' \
-      '  ft.mullet = {' \
-      '    enable     = true;' \
-      "    sourcePath = ../../users/${USER}/var/mullet.txt;" \
-      '  };' \
-      '' \
-      '  ft.sops = {' \
-      '    enable = true;' \
-      '    useTPM = true;' \
-      '  };' \
-      '' \
-      '  ft.facter = {' \
-      '    enable     = true;' \
-      '    reportPath = ./var/facter.json;' \
-      '  };' \
-      '' \
-      '  ft.core.stateVersion = "25.05";' \
-      "  nixpkgs.hostPlatform = \"${SYSTEM}\";" \
-      '}' \
-      > "${MACHINE_DIR}/default.nix"
-    printf '%s\n' \
-      '{ lib, ... }:' \
-      'let' \
-      '  allFiles = lib.filesystem.listFilesRecursive ./.;' \
-      '  validModules = builtins.filter (' \
-      '    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix' \
-      '  ) allFiles;' \
-      'in' \
-      '{' \
-      '  imports = validModules;' \
-      '}' \
-      > "${MACHINE_DIR}/modules/default.nix"
-    git add "var/local/" "${MACHINE_DIR}/"
-    git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
-    echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
+    git add var/local/
+    git diff --cached --quiet || git commit -m "bootstrap: record local machine state for ${NAME}"
+    if [ -d "$MACHINE_DIR" ]; then
+      echo ":: Machine ${NAME} already exists at ${MACHINE_DIR} ::"
+    else
+      mkdir -p "${MACHINE_DIR}/modules"
+      mkdir -p "${MACHINE_DIR}/var"
+      printf '%s\n' \
+        '{ lib, ... }:' \
+        '{' \
+        '  imports = [' \
+        '    ./modules' \
+        '    ../../modules/nixos' \
+        '  ];' \
+        '' \
+        "  networking.hostName = \"${NAME}\";" \
+        '' \
+        '  ft.users = {' \
+        "    mainUser = \"${USER}\";" \
+        "    superUsers = [ \"${USER}\" ];" \
+        '  };' \
+        "  users.users.${USER}.initialPassword = \"nixos\";" \
+        '  users.mutableUsers = true;' \
+        '' \
+        '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
+        '  ft.limine.enable = true;' \
+        '  ft.cosmic.enable = true;' \
+        '  ft.cli.enable = true;' \
+        '' \
+        '  ft.mullet = {' \
+        '    enable     = true;' \
+        "    sourcePath = ../../users/${USER}/var/mullet.txt;" \
+        '  };' \
+        '' \
+        '  ft.sops = {' \
+        '    enable = true;' \
+        '    useTPM = true;' \
+        '  };' \
+        '' \
+        '  ft.facter = {' \
+        '    enable     = true;' \
+        '    reportPath = ./var/facter.json;' \
+        '  };' \
+        '' \
+        '  ft.core.stateVersion = "25.05";' \
+        "  nixpkgs.hostPlatform = \"${SYSTEM}\";" \
+        '}' \
+        > "${MACHINE_DIR}/default.nix"
+      printf '%s\n' \
+        '{ lib, ... }:' \
+        'let' \
+        '  allFiles = lib.filesystem.listFilesRecursive ./.;' \
+        '  validModules = builtins.filter (' \
+        '    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix' \
+        '  ) allFiles;' \
+        'in' \
+        '{' \
+        '  imports = validModules;' \
+        '}' \
+        > "${MACHINE_DIR}/modules/default.nix"
+      git add "${MACHINE_DIR}/"
+      git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
+      echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
+    fi
+    # Always (re)generate facts, even on retry — otherwise a failed first
+    # attempt leaves facter.json permanently missing once the directory exists,
+    # since the early-return above would silently skip this on every retry.
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" generate-facts "${NAME}" "${IP}"
 
 # Generate SSH host key + derive age pubkey; create var/secrets/.sops.yaml if absent.
@@ -195,14 +208,19 @@ deploy name ip:
       echo "Disk selection failed or was declined; aborting deploy." >&2
       exit 1
     fi
-    EXTRA_FILES=""
+    # Bundle this repo onto the target's @src subvolume (mounted at /src) so
+    # ft.repoPath (set to /src/<name> by git-init) resolves to a real, persistent
+    # location once the target is installed — see disko-btrfs.nix.
+    REPO_NAME="$(basename "$PWD")"
+    mkdir -p "${TMPDIR}/src"
+    rm -rf "${TMPDIR}/src/${REPO_NAME}"
+    cp -a "$PWD" "${TMPDIR}/src/${REPO_NAME}"
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
       mkdir -p "${TMPDIR}/etc/ssh"
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
-      EXTRA_FILES="--extra-files ${TMPDIR}"
     fi
-    nixos-anywhere --flake ".#${NAME}" $EXTRA_FILES "root@${IP}"
+    nixos-anywhere --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
 
 # Install NixOS on this machine from the live ISO (nixos-anywhere via root@localhost).
 deploy-local name:
@@ -225,14 +243,19 @@ deploy-local name:
       echo "Disk selection failed or was declined; aborting deploy." >&2
       exit 1
     fi
-    EXTRA_FILES=""
+    # Bundle this repo onto the target's @src subvolume (mounted at /src) so
+    # ft.repoPath (set to /src/<name> by git-init) resolves to a real, persistent
+    # location once the target is installed — see disko-btrfs.nix.
+    REPO_NAME="$(basename "$PWD")"
+    mkdir -p "${TMPDIR}/src"
+    rm -rf "${TMPDIR}/src/${REPO_NAME}"
+    cp -a "$PWD" "${TMPDIR}/src/${REPO_NAME}"
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
       mkdir -p "${TMPDIR}/etc/ssh"
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
-      EXTRA_FILES="--extra-files ${TMPDIR}"
     fi
-    nixos-anywhere --flake ".#${NAME}" --phases disko,install --no-reboot $EXTRA_FILES root@localhost
+    nixos-anywhere --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
 
 # Full bootstrap: git-init → add-machine (includes generate-facts) → secrets-init → deploy.
 bootstrap name ip:
