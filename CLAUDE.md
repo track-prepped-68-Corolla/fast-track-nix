@@ -110,6 +110,8 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.core` | System core baseline (NixOS) / Home Manager foundation (HM) |
 | `ft.limine` | Limine bootloader |
 | `ft.cachyos` | CachyOS optimised kernel |
+| `ft.cosmic` | COSMIC desktop environment |
+| `ft.cosmicGreeter` | cosmic-greeter display manager |
 | `ft.plasma` | KDE Plasma desktop environment with SDDM |
 | `ft.plasmaBigscreen` | Plasma Bigscreen TV shell (SDDM Wayland session + HDMI-CEC) |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |

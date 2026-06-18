@@ -173,6 +173,8 @@ _: {
 | `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F (**default on**) |
 | `ft.limine.enable` | Limine bootloader |
 | `ft.cachyos.enable` | CachyOS-optimised kernel builds |
+| `ft.cosmic.enable` | COSMIC desktop environment + system76-scheduler |
+| `ft.cosmicGreeter.enable` | cosmic-greeter display manager |
 | `ft.plasma.enable` | KDE Plasma 6 with SDDM |
 | `ft.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), goverlay, Heroic, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
 | `ft.sops.enable` | sops-nix secret management via SSH host key (or TPM/YubiKey) |
