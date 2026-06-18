@@ -11,11 +11,12 @@
 
 let
   cfg = config.ft.plasmaBigscreen;
+  inherit (pkgs.kdePackages.plasma) plasma-bigscreen;
 in
 {
   options.ft.plasmaBigscreen = {
     enable = lib.mkEnableOption "Plasma Bigscreen TV shell" // {
-      description = "Installs kdePackages.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).";
+      description = "Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).";
     };
 
     cecSupport = lib.mkOption {
@@ -37,7 +38,7 @@ in
         enable = lib.mkDefault true;
         wayland.enable = lib.mkDefault true;
       };
-      sessionPackages = [ pkgs.kdePackages.plasma-bigscreen ];
+      sessionPackages = [ plasma-bigscreen ];
       # Plain value, not mkDefault: nixpkgs' plasma6 module already sets this
       # via mkDefault "plasma", and two mkDefault definitions at equal
       # priority conflict rather than one winning. This only fires when the
@@ -46,9 +47,14 @@ in
       defaultSession = lib.mkIf cfg.defaultSession "plasma-bigscreen-wayland";
     };
 
+    xdg.portal.configPackages = [ plasma-bigscreen ];
+
     boot.kernelModules = lib.optional cfg.cecSupport "cec";
 
-    environment.systemPackages = lib.optionals cfg.cecSupport [
+    environment.systemPackages = [
+      plasma-bigscreen
+    ]
+    ++ lib.optionals cfg.cecSupport [
       pkgs.libcec
       pkgs.v4l-utils
     ];
