@@ -61,13 +61,19 @@ add-machine name ip user="example":
     IP="{{ip}}"
     USER="{{user}}"
     MACHINE_DIR="machines/${NAME}"
+    # var/local state is global bootstrap bookkeeping, not part of the
+    # machine's own scaffold — write and commit it unconditionally so it's
+    # still recorded even when MACHINE_DIR already exists (e.g. a prebuilt,
+    # hand-written machine config rather than one from add-machine's template).
+    SYSTEM="$(nix eval --impure --expr 'builtins.currentSystem' --raw)"
+    mkdir -p var/local
+    printf '%s' "$NAME"   > var/local/machineName
+    printf '%s' "$SYSTEM" > var/local/system
+    git add var/local/
+    git diff --cached --quiet || git commit -m "bootstrap: record local machine state for ${NAME}"
     if [ -d "$MACHINE_DIR" ]; then
       echo ":: Machine ${NAME} already exists at ${MACHINE_DIR} ::"
     else
-      SYSTEM="$(nix eval --impure --expr 'builtins.currentSystem' --raw)"
-      mkdir -p var/local
-      printf '%s' "$NAME"   > var/local/machineName
-      printf '%s' "$SYSTEM" > var/local/system
       mkdir -p "${MACHINE_DIR}/modules"
       mkdir -p "${MACHINE_DIR}/var"
       printf '%s\n' \
@@ -123,7 +129,7 @@ add-machine name ip user="example":
         '  imports = validModules;' \
         '}' \
         > "${MACHINE_DIR}/modules/default.nix"
-      git add "var/local/" "${MACHINE_DIR}/"
+      git add "${MACHINE_DIR}/"
       git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
       echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
     fi
