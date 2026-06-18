@@ -38,7 +38,12 @@ in
         wayland.enable = lib.mkDefault true;
       };
       sessionPackages = [ pkgs.kdePackages.plasma-bigscreen ];
-      defaultSession = lib.mkIf cfg.defaultSession (lib.mkDefault "plasma-bigscreen-wayland");
+      # Plain value, not mkDefault: nixpkgs' plasma6 module already sets this
+      # via mkDefault "plasma", and two mkDefault definitions at equal
+      # priority conflict rather than one winning. This only fires when the
+      # consumer explicitly opts in via cfg.defaultSession, so it behaves as
+      # a consumer-directed override rather than a hardcoded opinion.
+      defaultSession = lib.mkIf cfg.defaultSession "plasma-bigscreen-wayland";
     };
 
     boot.kernelModules = lib.optional cfg.cecSupport "cec";
