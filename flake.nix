@@ -105,6 +105,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Declarative KDE Plasma settings via Home Manager — used by ft.plasmaManager.
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     # Lightweight VMs (Firecracker, QEMU, Cloud Hypervisor) — used by ft.dockervm.
     microvm = {
       url = "github:astro/microvm.nix";

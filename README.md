@@ -129,7 +129,7 @@ _: {
     repoPath = "/home/alice/ft-home"; # required when ft.cli.enable = true
 
     limine.enable  = true;
-    cosmic.enable  = true;
+    plasma.enable  = true;
     cachyos.enable = true;
     gaming = {
       enable    = true;
@@ -150,9 +150,11 @@ _: {
   home.username = "alice";
 
   ft = {
-    terminal.enable  = true;
-    lazyvim.enable   = true;
-    dotfiles.enable  = true;
+    terminal.enable      = true;
+    lazyvim.enable       = true;
+    dotfiles.enable      = true;
+    plasmaManager.enable = true;
+    karousel.enable      = true;
   };
 }
 ```
@@ -171,8 +173,9 @@ _: {
 | `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F (**default on**) |
 | `ft.limine.enable` | Limine bootloader |
 | `ft.cachyos.enable` | CachyOS-optimised kernel builds |
-| `ft.cosmic.enable` | COSMIC desktop environment + cosmic-greeter + system76-scheduler |
-| `ft.plasma.enable` | KDE Plasma 6 |
+| `ft.cosmic.enable` | COSMIC desktop environment + system76-scheduler |
+| `ft.cosmicGreeter.enable` | cosmic-greeter display manager |
+| `ft.plasma.enable` | KDE Plasma 6 with SDDM |
 | `ft.gaming.enable` | Steam, GameMode, MangoHud, Proton tooling (protonup-qt, steamtinkerlaunch), goverlay, Heroic, Jovian-NixOS; set `enableLeanbackUI = true` for Steam Big Picture boot |
 | `ft.sops.enable` | sops-nix secret management via SSH host key (or TPM/YubiKey) |
 | `ft.yubikey.enable` | YubiKey udev rules and pcscd |
@@ -193,6 +196,8 @@ _: {
 | `ft.dotfiles.enable` | Symlinks `users/<name>/dotfiles/` into `$HOME` |
 | `ft.sops.enable` | Per-user sops age key |
 | `ft.theme.enable` | System-wide theming via Stylix / Base16; configure wallpaper and fonts with `ft.theme.*` sub-options |
+| `ft.plasmaManager.enable` | Declarative KDE Plasma settings via plasma-manager |
+| `ft.karousel.enable` | Karousel scrollable-tiling KWin script |
 
 ---
 

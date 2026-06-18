@@ -11,7 +11,7 @@ in
 {
   options.ft.keepass = {
     enable = lib.mkEnableOption "KeePassXC as the primary keyring and secret service" // {
-      description = "Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on COSMIC or hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.";
+      description = "Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.";
     };
   };
 
