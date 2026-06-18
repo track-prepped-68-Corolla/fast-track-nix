@@ -95,7 +95,7 @@ add-machine name ip user="example":
         '' \
         '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
         '  ft.limine.enable = true;' \
-        '  ft.cosmic.enable = true;' \
+        '  ft.plasma.enable = true;' \
         '  ft.cli.enable = true;' \
         '' \
         '  ft.mullet = {' \

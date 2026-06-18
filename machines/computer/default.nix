@@ -38,7 +38,7 @@ _:
   ft = {
     core.stateVersion = "25.05";
     limine.enable = true;
-    cosmic.enable = true;
+    plasma.enable = true;
     cli.enable = true;
     users.mainUser = "guest";
     users.superUsers = [ "admin" ];

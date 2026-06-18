@@ -35,7 +35,7 @@ in
       schemeName = lib.mkOption {
         type = lib.types.str;
         default = "Catppuccin Mocha";
-        description = "Human-readable name of the scheme (used by COSMIC).";
+        description = "Human-readable name of the scheme.";
       };
 
       fonts = {
@@ -88,10 +88,6 @@ in
           };
         };
       };
-    };
-
-    ft.cosmic.enable = lib.mkEnableOption "COSMIC desktop environment theming logic" // {
-      description = "Applies COSMIC-specific theming overrides on top of `ft.theme`. Enable this alongside `ft.cosmic.enable` (NixOS) when running the COSMIC desktop environment.";
     };
   };
 
