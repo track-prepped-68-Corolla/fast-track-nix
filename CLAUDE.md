@@ -111,6 +111,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.limine` | Limine bootloader |
 | `ft.cachyos` | CachyOS optimised kernel |
 | `ft.plasma` | KDE Plasma desktop environment with SDDM |
+| `ft.plasmaBigscreen` | Plasma Bigscreen TV shell (SDDM Wayland session + HDMI-CEC) |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
 | `ft.asus` | ASUS ROG/TUF laptop hardware support |
 | `ft.vendorHw` | Vendor-specific hardware software (Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG, handhelds) |
