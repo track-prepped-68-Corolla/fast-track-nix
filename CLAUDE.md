@@ -92,7 +92,7 @@ in
 Drop a `.nix` file anywhere under `modules/nixos/` or `modules/home/`. The `default.nix` hub in each uses `lib.filesystem.listFilesRecursive` — no imports list to update. The file is discovered and evaluated automatically on the next build.
 
 **Workflow for new modules:**
-1. Determine placement: does the feature require system privileges, daemons, kernel modules, disk access, or system-level accounts? → NixOS (`modules/nixos/`). Is it purely per-user configuration, packages, or dotfiles with no privileged component? → Home Manager (`modules/home/`). Does it have both a privileged component and a per-user component? → Split: implement the privileged piece in `modules/nixos/` and the per-user piece in `modules/home/`, following the existing `ft.core` / `ft.sops` / `ft.cosmic` / `ft.komodo` pairing pattern. State the placement decision and reasoning before proceeding.
+1. Determine placement: does the feature require system privileges, daemons, kernel modules, disk access, or system-level accounts? → NixOS (`modules/nixos/`). Is it purely per-user configuration, packages, or dotfiles with no privileged component? → Home Manager (`modules/home/`). Does it have both a privileged component and a per-user component? → Split: implement the privileged piece in `modules/nixos/` and the per-user piece in `modules/home/`, following the existing `ft.core` / `ft.sops` / `ft.komodo` pairing pattern. State the placement decision and reasoning before proceeding.
 2. Propose the option interface: feature name, option names, types, and defaults. Write no `config` yet.
 3. Wait for explicit sign-off.
 4. Implement the `config` block.
@@ -110,8 +110,9 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.core` | System core baseline (NixOS) / Home Manager foundation (HM) |
 | `ft.limine` | Limine bootloader |
 | `ft.cachyos` | CachyOS optimised kernel |
-| `ft.cosmic` | COSMIC desktop environment (NixOS) / COSMIC theming (HM) |
-| `ft.plasma` | KDE Plasma desktop environment |
+| `ft.cosmic` | COSMIC desktop environment |
+| `ft.cosmicGreeter` | cosmic-greeter display manager |
+| `ft.plasma` | KDE Plasma desktop environment with SDDM |
 | `ft.plasmaBigscreen` | Plasma Bigscreen TV shell (SDDM Wayland session + HDMI-CEC) |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
 | `ft.asus` | ASUS ROG/TUF laptop hardware support |
@@ -135,6 +136,8 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.terminal` | Terminal stack — Home Manager |
 | `ft.lazyvim` | LazyVim Neovim config — Home Manager |
 | `ft.dotfiles` | Dotfile symlinking — Home Manager |
+| `ft.plasmaManager` | Declarative KDE Plasma settings via plasma-manager — Home Manager |
+| `ft.karousel` | Karousel KWin tiling script — Home Manager |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
 

@@ -34,7 +34,7 @@ in
     # Activate the shared U2F PAM stack owned by user.nix.
     ft.users.u2f.enable = lib.mkDefault true;
 
-    # user.nix owns security.pam.u2f — only add the lock screen here.
+    # user.nix owns security.pam.u2f — only add the display manager here.
     # cosmic-greeter is excluded: the greeter doesn't relay pam_u2f prompts
     # reliably and a hang there locks the user out completely. cosmic-lock
     # (the screen locker) is sufficient for DE-level key protection.
