@@ -21,7 +21,11 @@ git-init:
     git remote add origin "$GIT_REMOTE" 2>/dev/null || git remote set-url origin "$GIT_REMOTE"
     mkdir -p var/local
     printf '%s' "$(nix eval --impure --expr 'builtins.currentSystem' --raw)" > var/local/system
-    printf '%s' "$PWD" > var/local/repoPath
+    # repoPath is fixed to the @src convention (see disko-btrfs.nix), not the
+    # transient $PWD bootstrap happens to run from — deploy/deploy-local bundle
+    # this repo onto /src/<name> via nixos-anywhere --extra-files, so this value
+    # must already reflect where the repo will live once the target is installed.
+    printf '%s' "/src/$(basename "$PWD")" > var/local/repoPath
     git add var/git/ -f var/local/
     git diff --cached --quiet || git commit -m "chore: store git config and local state in var"
     echo ":: Git initialised. Remote: $GIT_REMOTE ::"
@@ -195,14 +199,19 @@ deploy name ip:
       echo "Disk selection failed or was declined; aborting deploy." >&2
       exit 1
     fi
-    EXTRA_FILES=""
+    # Bundle this repo onto the target's @src subvolume (mounted at /src) so
+    # ft.repoPath (set to /src/<name> by git-init) resolves to a real, persistent
+    # location once the target is installed — see disko-btrfs.nix.
+    REPO_NAME="$(basename "$PWD")"
+    mkdir -p "${TMPDIR}/src"
+    rm -rf "${TMPDIR}/src/${REPO_NAME}"
+    cp -a "$PWD" "${TMPDIR}/src/${REPO_NAME}"
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
       mkdir -p "${TMPDIR}/etc/ssh"
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
-      EXTRA_FILES="--extra-files ${TMPDIR}"
     fi
-    nixos-anywhere --flake ".#${NAME}" $EXTRA_FILES "root@${IP}"
+    nixos-anywhere --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
 
 # Install NixOS on this machine from the live ISO (nixos-anywhere via root@localhost).
 deploy-local name:
@@ -225,14 +234,19 @@ deploy-local name:
       echo "Disk selection failed or was declined; aborting deploy." >&2
       exit 1
     fi
-    EXTRA_FILES=""
+    # Bundle this repo onto the target's @src subvolume (mounted at /src) so
+    # ft.repoPath (set to /src/<name> by git-init) resolves to a real, persistent
+    # location once the target is installed — see disko-btrfs.nix.
+    REPO_NAME="$(basename "$PWD")"
+    mkdir -p "${TMPDIR}/src"
+    rm -rf "${TMPDIR}/src/${REPO_NAME}"
+    cp -a "$PWD" "${TMPDIR}/src/${REPO_NAME}"
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
       mkdir -p "${TMPDIR}/etc/ssh"
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
-      EXTRA_FILES="--extra-files ${TMPDIR}"
     fi
-    nixos-anywhere --flake ".#${NAME}" --phases disko,install --no-reboot $EXTRA_FILES root@localhost
+    nixos-anywhere --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
 
 # Full bootstrap: git-init → add-machine (includes generate-facts) → secrets-init → deploy.
 bootstrap name ip:
