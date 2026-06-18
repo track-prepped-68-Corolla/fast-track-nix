@@ -63,70 +63,73 @@ add-machine name ip user="example":
     MACHINE_DIR="machines/${NAME}"
     if [ -d "$MACHINE_DIR" ]; then
       echo ":: Machine ${NAME} already exists at ${MACHINE_DIR} ::"
-      exit 0
+    else
+      SYSTEM="$(nix eval --impure --expr 'builtins.currentSystem' --raw)"
+      mkdir -p var/local
+      printf '%s' "$NAME"   > var/local/machineName
+      printf '%s' "$SYSTEM" > var/local/system
+      mkdir -p "${MACHINE_DIR}/modules"
+      mkdir -p "${MACHINE_DIR}/var"
+      printf '%s\n' \
+        '{ lib, ... }:' \
+        '{' \
+        '  imports = [' \
+        '    ./modules' \
+        '    ../../modules/nixos' \
+        '  ];' \
+        '' \
+        "  networking.hostName = \"${NAME}\";" \
+        '' \
+        '  ft.users = {' \
+        "    mainUser = \"${USER}\";" \
+        "    superUsers = [ \"${USER}\" ];" \
+        '  };' \
+        "  users.users.${USER}.initialPassword = \"nixos\";" \
+        '  users.mutableUsers = true;' \
+        '' \
+        '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
+        '  ft.limine.enable = true;' \
+        '  ft.cosmic.enable = true;' \
+        '  ft.cli.enable = true;' \
+        '' \
+        '  ft.mullet = {' \
+        '    enable     = true;' \
+        "    sourcePath = ../../users/${USER}/var/mullet.txt;" \
+        '  };' \
+        '' \
+        '  ft.sops = {' \
+        '    enable = true;' \
+        '    useTPM = true;' \
+        '  };' \
+        '' \
+        '  ft.facter = {' \
+        '    enable     = true;' \
+        '    reportPath = ./var/facter.json;' \
+        '  };' \
+        '' \
+        '  ft.core.stateVersion = "25.05";' \
+        "  nixpkgs.hostPlatform = \"${SYSTEM}\";" \
+        '}' \
+        > "${MACHINE_DIR}/default.nix"
+      printf '%s\n' \
+        '{ lib, ... }:' \
+        'let' \
+        '  allFiles = lib.filesystem.listFilesRecursive ./.;' \
+        '  validModules = builtins.filter (' \
+        '    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix' \
+        '  ) allFiles;' \
+        'in' \
+        '{' \
+        '  imports = validModules;' \
+        '}' \
+        > "${MACHINE_DIR}/modules/default.nix"
+      git add "var/local/" "${MACHINE_DIR}/"
+      git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
+      echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
     fi
-    SYSTEM="$(nix eval --impure --expr 'builtins.currentSystem' --raw)"
-    mkdir -p var/local
-    printf '%s' "$NAME"   > var/local/machineName
-    printf '%s' "$SYSTEM" > var/local/system
-    mkdir -p "${MACHINE_DIR}/modules"
-    mkdir -p "${MACHINE_DIR}/var"
-    printf '%s\n' \
-      '{ lib, ... }:' \
-      '{' \
-      '  imports = [' \
-      '    ./modules' \
-      '    ../../modules/nixos' \
-      '  ];' \
-      '' \
-      "  networking.hostName = \"${NAME}\";" \
-      '' \
-      '  ft.users = {' \
-      "    mainUser = \"${USER}\";" \
-      "    superUsers = [ \"${USER}\" ];" \
-      '  };' \
-      "  users.users.${USER}.initialPassword = \"nixos\";" \
-      '  users.mutableUsers = true;' \
-      '' \
-      '  ft.repoPath = lib.strings.trim (builtins.readFile ../../var/local/repoPath);' \
-      '  ft.limine.enable = true;' \
-      '  ft.cosmic.enable = true;' \
-      '  ft.cli.enable = true;' \
-      '' \
-      '  ft.mullet = {' \
-      '    enable     = true;' \
-      "    sourcePath = ../../users/${USER}/var/mullet.txt;" \
-      '  };' \
-      '' \
-      '  ft.sops = {' \
-      '    enable = true;' \
-      '    useTPM = true;' \
-      '  };' \
-      '' \
-      '  ft.facter = {' \
-      '    enable     = true;' \
-      '    reportPath = ./var/facter.json;' \
-      '  };' \
-      '' \
-      '  ft.core.stateVersion = "25.05";' \
-      "  nixpkgs.hostPlatform = \"${SYSTEM}\";" \
-      '}' \
-      > "${MACHINE_DIR}/default.nix"
-    printf '%s\n' \
-      '{ lib, ... }:' \
-      'let' \
-      '  allFiles = lib.filesystem.listFilesRecursive ./.;' \
-      '  validModules = builtins.filter (' \
-      '    path: lib.hasSuffix ".nix" (builtins.toString path) && path != ./default.nix' \
-      '  ) allFiles;' \
-      'in' \
-      '{' \
-      '  imports = validModules;' \
-      '}' \
-      > "${MACHINE_DIR}/modules/default.nix"
-    git add "var/local/" "${MACHINE_DIR}/"
-    git diff --cached --quiet || git commit -m "bootstrap: scaffold machine ${NAME}"
-    echo ":: Machine ${NAME} scaffolded at ${MACHINE_DIR} ::"
+    # Always (re)generate facts, even on retry — otherwise a failed first
+    # attempt leaves facter.json permanently missing once the directory exists,
+    # since the early-return above would silently skip this on every retry.
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" generate-facts "${NAME}" "${IP}"
 
 # Generate SSH host key + derive age pubkey; create var/secrets/.sops.yaml if absent.
