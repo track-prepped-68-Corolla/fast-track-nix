@@ -8,6 +8,8 @@
 let
   cfg = config.ft.diskBtrfs;
 
+  defaultDevice = "/dev/nvme0n1";
+
   commonSubvolumes = {
     "@home" = {
       mountpoint = "/home";
@@ -78,8 +80,20 @@ in
 
     device = lib.mkOption {
       type = lib.types.str;
-      default = "/dev/nvme0n1";
+      default = defaultDevice;
       description = "Block device to partition (e.g. /dev/nvme0n1).";
+    };
+
+    confirmDevice = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "Must equal `device` whenever `device` is overridden away from the framework default (${defaultDevice}). A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage.";
+    };
+
+    excludeDevices = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Device paths that must never be used as the install target, e.g. a live installer's own boot media. Evaluation fails if `device` matches one of these.";
     };
 
     luks = {
@@ -110,6 +124,25 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.device == defaultDevice || cfg.device == cfg.confirmDevice;
+        message = ''
+          ft.diskBtrfs.device is set to "${cfg.device}", which differs from the framework
+          default ("${defaultDevice}"), but ft.diskBtrfs.confirmDevice ("${cfg.confirmDevice}")
+          does not match it. Set confirmDevice to the same value as device to confirm this is
+          the disk you intend to wipe.
+        '';
+      }
+      {
+        assertion = !(builtins.elem cfg.device cfg.excludeDevices);
+        message = ''
+          ft.diskBtrfs.device ("${cfg.device}") is listed in ft.diskBtrfs.excludeDevices and
+          cannot be used as the install target.
+        '';
+      }
+    ];
+
     disko.devices = lib.mkDefault (
       {
         disk.main = {

@@ -181,22 +181,19 @@ deploy name ip:
     IP="{{ip}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
     MACHINE_CFG="machines/${NAME}/default.nix"
-    # Confirm disk device before formatting — show lsblk output from target.
-    CURRENT_DEVICE=$(grep -oP 'device\s*=\s*"\K[^"]+' "$MACHINE_CFG" 2>/dev/null | head -1 || true)
-    if [ -n "$CURRENT_DEVICE" ]; then
-      echo ":: Disks visible on ${IP} ::"
-      ssh "root@${IP}" "lsblk -d -o NAME,SIZE,MODEL,TYPE --noheadings | grep disk" 2>/dev/null || \
-        ssh "root@${IP}" "lsblk -d -o NAME,SIZE,TYPE --noheadings" 2>/dev/null || true
-      echo ""
-      read -rp "OS disk device [${CURRENT_DEVICE}]: " NEW_DEVICE
-      NEW_DEVICE="${NEW_DEVICE:-$CURRENT_DEVICE}"
-      [[ "$NEW_DEVICE" != /dev/* ]] && NEW_DEVICE="/dev/${NEW_DEVICE}"
-      if [ "$NEW_DEVICE" != "$CURRENT_DEVICE" ]; then
-        sed -i "s|device = \"${CURRENT_DEVICE}\"|device = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
-        git add "$MACHINE_CFG"
-        git diff --cached --quiet || git commit -m "bootstrap: set OS disk to ${NEW_DEVICE} for ${NAME}"
-        echo ":: Updated ft.diskBtrfs.device to ${NEW_DEVICE} ::"
-      fi
+    # Confirm disk device before formatting — select-disk.sh shows lsblk output
+    # from the target, requires explicit wipe confirmation, and writes both
+    # ft.diskBtrfs.device and confirmDevice into $MACHINE_CFG.
+    set +e
+    NEW_DEVICE=$(bash "{{justfile_directory()}}/select-disk.sh" "$MACHINE_CFG" "root@${IP}")
+    SELECT_RC=$?
+    set -e
+    if [ "$SELECT_RC" -eq 0 ]; then
+      git add "$MACHINE_CFG"
+      git diff --cached --quiet || git commit -m "bootstrap: set OS disk to ${NEW_DEVICE} for ${NAME}"
+    elif [ "$SELECT_RC" -ne 2 ]; then
+      echo "Disk selection failed or was declined; aborting deploy." >&2
+      exit 1
     fi
     EXTRA_FILES=""
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
@@ -214,20 +211,19 @@ deploy-local name:
     NAME="{{name}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
     MACHINE_CFG="machines/${NAME}/default.nix"
-    # Confirm disk device — show lsblk for this machine.
-    echo ":: Disks on this machine ::"
-    lsblk -d -o NAME,SIZE,MODEL,TYPE --noheadings 2>/dev/null | grep disk || \
-      lsblk -d -o NAME,SIZE,TYPE --noheadings 2>/dev/null || true
-    echo ""
-    CURRENT_DEVICE=$(grep -oP 'device\s*=\s*"\K[^"]+' "$MACHINE_CFG" 2>/dev/null | head -1 || true)
-    read -rp "OS disk device [${CURRENT_DEVICE:-/dev/nvme0n1}]: " NEW_DEVICE
-    NEW_DEVICE="${NEW_DEVICE:-${CURRENT_DEVICE:-/dev/nvme0n1}}"
-    [[ "$NEW_DEVICE" != /dev/* ]] && NEW_DEVICE="/dev/${NEW_DEVICE}"
-    if [ -n "$CURRENT_DEVICE" ] && [ "$NEW_DEVICE" != "$CURRENT_DEVICE" ]; then
-      sed -i "s|device = \"${CURRENT_DEVICE}\"|device = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
+    # Confirm disk device — select-disk.sh shows lsblk output for this machine,
+    # requires explicit wipe confirmation, and writes both ft.diskBtrfs.device
+    # and confirmDevice into $MACHINE_CFG.
+    set +e
+    NEW_DEVICE=$(bash "{{justfile_directory()}}/select-disk.sh" "$MACHINE_CFG")
+    SELECT_RC=$?
+    set -e
+    if [ "$SELECT_RC" -eq 0 ]; then
       git add "$MACHINE_CFG"
       git diff --cached --quiet || git commit -m "bootstrap: set OS disk to ${NEW_DEVICE} for ${NAME}"
-      echo ":: Updated ft.diskBtrfs.device to ${NEW_DEVICE} ::"
+    elif [ "$SELECT_RC" -ne 2 ]; then
+      echo "Disk selection failed or was declined; aborting deploy." >&2
+      exit 1
     fi
     EXTRA_FILES=""
     if [ -f "${TMPDIR}/ssh_host_ed25519_key" ]; then
