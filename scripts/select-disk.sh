@@ -35,7 +35,18 @@ run() {
   fi
 }
 
-CURRENT_DEVICE=$(grep -oP 'device\s*=\s*"\K[^"]+' "$MACHINE_CFG" 2>/dev/null | head -1 || true)
+# Read the currently-configured ft.diskBtrfs.device. Scope the search to the
+# ft.diskBtrfs block (and anchor `device` at the start of its line) so an
+# unrelated `device = "..."` — e.g. a disko literal elsewhere in the machine
+# config, or the `confirmDevice` line — is never mistaken for it.
+CURRENT_DEVICE=$(
+  sed -n '/ft\.diskBtrfs[[:space:]]*=/,/};/p' "$MACHINE_CFG" 2>/dev/null \
+    | grep -oP '^\s*device\s*=\s*"\K[^"]+' | head -1 || true
+)
+# Fall back to the dotted form (ft.diskBtrfs.device = "...") if no block is used.
+if [ -z "$CURRENT_DEVICE" ]; then
+  CURRENT_DEVICE=$(grep -oP '^\s*ft\.diskBtrfs\.device\s*=\s*"\K[^"]+' "$MACHINE_CFG" 2>/dev/null | head -1 || true)
+fi
 if [ -z "$CURRENT_DEVICE" ]; then
   log ":: No ft.diskBtrfs.device assignment found in ${MACHINE_CFG} — skipping disk selection. ::"
   exit 2
@@ -49,8 +60,10 @@ BOOT_DISK=$(
 )
 
 log ":: Disks visible on ${SSH_TARGET:-this machine} (current: ${CURRENT_DEVICE}) ::"
+# TYPE is the last column, so filter on $NF=="disk" rather than a bare `grep
+# disk`, which would also match a MODEL string containing the word "disk".
 mapfile -t CANDIDATES < <(
-  run "lsblk -d -n -o NAME,SIZE,MODEL,TYPE 2>/dev/null | grep disk" | awk -v boot="$BOOT_DISK" '$1 != boot'
+  run "lsblk -d -n -o NAME,SIZE,MODEL,TYPE 2>/dev/null" | awk -v boot="$BOOT_DISK" '$NF=="disk" && $1 != boot'
 )
 
 if [ "${#CANDIDATES[@]}" -eq 0 ]; then
@@ -81,14 +94,19 @@ log ""
 read -rp "This WIPES ALL DATA on ${NEW_DEVICE}. This is IRREVERSIBLE. Continue? [y/N]: " CONFIRM
 [[ "$CONFIRM" =~ ^[yY]$ ]] || { log "Aborted."; exit 1; }
 
-if [ "$NEW_DEVICE" != "$CURRENT_DEVICE" ]; then
-  sed -i "s|device = \"${CURRENT_DEVICE}\"|device = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
-fi
+# Rewrite device and confirmDevice within the ft.diskBtrfs block only. `device`
+# is anchored at the start of its line (after indentation) so the substring
+# inside `confirmDevice` is never matched, alignment whitespace around `=` is
+# preserved, and a missing confirmDevice is inserted reusing the device line's
+# own indentation so the result stays correctly formatted regardless of style.
+RANGE='/ft\.diskBtrfs[[:space:]]*=/,/};/'
 
-if grep -qE 'confirmDevice[[:space:]]*=' "$MACHINE_CFG"; then
-  sed -i -E "s|confirmDevice[[:space:]]*=[[:space:]]*\"[^\"]*\"|confirmDevice = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
+sed -i -E "${RANGE} s|^([[:space:]]*)device([[:space:]]*=[[:space:]]*\")[^\"]*(\")|\1device\2${NEW_DEVICE}\3|" "$MACHINE_CFG"
+
+if sed -n "${RANGE}p" "$MACHINE_CFG" | grep -qE '^[[:space:]]*confirmDevice[[:space:]]*='; then
+  sed -i -E "${RANGE} s|^([[:space:]]*)confirmDevice([[:space:]]*=[[:space:]]*\")[^\"]*(\")|\1confirmDevice\2${NEW_DEVICE}\3|" "$MACHINE_CFG"
 else
-  sed -i "s|device = \"${NEW_DEVICE}\"|device = \"${NEW_DEVICE}\"\n    confirmDevice = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
+  sed -i -E "${RANGE} s|^([[:space:]]*)device([[:space:]]*=[[:space:]]*\"[^\"]*\";)|\1device\2\n\1confirmDevice = \"${NEW_DEVICE}\";|" "$MACHINE_CFG"
 fi
 
 log ":: ft.diskBtrfs.device and confirmDevice set to ${NEW_DEVICE} in ${MACHINE_CFG} ::"

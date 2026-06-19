@@ -46,7 +46,10 @@ switch: check
       just --justfile "{{justfile()}}" --working-directory "$FT_REPO" failover-switch
 
       GEN=$(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _current-gen)
-      NVD_DIFF=$(nvd --color never diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens))
+      # Tolerate a single-generation system (e.g. first switch): nvd needs two
+      # profiles to diff, and under `set -e` a failure here would abort the
+      # commit even though the build already succeeded.
+      NVD_DIFF=$(nvd --color never diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens) 2>/dev/null || echo "(no previous generation to diff)")
 
       if ! git diff --cached --quiet; then
           echo ""
@@ -70,9 +73,15 @@ switch: check
 
 home-switch user="" arch="":
     #!/usr/bin/env bash
-    USER="${user:-$USER}"
-    ARCH="${arch:-$(uname -m)-linux}"
-    home-manager switch --flake ".#${USER}@${ARCH}"
+    set -euo pipefail
+    # Recipe parameters are only available via just's {{...}} interpolation;
+    # they are NOT exported as shell variables (no `set export`), so the previous
+    # ${user:-...} expansion always saw an unset shell var and silently ignored
+    # both arguments. Read them through interpolation, then default in the shell.
+    U="{{user}}"; A="{{arch}}"
+    U="${U:-$USER}"
+    A="${A:-$(uname -m)-linux}"
+    home-manager switch --flake ".#${U}@${A}"
 
 # --- 4. Remote Syncing ---
 
@@ -87,7 +96,7 @@ pull:
     nh os switch . --ask
 
     echo ":: System Package Changes ::"
-    nvd diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens)
+    nvd diff $(just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _last-two-gens) 2>/dev/null || echo "(no previous generation to diff)"
 
 push:
     #!/usr/bin/env bash

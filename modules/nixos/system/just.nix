@@ -29,9 +29,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # The bundled justfiles shell out to these at runtime: ssh-to-age and sops
+    # for bootstrap secrets-init / tailscale-init / git-init, and jq for the
+    # bulk-drive (drives.just) recipes. They are not guaranteed on PATH from
+    # anywhere else (sops is only pulled in when ft.sops is enabled), so ship
+    # them with the CLI itself rather than letting recipes fail mid-run.
     environment.systemPackages = [
       pkgs.just
       pkgs.ssh-to-age
+      pkgs.sops
+      pkgs.jq
       ftWrapper
     ];
   };
