@@ -167,8 +167,17 @@ secrets-init name:
       git diff --cached --quiet || git commit -m "bootstrap: initialise sops config for ${NAME}"
       echo ":: Created ${SOPS_YAML} ::"
     else
-      echo ":: ${SOPS_YAML} already exists — add this line to the keys section and re-run sops updatekeys ::"
+      echo ":: ${SOPS_YAML} already exists — add this line to its keys section: ::"
       echo "     - &${NAME} ${AGE_KEY}"
+      ENCRYPTED_FILES=$(find "$SECRETS_DIR" -name '*.yaml' ! -name '.sops.yaml')
+      if [ -n "$ENCRYPTED_FILES" ]; then
+        echo ":: Then run sops updatekeys on each existing encrypted file: ::"
+        for f in $ENCRYPTED_FILES; do
+          echo "     sops updatekeys ${f}"
+        done
+      else
+        echo ":: No encrypted files exist under ${SECRETS_DIR} yet, so there is nothing to run sops updatekeys against. ::"
+      fi
     fi
 
 # SSH into target and collect hardware facts into machines/<name>/var/facter.json.
