@@ -11,7 +11,7 @@ let
   scriptsDir = ../../../scripts;
   ftWrapper = pkgs.writeShellScriptBin "ft" ''
     export FT_REPO="${flakeDir}"
-    exec ${pkgs.just}/bin/just --justfile "${scriptsDir}/ft.just" --working-directory "${flakeDir}" "$@"
+    exec ${pkgs.just}/bin/just --shell "${pkgs.bash}/bin/bash" --justfile "${scriptsDir}/ft.just" --working-directory "${flakeDir}" "$@"
   '';
 in
 {
