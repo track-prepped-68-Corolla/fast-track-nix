@@ -169,14 +169,23 @@ secrets-init name:
     else
       echo ":: ${SOPS_YAML} already exists — add this line to its keys section: ::"
       echo "     - &${NAME} ${AGE_KEY}"
-      ENCRYPTED_FILES=$(find "$SECRETS_DIR" -name '*.yaml' ! -name '.sops.yaml')
-      if [ -n "$ENCRYPTED_FILES" ]; then
-        echo ":: Then run sops updatekeys on each existing encrypted file: ::"
-        for f in $ENCRYPTED_FILES; do
-          echo "     sops updatekeys ${f}"
-        done
+      CANDIDATE_FILES=$(find "$SECRETS_DIR" -name '*.yaml' ! -name '.sops.yaml')
+      if [ -z "$CANDIDATE_FILES" ]; then
+        echo ":: No files exist under ${SECRETS_DIR} yet, so there is nothing to run sops on. ::"
       else
-        echo ":: No encrypted files exist under ${SECRETS_DIR} yet, so there is nothing to run sops updatekeys against. ::"
+        # sops resolves .sops.yaml by walking up from the current working
+        # directory, not from the target file's path, so commands below
+        # must be run with cwd inside (or below) $SECRETS_DIR.
+        for f in $CANDIDATE_FILES; do
+          rel="${f#"$SECRETS_DIR"/}"
+          if grep -q '^sops:' "$f"; then
+            echo ":: ${f} is already sops-encrypted — run this to sync its keys: ::"
+            echo "     (cd ${SECRETS_DIR} && sops updatekeys ${rel})"
+          else
+            echo ":: ${f} is not sops-encrypted yet — run this to encrypt it with the current rules: ::"
+            echo "     (cd ${SECRETS_DIR} && sops ${rel})"
+          fi
+        done
       fi
     fi
 
