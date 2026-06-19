@@ -22,7 +22,7 @@ store-custom APP_NAME +PATHS:
     set -euo pipefail
 
     APP="{{APP_NAME}}"
-    REPO="${FT_REPO_PATH:-$HOME/git/ft-home}"
+    REPO="${FT_REPO:?FT_REPO is not set — run this via the ft wrapper}"
     LOCAL_DB="$REPO/mackup-local"
     
     mkdir -p "$LOCAL_DB"
@@ -53,8 +53,8 @@ _store_single APP_NAME:
     set -euo pipefail
 
     APP="{{APP_NAME}}"
-    REPO="${FT_REPO_PATH:-$HOME/git/ft-home}"
-    DOTFILES="$REPO/homes/$USER/dotfiles"
+    REPO="${FT_REPO:?FT_REPO is not set — run this via the ft wrapper}"
+    DOTFILES="$REPO/users/$USER/dotfiles"
     LOCAL_DB="$REPO/mackup-local"
     CFG_FILE="/tmp/mackup-${APP}.cfg"
     
@@ -77,8 +77,10 @@ _store_single APP_NAME:
 _store_all:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/store.sh
+    source "{{justfile_directory()}}/lib/store.sh"
 
-    REPO="${FT_REPO_PATH:-$HOME/git/ft-home}"
+    REPO="${FT_REPO:?FT_REPO is not set — run this via the ft wrapper}"
     LOCAL_DB="$REPO/mackup-local"
     TMP_DIR=$(mktemp -d)
     trap 'rm -rf "$TMP_DIR"' EXIT
@@ -108,26 +110,19 @@ _store_all:
         APP_NEEDS_SYNC=false
         
         # Fast-pass check: Do any files exist and lack symlinks?
-        SECTION=""
-        while IFS= read -r line || [[ -n "$line" ]]; do
-            line="${line%$'\r'}"
-            if [[ -z "$line" ]]; then continue; fi
-            if [[ "$line" =~ ^\[(.*)\]$ ]]; then SECTION="${BASH_REMATCH[1]}"; continue; fi
-
-            if [[ "$SECTION" == "configuration_files" ]]; then
-                SRC="$HOME/$line"
-            elif [[ "$SECTION" == "xdg_configuration_files" ]]; then
-                SRC="${XDG_CONFIG_HOME:-$HOME/.config}/$line"
-            else
-                continue
-            fi
+        while IFS=$'\t' read -r kind rel; do
+            case "$kind" in
+                config) SRC="$HOME/$rel" ;;
+                xdg)    SRC="${XDG_CONFIG_HOME:-$HOME/.config}/$rel" ;;
+                *)      continue ;;
+            esac
 
             # If the file exists AND is not a symlink, flag it for processing
             if [ -e "$SRC" ] && [ ! -L "$SRC" ]; then
                 APP_NEEDS_SYNC=true
-                break 
+                break
             fi
-        done < "$CFG_FILE"
+        done < <(store_parse_cfg "$CFG_FILE")
 
         # If flagged, hand it off to the processor
         if [ "$APP_NEEDS_SYNC" = true ]; then
@@ -146,42 +141,28 @@ _store_all:
 _process_cfg APP CFG_FILE:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/store.sh
+    source "{{justfile_directory()}}/lib/store.sh"
 
     APP="{{APP}}"
     CFG_FILE="{{CFG_FILE}}"
-    REPO="${FT_REPO_PATH:-$HOME/git/ft-home}"
-    DOTFILES="$REPO/homes/$USER/dotfiles"
+    REPO="${FT_REPO:?FT_REPO is not set — run this via the ft wrapper}"
+    DOTFILES="$REPO/users/$USER/dotfiles"
     
     echo ":: Storing $APP into $DOTFILES ::"
 
-    SECTION=""
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        line="${line%$'\r'}"
-        if [[ -z "$line" ]]; then continue; fi
-
-        if [[ "$line" =~ ^\[(.*)\]$ ]]; then
-            SECTION="${BASH_REMATCH[1]}"
-            continue
-        fi
-
-        if [[ "$SECTION" == "configuration_files" ]]; then
-            SRC="$HOME/$line"
-            DEST="$DOTFILES/$line"
-        elif [[ "$SECTION" == "xdg_configuration_files" ]]; then
-            SRC="${XDG_CONFIG_HOME:-$HOME/.config}/$line"
-            DEST="$DOTFILES/.config/$line"
-        else
-            continue
-        fi
+    while IFS=$'\t' read -r kind rel; do
+        case "$kind" in
+            config) SRC="$HOME/$rel";                        DEST="$DOTFILES/$rel" ;;
+            xdg)    SRC="${XDG_CONFIG_HOME:-$HOME/.config}/$rel"; DEST="$DOTFILES/.config/$rel" ;;
+            *)      continue ;;
+        esac
 
         if [ -e "$SRC" ] && [ ! -L "$SRC" ]; then
             echo "  [MOVE] ~/${SRC#$HOME/} -> $DEST"
             mkdir -p "$(dirname "$DEST")"
             mv "$SRC" "$DEST"
             ln -sf "$DEST" "$SRC"
-        elif [ -L "$SRC" ]; then
-            # Supress output for already symlinked files during bulk scans to keep logs clean
-            true
         fi
-
-    done < "$CFG_FILE"
+        # Already-symlinked files are skipped silently to keep bulk-scan logs clean.
+    done < <(store_parse_cfg "$CFG_FILE")

@@ -3,7 +3,9 @@
 # Initialize git repo and set remote URL.
 git-init:
     #!/usr/bin/env bash
-    set -e
+    set -euo pipefail
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     _rp() {
       local key="$1" prompt="$2"
       if [ -f "var/git/$key" ]; then cat "var/git/$key"; return; fi
@@ -26,14 +28,45 @@ git-init:
     # this repo onto /src/<name> via nixos-anywhere --extra-files, so this value
     # must already reflect where the repo will live once the target is installed.
     printf '%s' "/src/$(basename "$PWD")" > var/local/repoPath
-    git add var/git/ -f var/local/
-    git diff --cached --quiet || git commit -m "chore: store git config and local state in var"
+
+    # var/git/ caches name + email (personal data). Let the operator decide how
+    # it is persisted, defaulting to keeping it on disk only — off the remote.
+    echo ""
+    echo "How should your git identity (name + email) be stored in this repo?"
+    echo "  1) gitignore  — keep on disk, never commit (recommended)"
+    echo "  2) sops       — encrypt and commit (needs var/secrets/.sops.yaml; run secrets-init first)"
+    echo "  3) plaintext  — commit name/email to the repo as-is"
+    read -rp "Select [1-3] [1]: " ID_CHOICE
+    ID_CHOICE="${ID_CHOICE:-1}"
+    case "$ID_CHOICE" in
+      3)
+        git add -f var/git/ var/local/
+        ;;
+      2)
+        gitignore_add ".gitignore" "/var/git/"
+        if command -v sops >/dev/null 2>&1 && [ -f var/secrets/.sops.yaml ]; then
+          mkdir -p var/secrets/shared
+          printf 'name: "%s"\nemail: "%s"\n' "$GIT_NAME" "$GIT_EMAIL" \
+            | (cd var/secrets && sops --encrypt --input-type yaml \
+                --output shared/git.yaml /dev/stdin)
+          git add .gitignore var/secrets/shared/git.yaml var/local/
+        else
+          echo ":: sops or var/secrets/.sops.yaml unavailable — run secrets-init first, then re-run git-init to encrypt. Keeping identity on disk only for now. ::"
+          git add .gitignore var/local/
+        fi
+        ;;
+      *)
+        gitignore_add ".gitignore" "/var/git/"
+        git add .gitignore var/local/
+        ;;
+    esac
+    git diff --cached --quiet || git commit -m "chore: store local state in var"
     echo ":: Git initialised. Remote: $GIT_REMOTE ::"
 
 # Initialize tailscale config.
 tailscale-init:
     #!/usr/bin/env bash
-    set -e
+    set -euo pipefail
     _rp() {
       local key="$1" prompt="$2"
       if [ -f "var/tailscale/$key" ]; then cat "var/tailscale/$key"; return; fi
@@ -43,10 +76,18 @@ tailscale-init:
       echo "$val"
     }
     TS_TAILNET=$(_rp "tailnet" "Tailscale tailnet name (e.g. example.ts.net)")
+    if [ ! -f var/secrets/.sops.yaml ]; then
+      echo ":: var/secrets/.sops.yaml not found — run 'ft secrets-init <machine>' first. ::" >&2
+      exit 1
+    fi
     if ! sops --decrypt var/secrets/shared/tailscale.yaml 2>/dev/null | grep -q auth-key; then
       read -rsp "Tailscale auth key (input hidden): " TS_KEY; echo
-      printf 'auth-key: "%s"\n' "$TS_KEY" | sops --encrypt --input-type yaml \
-        --output var/secrets/shared/tailscale.yaml /dev/stdin
+      mkdir -p var/secrets/shared
+      # Run sops from inside var/secrets so it finds .sops.yaml — sops walks up
+      # from the cwd, not from the target path (same lookup fix as secrets-init).
+      # The resolved absolute path still matches the var/secrets/.*\.yaml$ rule.
+      ( cd var/secrets && printf 'auth-key: "%s"\n' "$TS_KEY" \
+          | sops --encrypt --input-type yaml --output shared/tailscale.yaml /dev/stdin )
     fi
     git add var/tailscale/ var/secrets/shared/tailscale.yaml
     git diff --cached --quiet || git commit -m "chore: tailscale config"
@@ -69,6 +110,10 @@ add-machine name ip user="example":
     mkdir -p var/local
     printf '%s' "$NAME"   > var/local/machineName
     printf '%s' "$SYSTEM" > var/local/system
+    # The scaffolded default.nix reads var/local/repoPath at eval time; it is
+    # normally written by git-init, but recreate it here so add-machine works
+    # standalone (and on retry) instead of producing a config that fails to eval.
+    [ -f var/local/repoPath ] || printf '%s' "/src/$(basename "$PWD")" > var/local/repoPath
     git add var/local/
     git diff --cached --quiet || git commit -m "bootstrap: record local machine state for ${NAME}"
     if [ -d "$MACHINE_DIR" ]; then
@@ -106,6 +151,15 @@ add-machine name ip user="example":
         '  ft.sops = {' \
         '    enable = true;' \
         '    useTPM = true;' \
+        '  };' \
+        '' \
+        '  # device/confirmDevice are rewritten by select-disk.sh during deploy.' \
+        '  # The default (/dev/nvme0n1) satisfies the disko-btrfs assertion until' \
+        '  # then; without this block deploy has no disk layout and install fails.' \
+        '  ft.diskBtrfs = {' \
+        '    enable        = true;' \
+        '    device        = "/dev/nvme0n1";' \
+        '    confirmDevice = "";' \
         '  };' \
         '' \
         '  ft.facter = {' \
@@ -192,14 +246,32 @@ secrets-init name:
 # SSH into target and collect hardware facts into machines/<name>/var/facter.json.
 generate-facts name ip:
     #!/usr/bin/env bash
-    set -e
+    set -euo pipefail
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     NAME="{{name}}"
     IP="{{ip}}"
     mkdir -p "machines/${NAME}/var"
     echo ":: Scanning hardware on ${IP} ::"
-    ssh "root@${IP}" \
-      "nix run github:numtide/nixos-facter -- -o /tmp/facter.json && cat /tmp/facter.json" \
-      > "machines/${NAME}/var/facter.json"
+    TMP=$(mktemp)
+    trap 'rm -f "$TMP"' EXIT
+    # Send nixos-facter's own stdout/stderr to the remote's /dev/null so only the
+    # JSON emitted by `cat` reaches our captured stdout — a progress line or SSH
+    # banner would otherwise corrupt the report. Capture to a temp file and only
+    # overwrite facter.json once we've confirmed the payload is non-empty JSON,
+    # so a failed scan never clobbers a good report (or commits an empty one).
+    if ! ssh "root@${IP}" \
+        'nix run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json' \
+        > "$TMP"; then
+      echo ":: Error: hardware scan over ssh failed for ${IP}. ::" >&2
+      exit 1
+    fi
+    if ! is_json_object "$TMP"; then
+      echo ":: Error: facter produced empty or non-JSON output; leaving machines/${NAME}/var/facter.json untouched. ::" >&2
+      exit 1
+    fi
+    mv "$TMP" "machines/${NAME}/var/facter.json"
+    trap - EXIT
     git add "machines/${NAME}/var/facter.json"
     git diff --cached --quiet || git commit -m "bootstrap: hardware facts for ${NAME}"
     echo ":: machines/${NAME}/var/facter.json written ::"
@@ -279,7 +351,7 @@ deploy-local name:
 bootstrap name ip:
     #!/usr/bin/env bash
     set -e
-    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init 2>/dev/null || true
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" add-machine "{{name}}" "{{ip}}"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" secrets-init "{{name}}"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" deploy "{{name}}" "{{ip}}"
@@ -289,7 +361,7 @@ bootstrap name ip:
 bootstrap-local name:
     #!/usr/bin/env bash
     set -e
-    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init 2>/dev/null || true
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" add-machine "{{name}}" "localhost"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" secrets-init "{{name}}"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" deploy-local "{{name}}"

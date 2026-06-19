@@ -14,6 +14,8 @@ DRIVES_FILE := "machines/" + `hostname` + "/var/bulk-drives.nix"
 drives-format:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/drives.sh
+    source "{{justfile_directory()}}/lib/drives.sh"
 
     DRIVES_FILE="machines/$(hostname)/var/bulk-drives.nix"
 
@@ -98,15 +100,8 @@ drives-format:
             esac
         done
 
-        # Auto-assign number: max existing number for this role + 1
-        MAX_N=0
-        while IFS= read -r label; do
-            [[ -z "$label" ]] && continue
-            N=$(echo "$label" | grep -oE '[0-9]+$' || echo "0")
-            [[ "$N" -gt "$MAX_N" ]] && MAX_N="$N"
-        done < <(echo "$CURRENT" | jq -r --arg r "$ROLE" '.[$r][]' 2>/dev/null || true)
-        NEXT_N=$((MAX_N + 1))
-        LABEL="bulk-${ROLE}-${NEXT_N}"
+        # Auto-assign the next free label for this role (see lib/drives.sh).
+        LABEL=$(drives_next_label "$ROLE" "$CURRENT")
 
         echo ""
         echo "  $DEVICE  →  $LABEL"
@@ -156,20 +151,9 @@ drives-format:
         echo ""
     done
 
-    # Write updated drives file
+    # Write updated drives file (see lib/drives.sh for the format).
     mkdir -p "$(dirname "$DRIVES_FILE")"
-    P=$(echo "$CURRENT" | jq -r '[.parity[]] | map("\"" + . + "\"") | join(" ")')
-    D=$(echo "$CURRENT" | jq -r '[.data[]]   | map("\"" + . + "\"") | join(" ")')
-    C=$(echo "$CURRENT" | jq -r '[.cache[]]  | map("\"" + . + "\"") | join(" ")')
-
-    {
-        printf '# Managed by ft drives-format and ft drives-sync. Clear with ft drives-clear.\n'
-        printf '{\n'
-        printf '  parity = [ %s ];\n' "$P"
-        printf '  data   = [ %s ];\n' "$D"
-        printf '  cache  = [ %s ];\n' "$C"
-        printf '}\n'
-    } > "$DRIVES_FILE"
+    drives_render "$CURRENT" > "$DRIVES_FILE"
 
     echo ":: $DRIVES_FILE updated. ::"
     echo ":: Review changes, commit, and run 'ft switch' to activate. ::"
@@ -178,6 +162,8 @@ drives-format:
 drives-sync:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/drives.sh
+    source "{{justfile_directory()}}/lib/drives.sh"
 
     DRIVES_FILE="machines/$(hostname)/var/bulk-drives.nix"
     mkdir -p "$(dirname "$DRIVES_FILE")"
@@ -221,13 +207,8 @@ drives-sync:
             echo "  UNREGISTERED: $label (visible but not in $DRIVES_FILE)"
             read -rp "  Register $label? [y/N]: " confirm
             if [[ "$confirm" =~ ^[yY]$ ]]; then
-                if [[ "$label" == *parity* ]]; then
-                    NEW=$(echo "$NEW" | jq --arg l "$label" '.parity += [$l]')
-                elif [[ "$label" == *cache* ]]; then
-                    NEW=$(echo "$NEW" | jq --arg l "$label" '.cache  += [$l]')
-                else
-                    NEW=$(echo "$NEW" | jq --arg l "$label" '.data   += [$l]')
-                fi
+                role=$(drives_role_for_label "$label")
+                NEW=$(echo "$NEW" | jq --arg l "$label" --arg r "$role" '.[$r] += [$l]')
                 echo "  Registered: $label"
                 CHANGED=1
             fi
@@ -235,18 +216,7 @@ drives-sync:
     done
 
     if [[ $CHANGED -gt 0 ]]; then
-        P=$(echo "$NEW" | jq -r '[.parity[]] | map("\"" + . + "\"") | join(" ")')
-        D=$(echo "$NEW" | jq -r '[.data[]]   | map("\"" + . + "\"") | join(" ")')
-        C=$(echo "$NEW" | jq -r '[.cache[]]  | map("\"" + . + "\"") | join(" ")')
-
-        {
-            printf '# Managed by ft drives-format and ft drives-sync. Clear with ft drives-clear.\n'
-            printf '{\n'
-            printf '  parity = [ %s ];\n' "$P"
-            printf '  data   = [ %s ];\n' "$D"
-            printf '  cache  = [ %s ];\n' "$C"
-            printf '}\n'
-        } > "$DRIVES_FILE"
+        drives_render "$NEW" > "$DRIVES_FILE"
         echo ":: $DRIVES_FILE updated. Commit and run 'ft switch' to apply. ::"
     else
         echo ":: No changes needed. ::"
@@ -284,6 +254,8 @@ drives-list:
 drives-clear:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/drives.sh
+    source "{{justfile_directory()}}/lib/drives.sh"
 
     DRIVES_FILE="machines/$(hostname)/var/bulk-drives.nix"
 
@@ -291,14 +263,7 @@ drives-clear:
     echo ":: SnapRAID parity will no longer be able to reference these drives. ::"
     read -rp "Clear all records? [y/N]: " confirm
     if [[ "$confirm" =~ ^[yY]$ ]]; then
-        {
-            printf '# Managed by ft drives-format and ft drives-sync. Clear with ft drives-clear.\n'
-            printf '{\n'
-            printf '  parity = [ ];\n'
-            printf '  data   = [ ];\n'
-            printf '  cache  = [ ];\n'
-            printf '}\n'
-        } > "$DRIVES_FILE"
+        drives_render '{"parity":[],"data":[],"cache":[]}' > "$DRIVES_FILE"
         echo ":: $DRIVES_FILE cleared. Commit and run 'ft switch' to apply. ::"
     else
         echo "Cancelled."
