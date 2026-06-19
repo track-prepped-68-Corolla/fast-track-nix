@@ -31,6 +31,7 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
       pkgs.just
+      pkgs.ssh-to-age
       ftWrapper
     ];
   };
