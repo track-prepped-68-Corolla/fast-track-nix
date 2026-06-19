@@ -8,7 +8,7 @@ import "./drives.just"
 import "./failover.just"
 
 default:
-    just --justfile {{ justfile() }} --working-directory {{ working_directory() }} --list
+    just --list
 
 alias r  := switch
 alias t  := test
