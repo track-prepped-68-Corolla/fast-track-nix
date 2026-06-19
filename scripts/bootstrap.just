@@ -4,6 +4,8 @@
 git-init:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     _rp() {
       local key="$1" prompt="$2"
       if [ -f "var/git/$key" ]; then cat "var/git/$key"; return; fi
@@ -11,12 +13,6 @@ git-init:
       mkdir -p var/git
       printf '%s' "$val" > "var/git/$key"
       echo "$val"
-    }
-    _gitignore() {
-      # Append a root-anchored pattern to .gitignore once, idempotently.
-      local pat="$1"
-      touch .gitignore
-      grep -qxF "$pat" .gitignore || printf '%s\n' "$pat" >> .gitignore
     }
     GIT_NAME=$(_rp "user-name"  "Git user name")
     GIT_EMAIL=$(_rp "user-email" "Git user email")
@@ -47,7 +43,7 @@ git-init:
         git add -f var/git/ var/local/
         ;;
       2)
-        _gitignore "/var/git/"
+        gitignore_add ".gitignore" "/var/git/"
         if command -v sops >/dev/null 2>&1 && [ -f var/secrets/.sops.yaml ]; then
           mkdir -p var/secrets/shared
           printf 'name: "%s"\nemail: "%s"\n' "$GIT_NAME" "$GIT_EMAIL" \
@@ -60,7 +56,7 @@ git-init:
         fi
         ;;
       *)
-        _gitignore "/var/git/"
+        gitignore_add ".gitignore" "/var/git/"
         git add .gitignore var/local/
         ;;
     esac
@@ -251,6 +247,8 @@ secrets-init name:
 generate-facts name ip:
     #!/usr/bin/env bash
     set -euo pipefail
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     NAME="{{name}}"
     IP="{{ip}}"
     mkdir -p "machines/${NAME}/var"
@@ -268,7 +266,7 @@ generate-facts name ip:
       echo ":: Error: hardware scan over ssh failed for ${IP}. ::" >&2
       exit 1
     fi
-    if [ ! -s "$TMP" ] || [ "$(head -c1 "$TMP")" != "{" ]; then
+    if ! is_json_object "$TMP"; then
       echo ":: Error: facter produced empty or non-JSON output; leaving machines/${NAME}/var/facter.json untouched. ::" >&2
       exit 1
     fi

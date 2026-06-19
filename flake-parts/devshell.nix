@@ -11,6 +11,11 @@ _: {
           conform
           convco
           lefthook
+          # Shell test suite (tests/shell/run.sh) tooling.
+          bats
+          shellcheck
+          just
+          jq
         ];
       };
     };

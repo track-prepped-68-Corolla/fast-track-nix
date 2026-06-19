@@ -16,9 +16,11 @@ MULLET_FILE := "users/" + env_var("USER") + "/var/mullet.txt"
 @add pkg:
     #!/usr/bin/env bash
     set -e
-    
+    # shellcheck source=lib/mullet.sh
+    source "{{justfile_directory()}}/lib/mullet.sh"
+
     # 1. Check if it's already in the file
-    if grep -q "^[[:space:]]*{{pkg}}[[:space:]]*$" "{{MULLET_FILE}}"; then
+    if mullet_contains "{{MULLET_FILE}}" "{{pkg}}"; then
       echo ":: '{{pkg}}' is already in The Mullet. ::"
       exit 0
     fi
@@ -39,13 +41,16 @@ MULLET_FILE := "users/" + env_var("USER") + "/var/mullet.txt"
     fi
 
     # 3. Append to the flat file
-    echo "{{pkg}}" >> "{{MULLET_FILE}}"
+    mullet_add_line "{{MULLET_FILE}}" "{{pkg}}"
     echo ":: Added {{pkg}}. Run 'ft switch' to apply. ::"
 
 @rm pkg:
     #!/usr/bin/env bash
-    if grep -q "^[[:space:]]*{{pkg}}[[:space:]]*$" "{{MULLET_FILE}}"; then
-      sed -i "/^[[:space:]]*{{pkg}}[[:space:]]*$/d" "{{MULLET_FILE}}"
+    set -e
+    # shellcheck source=lib/mullet.sh
+    source "{{justfile_directory()}}/lib/mullet.sh"
+    if mullet_contains "{{MULLET_FILE}}" "{{pkg}}"; then
+      mullet_rm_line "{{MULLET_FILE}}" "{{pkg}}"
       echo ":: Removed {{pkg}}. Run 'ft switch' to apply. ::"
     else
       echo ":: Error: '{{pkg}}' not found in The Mullet. ::"

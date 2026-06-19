@@ -111,6 +111,49 @@ in
       packages = {
         inherit (pkgs) nixfmt deadnix;
 
+        # Shell test suite for the bundled ft just-recipes: shellcheck +
+        # bats (unit + integration). Exposed as a package (not a flake check)
+        # so it stays out of the gating `nix flake check` and is run on demand
+        # via the Shell Tests workflow_dispatch job or `nix build .#shell-tests`.
+        shell-tests =
+          let
+            src = pkgs.lib.fileset.toSource {
+              root = ../.;
+              fileset = pkgs.lib.fileset.unions [
+                ../scripts
+                ../tests
+                ../flake.nix
+              ];
+            };
+          in
+          pkgs.stdenvNoCC.mkDerivation {
+            name = "ft-shell-tests";
+            inherit src;
+            nativeBuildInputs = with pkgs; [
+              bats
+              shellcheck
+              just
+              jq
+              git
+              gnused
+              gnugrep
+              gawk
+              coreutils
+            ];
+            dontConfigure = true;
+            dontBuild = true;
+            doCheck = true;
+            checkPhase = ''
+              runHook preCheck
+              export HOME="$TMPDIR"
+              export GIT_CONFIG_NOSYSTEM=1
+              export GIT_CONFIG_GLOBAL=/dev/null
+              bash tests/shell/run.sh
+              runHook postCheck
+            '';
+            installPhase = "touch $out";
+          };
+
         default =
           let
             scriptsDir = ../scripts;
