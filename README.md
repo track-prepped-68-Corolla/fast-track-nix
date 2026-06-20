@@ -170,7 +170,8 @@ _: {
 | Option | What it does |
 |--------|-------------|
 | `ft.core.enable` | NetworkManager, Bluetooth, CUPS/Avahi, nix flakes, timezone, locale, core CLI packages (**default on**) |
-| `ft.users.enable` | User management: admin safety-net account, extra wheel/normal users, PAM U2F (**default on**) |
+| `ft.admin.enable` | Privileged admin wheel account (configurable name, password, SSH keys) — owns the administrator, present on every machine (**default on**) |
+| `ft.users.enable` | User management: extra wheel/normal users, PAM U2F (**default on**) |
 | `ft.limine.enable` | Limine bootloader |
 | `ft.cachyos.enable` | CachyOS-optimised kernel builds |
 | `ft.cosmic.enable` | COSMIC desktop environment + system76-scheduler |
