@@ -276,6 +276,74 @@ generate-facts name ip:
     git diff --cached --quiet || git commit -m "bootstrap: hardware facts for ${NAME}"
     echo ":: machines/${NAME}/var/facter.json written ::"
 
+# Pre-flight safety checks. Run by deploy/deploy-local before nixos-anywhere
+# touches any disk. BLOCK conditions (exit 1) would brick the install or
+# silently fail first boot; WARN conditions are surfaced but allowed.
+_preflight name:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    # shellcheck source=lib/preflight.sh
+    source "{{justfile_directory()}}/lib/preflight.sh"
+    NAME="{{name}}"
+    FLAKE=".#nixosConfigurations.${NAME}"
+    rc=0
+    fail() { echo ":: BLOCK: $* ::" >&2; rc=1; }
+    warn() { echo ":: WARN:  $* ::" >&2; }
+
+    # One eval forces the toplevel derivation, so failed assertions, a missing
+    # var/local/repoPath, syntax errors, or an unreadable facter.json all surface
+    # HERE — before any disk is wiped — and returns the ft.* facts vetted below.
+    ERRLOG=$(mktemp)
+    if ! facts=$(nix eval --json "$FLAKE" --apply \
+        'm: let c = m.config; in builtins.seq c.system.build.toplevel.drvPath {
+            sops   = c.ft.sops.enable or false;
+            facter = c.ft.facter.enable or false;
+            ssh    = c.ft.ssh.enable or false;
+            keys   = builtins.length (c.ft.ssh.authorizedKeys or [ ]);
+         }' 2>"$ERRLOG"); then
+      fail "nixosConfigurations.${NAME} does not evaluate — fix before deploying:"
+      sed 's/^/      /' "$ERRLOG" >&2
+      rm -f "$ERRLOG"
+      echo ":: Pre-flight FAILED — nothing was touched. ::" >&2
+      exit 1
+    fi
+    rm -f "$ERRLOG"
+
+    sops_on=$(printf '%s' "$facts" | jq -r '.sops')
+    facter_on=$(printf '%s' "$facts" | jq -r '.facter')
+    ssh_on=$(printf '%s' "$facts" | jq -r '.ssh')
+    keys=$(printf '%s' "$facts" | jq -r '.keys')
+
+    # sops: if enabled, this host needs a real age recipient or first-boot
+    # decryption fails (taking any secret-dependent service down with it).
+    if [ "$sops_on" = "true" ]; then
+      if [ ! -f var/secrets/.sops.yaml ]; then
+        fail "ft.sops.enable but var/secrets/.sops.yaml is missing — run 'ft secrets-init ${NAME}'."
+      elif ! sops_recipient_ok var/secrets/.sops.yaml "$NAME"; then
+        fail "ft.sops.enable but the &${NAME} recipient in var/secrets/.sops.yaml is a placeholder/invalid — secrets won't decrypt on first boot. Run 'ft secrets-init ${NAME}', paste the printed key over the placeholder, then '(cd var/secrets && sops updatekeys <files>)'."
+      fi
+    fi
+
+    # facter wiring (warn only): a report nobody reads, or one expected but absent.
+    FACTER="machines/${NAME}/var/facter.json"
+    if [ -f "$FACTER" ] && [ "$facter_on" != "true" ]; then
+      warn "${FACTER} exists but ft.facter.enable is false — the hardware report is ignored. Add an ft.facter block (enable = true; reportPath = ./var/facter.json;)."
+    elif [ ! -f "$FACTER" ] && [ "$facter_on" = "true" ]; then
+      warn "ft.facter.enable but ${FACTER} is missing — run 'ft generate-facts ${NAME} <ip>' (no hardware detection until then)."
+    fi
+
+    # ssh keys (warn only): enabled, but no key can log in.
+    if [ "$ssh_on" = "true" ] && [ "$keys" = "0" ]; then
+      warn "ft.ssh.enable but ft.ssh.authorizedKeys is empty — key login won't work (password only)."
+    fi
+
+    if [ "$rc" -ne 0 ]; then
+      echo ":: Pre-flight FAILED — aborting before any disk is touched. ::" >&2
+    else
+      echo ":: Pre-flight OK for ${NAME}. ::"
+    fi
+    exit "$rc"
+
 # Install NixOS on target via nixos-anywhere; confirms the OS disk interactively first.
 deploy name ip:
     #!/usr/bin/env bash
@@ -284,6 +352,9 @@ deploy name ip:
     IP="{{ip}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
     MACHINE_CFG="machines/${NAME}/default.nix"
+    # Fail before touching any disk if the config won't evaluate or would brick
+    # first boot (sops recipient placeholder, etc.).
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _preflight "$NAME"
     # Confirm disk device before formatting — select-disk.sh shows lsblk output
     # from the target, requires explicit wipe confirmation, and writes both
     # ft.diskBtrfs.device and confirmDevice into $MACHINE_CFG.
@@ -319,6 +390,9 @@ deploy-local name:
     NAME="{{name}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
     MACHINE_CFG="machines/${NAME}/default.nix"
+    # Fail before touching any disk if the config won't evaluate or would brick
+    # first boot (sops recipient placeholder, etc.).
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" _preflight "$NAME"
     # Confirm disk device — select-disk.sh shows lsblk output for this machine,
     # requires explicit wipe confirmation, and writes both ft.diskBtrfs.device
     # and confirmDevice into $MACHINE_CFG.
