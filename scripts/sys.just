@@ -74,10 +74,10 @@ switch: check
 home-switch user="" arch="":
     #!/usr/bin/env bash
     set -euo pipefail
-    # Recipe parameters are only available via just's {{...}} interpolation;
-    # they are NOT exported as shell variables (no `set export`), so the previous
-    # ${user:-...} expansion always saw an unset shell var and silently ignored
-    # both arguments. Read them through interpolation, then default in the shell.
+    # Recipe parameters arrive only through just's interpolation (the double-brace
+    # syntax); they are NOT exported as shell variables (no `set export`), so the
+    # previous ${user:-...} expansion always saw an unset shell var and silently
+    # ignored both arguments. Read them through interpolation, then default here.
     U="{{user}}"; A="{{arch}}"
     U="${U:-$USER}"
     A="${A:-$(uname -m)-linux}"
