@@ -21,13 +21,13 @@ in
   options.ft.users = {
     enable = lib.mkEnableOption "user management" // {
       default = true;
-      description = "Creates and manages all system users: always creates an `admin` wheel user; additional wheel users from `superUsers`; unprivileged users from `normalUsers`. All users get zsh and common group membership.";
+      description = "Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.";
     };
 
     mainUser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "The primary username other modules (like Home Manager) will target.";
+      description = "The primary username other modules (like Home Manager) will target. Defaults to the admin account created by `ft.admin`.";
     };
 
     superUsers = lib.mkOption {
@@ -73,20 +73,12 @@ in
     (lib.mkIf cfg.enable {
       users.groups.container = lib.mkDefault { };
 
+      # The admin account is owned by ft.admin; filter it out of the user lists
+      # below so listing it in mainUser/superUsers/normalUsers never produces a
+      # duplicate-definition conflict.
       users.users = lib.mkMerge [
-        # Hardcoded safety net — always present regardless of mainUser to prevent
-        # complete lockout if the primary account becomes inaccessible.
-        {
-          admin = {
-            isNormalUser = true;
-            extraGroups = commonGroups ++ [ "wheel" ];
-            initialPassword = lib.mkDefault (cfg.initialPasswords.admin or null);
-            shell = pkgs.zsh;
-          };
-        }
-        # admin is filtered out here to avoid a duplicate-definition conflict
-        # when mainUser or superUsers also lists "admin".
-        (lib.genAttrs (lib.filter (u: u != "admin") (lib.unique ([ cfg.mainUser ] ++ cfg.superUsers)))
+        (lib.genAttrs
+          (lib.filter (u: u != config.ft.admin.name) (lib.unique ([ cfg.mainUser ] ++ cfg.superUsers)))
           (_user: {
             isNormalUser = true;
             extraGroups = commonGroups ++ [ "wheel" ];
@@ -94,7 +86,7 @@ in
             shell = pkgs.zsh;
           })
         )
-        (lib.genAttrs (lib.filter (u: u != "admin") cfg.normalUsers) (_user: {
+        (lib.genAttrs (lib.filter (u: u != config.ft.admin.name) cfg.normalUsers) (_user: {
           isNormalUser = true;
           extraGroups = commonGroups;
           initialPassword = lib.mkDefault (cfg.initialPasswords.${_user} or null);
