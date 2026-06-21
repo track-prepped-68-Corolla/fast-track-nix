@@ -31,12 +31,19 @@ git-init:
 
     # var/git/ caches name + email (personal data). Let the operator decide how
     # it is persisted, defaulting to keeping it on disk only — off the remote.
-    echo ""
-    echo "How should your git identity (name + email) be stored in this repo?"
-    echo "  1) gitignore  — keep on disk, never commit (recommended)"
-    echo "  2) sops       — encrypt and commit (needs var/secrets/.sops.yaml; run secrets-init first)"
-    echo "  3) plaintext  — commit name/email to the repo as-is"
-    read -rp "Select [1-3] [1]: " ID_CHOICE
+    # Only prompt on an interactive terminal: under non-interactive stdin (CI,
+    # piped input, the bootstrap VM test) a blocking read would hang forever, so
+    # fall back to the recommended gitignore default instead.
+    if [ -t 0 ]; then
+      echo ""
+      echo "How should your git identity (name + email) be stored in this repo?"
+      echo "  1) gitignore  — keep on disk, never commit (recommended)"
+      echo "  2) sops       — encrypt and commit (needs var/secrets/.sops.yaml; run secrets-init first)"
+      echo "  3) plaintext  — commit name/email to the repo as-is"
+      read -rp "Select [1-3] [1]: " ID_CHOICE
+    else
+      ID_CHOICE=1
+    fi
     ID_CHOICE="${ID_CHOICE:-1}"
     case "$ID_CHOICE" in
       3)
