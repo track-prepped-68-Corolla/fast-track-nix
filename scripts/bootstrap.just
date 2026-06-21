@@ -46,9 +46,14 @@ git-init:
         gitignore_add ".gitignore" "/var/git/"
         if command -v sops >/dev/null 2>&1 && [ -f var/secrets/.sops.yaml ]; then
           mkdir -p var/secrets/shared
-          printf 'name: "%s"\nemail: "%s"\n' "$GIT_NAME" "$GIT_EMAIL" \
-            | (cd var/secrets && sops --encrypt --input-type yaml \
-                --output shared/git.yaml /dev/stdin)
+          # Write then encrypt in place. sops matches its creation rule against
+          # the path as given and finds .sops.yaml by walking up from the cwd, so
+          # we run from var/secrets with a relative path; piping /dev/stdin would
+          # match no rule. umask keeps the brief plaintext window private.
+          ( umask 077
+            cd var/secrets || exit 1
+            printf 'name: "%s"\nemail: "%s"\n' "$GIT_NAME" "$GIT_EMAIL" > shared/git.yaml
+            sops --encrypt --in-place shared/git.yaml )
           git add .gitignore var/secrets/shared/git.yaml var/local/
         else
           echo ":: sops or var/secrets/.sops.yaml unavailable — run secrets-init first, then re-run git-init to encrypt. Keeping identity on disk only for now. ::"
@@ -80,16 +85,32 @@ tailscale-init:
       echo ":: var/secrets/.sops.yaml not found — run 'ft secrets-init <machine>' first. ::" >&2
       exit 1
     fi
-    if ! sops --decrypt var/secrets/shared/tailscale.yaml 2>/dev/null | grep -q auth-key; then
+    # ft.tailscale reads sops.secrets."tailscale/authkey" from the default sops
+    # file (var/secrets/secrets.yaml) — i.e. nested tailscale.authkey — so the
+    # key must live there, not in a separate file, or auto-join never finds it.
+    SF="var/secrets/secrets.yaml"
+    if sops --decrypt "$SF" 2>/dev/null | grep -qE '^[[:space:]]*authkey:'; then
+      echo ":: tailscale/authkey already present in ${SF} — leaving as-is. ::"
+    else
       read -rsp "Tailscale auth key (input hidden): " TS_KEY; echo
-      mkdir -p var/secrets/shared
-      # Run sops from inside var/secrets so it finds .sops.yaml — sops walks up
-      # from the cwd, not from the target path (same lookup fix as secrets-init).
-      # The resolved absolute path still matches the var/secrets/.*\.yaml$ rule.
-      ( cd var/secrets && printf 'auth-key: "%s"\n' "$TS_KEY" \
-          | sops --encrypt --input-type yaml --output shared/tailscale.yaml /dev/stdin )
+      if [ -f "$SF" ] && grep -q '^sops:' "$SF"; then
+        # Existing encrypted secrets file — merge the nested key in place.
+        # Requires the operator to be a recipient of ${SF} (a decryptable
+        # identity); otherwise sops refuses and prints why.
+        ( cd var/secrets || exit 1
+          sops set secrets.yaml '["tailscale"]["authkey"]' "\"${TS_KEY}\"" )
+      else
+        # No encrypted secrets file yet — create it with just the tailscale key
+        # and encrypt under the repo's creation rules. Run from var/secrets so
+        # sops finds .sops.yaml (it walks up from the cwd); umask keeps the brief
+        # plaintext window private.
+        ( umask 077
+          cd var/secrets || exit 1
+          printf 'tailscale:\n    authkey: "%s"\n' "$TS_KEY" > secrets.yaml
+          sops --encrypt --in-place secrets.yaml )
+      fi
     fi
-    git add var/tailscale/ var/secrets/shared/tailscale.yaml
+    git add var/tailscale/ "$SF"
     git diff --cached --quiet || git commit -m "chore: tailscale config"
     echo ":: Tailscale configured for tailnet: $TS_TAILNET ::"
 
@@ -212,7 +233,11 @@ secrets-init name:
         printf '  - &%s %s\n' "$NAME" "$AGE_KEY"
         printf '\n'
         printf 'creation_rules:\n'
-        printf '  - path_regex: var/secrets/.*\\.yaml$\n'
+        # Match any YAML by basename, not a var/secrets/ prefix: sops matches
+        # this regex against the path as given on the CLI and finds .sops.yaml
+        # by walking up from the cwd, so recipes run from inside var/secrets with
+        # relative paths (where a var/secrets/ prefix would never match).
+        printf '  - path_regex: .*\\.ya?ml$\n'
         printf '    key_groups:\n'
         printf '      - age:\n'
         printf '        - *%s\n' "$NAME"
@@ -350,6 +375,8 @@ _preflight name:
 deploy name ip:
     #!/usr/bin/env bash
     set -e
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     NAME="{{name}}"
     IP="{{ip}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
@@ -383,17 +410,15 @@ deploy name ip:
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
     fi
-    # Run nixos-anywhere via `nix run` rather than assuming it is installed on
-    # the operator's PATH; enable flakes inline so it also works from a stock
-    # live ISO. See also deploy-local.
-    nix run --extra-experimental-features "nix-command flakes" \
-      github:nix-community/nixos-anywhere -- \
-      --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
+    # nixos_anywhere prefers an installed binary, else `nix run` (see common.sh).
+    nixos_anywhere --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
 
 # Install NixOS on this machine from the live ISO (nixos-anywhere via root@localhost).
 deploy-local name:
     #!/usr/bin/env bash
     set -e
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     NAME="{{name}}"
     TMPDIR="/tmp/bootstrap-${NAME}"
     MACHINE_CFG="machines/${NAME}/default.nix"
@@ -426,11 +451,8 @@ deploy-local name:
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
     fi
-    # Run nixos-anywhere via `nix run` (not assumed on PATH); enable flakes
-    # inline since the live ISO has them disabled by default.
-    nix run --extra-experimental-features "nix-command flakes" \
-      github:nix-community/nixos-anywhere -- \
-      --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
+    # nixos_anywhere prefers an installed binary, else `nix run` (see common.sh).
+    nixos_anywhere --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
 
 # Full bootstrap: git-init → add-machine (includes generate-facts) → secrets-init → deploy.
 bootstrap name ip:
