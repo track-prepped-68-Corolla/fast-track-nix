@@ -123,6 +123,13 @@
 
     # Official Nous Research hermes-agent flake — provides nixosModules.default.
     hermes-agent.url = "github:NousResearch/hermes-agent";
+
+    # Colmena fleet deployment — consumed by flake-parts/colmena.nix to emit the
+    # colmenaHive output (lib.makeHive).
+    colmena = {
+      url = "github:zhaofengli/colmena";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

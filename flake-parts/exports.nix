@@ -27,6 +27,7 @@ in
           ];
           imports = [
             ./generator.nix
+            ./colmena.nix
             ./checks.nix
             ./formatter.nix
           ];
