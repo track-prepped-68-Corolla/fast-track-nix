@@ -260,8 +260,10 @@ generate-facts name ip:
     # banner would otherwise corrupt the report. Capture to a temp file and only
     # overwrite facter.json once we've confirmed the payload is non-empty JSON,
     # so a failed scan never clobbers a good report (or commits an empty one).
+    # The stock NixOS live ISO ships with nix-command/flakes disabled, so the
+    # remote `nix run` must enable them inline or it aborts before facter runs.
     if ! ssh "root@${IP}" \
-        'nix run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json' \
+        'nix --extra-experimental-features "nix-command flakes" run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json' \
         > "$TMP"; then
       echo ":: Error: hardware scan over ssh failed for ${IP}. ::" >&2
       exit 1
@@ -381,7 +383,12 @@ deploy name ip:
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
     fi
-    nixos-anywhere --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
+    # Run nixos-anywhere via `nix run` rather than assuming it is installed on
+    # the operator's PATH; enable flakes inline so it also works from a stock
+    # live ISO. See also deploy-local.
+    nix run --extra-experimental-features "nix-command flakes" \
+      github:nix-community/nixos-anywhere -- \
+      --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
 
 # Install NixOS on this machine from the live ISO (nixos-anywhere via root@localhost).
 deploy-local name:
@@ -419,7 +426,11 @@ deploy-local name:
       cp "${TMPDIR}/ssh_host_ed25519_key"     "${TMPDIR}/etc/ssh/"
       cp "${TMPDIR}/ssh_host_ed25519_key.pub" "${TMPDIR}/etc/ssh/"
     fi
-    nixos-anywhere --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
+    # Run nixos-anywhere via `nix run` (not assumed on PATH); enable flakes
+    # inline since the live ISO has them disabled by default.
+    nix run --extra-experimental-features "nix-command flakes" \
+      github:nix-community/nixos-anywhere -- \
+      --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
 
 # Full bootstrap: git-init → add-machine (includes generate-facts) → secrets-init → deploy.
 bootstrap name ip:
