@@ -6,6 +6,7 @@ import "./mullet.just"
 import "./store.just"
 import "./drives.just"
 import "./failover.just"
+import "./fleet.just"
 
 default:
     just --list
