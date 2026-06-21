@@ -58,20 +58,19 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    users.users.${cfg.name} =
-      {
-        isNormalUser = true;
-        extraGroups = [ "wheel" ] ++ commonGroups ++ cfg.extraGroups;
-        # Normal priority (not mkDefault): the base sets shell via mkDefault, so
-        # two mkDefaults would conflict — match how ft.users assigns user shells.
-        shell = pkgs.zsh;
-        openssh.authorizedKeys.keys = cfg.authorizedKeys;
-      }
-      // lib.optionalAttrs (cfg.hashedPasswordFile != null) {
-        inherit (cfg) hashedPasswordFile;
-      }
-      // lib.optionalAttrs (cfg.hashedPasswordFile == null) {
-        initialPassword = lib.mkDefault cfg.initialPassword;
-      };
+    users.users.${cfg.name} = {
+      isNormalUser = true;
+      extraGroups = [ "wheel" ] ++ commonGroups ++ cfg.extraGroups;
+      # Normal priority (not mkDefault): the base sets shell via mkDefault, so
+      # two mkDefaults would conflict — match how ft.users assigns user shells.
+      shell = pkgs.zsh;
+      openssh.authorizedKeys.keys = cfg.authorizedKeys;
+    }
+    // lib.optionalAttrs (cfg.hashedPasswordFile != null) {
+      inherit (cfg) hashedPasswordFile;
+    }
+    // lib.optionalAttrs (cfg.hashedPasswordFile == null) {
+      initialPassword = lib.mkDefault cfg.initialPassword;
+    };
   };
 }
