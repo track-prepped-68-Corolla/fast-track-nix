@@ -108,6 +108,10 @@ in
         default = "cryptroot";
         description = "Name of the LUKS dm-crypt device (appears under /dev/mapper/).";
       };
+
+      tpm.enable = lib.mkEnableOption "TPM2+PIN unlock for the LUKS volume" // {
+        description = "Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery. No PCR binding is configured (the PIN is the secret, not the boot-chain state). Declarative wiring only — you must run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared. Requires luks.enable.";
+      };
     };
 
     impermanence = {
@@ -140,6 +144,10 @@ in
           ft.diskBtrfs.device ("${cfg.device}") is listed in ft.diskBtrfs.excludeDevices and
           cannot be used as the install target.
         '';
+      }
+      {
+        assertion = !cfg.luks.tpm.enable || cfg.luks.enable;
+        message = "ft.diskBtrfs.luks.tpm.enable requires ft.diskBtrfs.luks.enable = true.";
       }
     ];
 
@@ -195,6 +203,16 @@ in
     # All users can read /src; wheel group members can write without sudo.
     # setgid ensures new files/dirs inherit the wheel group.
     systemd.tmpfiles.rules = [ "d /src 2775 root wheel - -" ];
+
+    # TPM2+PIN unlock: the systemd-based initrd plus tpm2-device=auto on the
+    # crypttab entry disko generates for the LUKS device. The TPM+PIN keyslot is
+    # enrolled once post-install (systemd-cryptenroll --tpm2-device=auto
+    # --tpm2-with-pin=yes; see ft.diskBtrfs.luks.tpm.enable); until then boot
+    # falls back to the passphrase keyslot.
+    boot.initrd = lib.mkIf (cfg.luks.enable && cfg.luks.tpm.enable) {
+      systemd.enable = lib.mkDefault true;
+      luks.devices.${cfg.luks.label}.crypttabExtraOpts = [ "tpm2-device=auto" ];
+    };
 
     environment.persistence."/persist" = lib.mkIf cfg.impermanence.enable {
       hideMounts = lib.mkDefault true;
