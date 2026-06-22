@@ -322,6 +322,80 @@ generate-facts name ip:
     git diff --cached --quiet || git commit -m "bootstrap: hardware facts for ${NAME}"
     echo ":: machines/${NAME}/var/facter.json written ::"
 
+# Pull a provisioned host's "snowflake" state off the box and commit + push it,
+# so git authoritatively reproduces the machine (the lesson from a host whose
+# facter.json never left the box). Run from an operator that HAS push access — a
+# freshly provisioned host usually does not. `user` defaults to admin (the
+# installed system's management account); pass root for a host still in the
+# installer.
+#
+#   facter.json   re-generated on the host and committed (authoritative).
+#   sops recipient / OS disk   verified against the host; drift is reported with
+#                              the fix, not auto-rewritten (that path is not yet
+#                              shell-tested — rewriting .sops.yaml/confirmDevice
+#                              blind is destructive).
+capture name ip user="admin":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
+    NAME="{{name}}"
+    IP="{{ip}}"
+    USER="{{user}}"
+    REMOTE="${USER}@${IP}"
+    MACHINE_CFG="machines/${NAME}/default.nix"
+    if [ "$USER" = "root" ]; then SUDO=""; else SUDO="sudo "; fi
+
+    echo ":: Capturing snowflake state from ${REMOTE} for ${NAME} ::"
+
+    # 1) Hardware report — re-run facter on the host (authoritative) and commit.
+    mkdir -p "machines/${NAME}/var"
+    TMP=$(mktemp)
+    trap 'rm -f "$TMP"' EXIT
+    if ! ssh "$REMOTE" \
+        "${SUDO}nix --extra-experimental-features 'nix-command flakes' run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json" \
+        > "$TMP"; then
+      echo ":: Error: hardware scan over ssh failed for ${REMOTE}. ::" >&2
+      exit 1
+    fi
+    if ! is_json_object "$TMP"; then
+      echo ":: Error: facter produced empty or non-JSON output; leaving facter.json untouched. ::" >&2
+      exit 1
+    fi
+    mv "$TMP" "machines/${NAME}/var/facter.json"
+    trap - EXIT
+
+    # 2) sops age recipient — derive from the host's REAL ssh host key and check
+    #    it against var/secrets/.sops.yaml (verify-only).
+    if [ -f var/secrets/.sops.yaml ] && command -v ssh-to-age >/dev/null 2>&1; then
+      HOST_AGE=$(ssh "$REMOTE" 'cat /etc/ssh/ssh_host_ed25519_key.pub' | ssh-to-age || true)
+      if [ -n "$HOST_AGE" ] && ! grep -qF "$HOST_AGE" var/secrets/.sops.yaml; then
+        echo ":: WARN: ${NAME}'s on-host sops recipient is not in var/secrets/.sops.yaml:" >&2
+        echo "::         ${HOST_AGE}" >&2
+        echo "::       Set the &${NAME} recipient to it, then: (cd var/secrets && sops updatekeys <files>). ::" >&2
+      fi
+    fi
+
+    # 3) OS disk — detect the physical disk backing / on the host (verify-only).
+    if [ -f "$MACHINE_CFG" ]; then
+      SRC=$(ssh "$REMOTE" "${SUDO}findmnt -no SOURCE /" 2>/dev/null || true)
+      if [ -n "$SRC" ]; then
+        DISK=$(ssh "$REMOTE" "lsblk -nso NAME '${SRC}' 2>/dev/null | tail -1" || true)
+        if [ -n "$DISK" ] && ! grep -qF "\"/dev/${DISK}\"" "$MACHINE_CFG"; then
+          echo ":: WARN: ${NAME} is installed on /dev/${DISK}, which is not set as ft.diskBtrfs.device in ${MACHINE_CFG}. ::" >&2
+        fi
+      fi
+    fi
+
+    # Commit + push whatever changed (facter.json at minimum).
+    git add "machines/${NAME}/var/facter.json"
+    if git diff --cached --quiet; then
+      echo ":: No snowflake changes to commit for ${NAME}. ::"
+    else
+      git commit -m "capture: snowflake state for ${NAME} from ${IP}"
+    fi
+    git_push_branch
+
 # Pre-flight safety checks. Run by deploy/deploy-local before nixos-anywhere
 # touches any disk. BLOCK conditions (exit 1) would brick the install or
 # silently fail first boot; WARN conditions are surfaced but allowed.
@@ -431,6 +505,10 @@ deploy name ip:
     fi
     # nixos_anywhere prefers an installed binary, else `nix run` (see common.sh).
     nixos_anywhere --flake ".#${NAME}" --extra-files "${TMPDIR}" "root@${IP}"
+    # Push the snowflakes (facter, disk, sops recipient) committed above so git
+    # authoritatively reproduces ${NAME} — never silently local. Warns, does not
+    # fail, if the operator has no push access.
+    git_push_branch
 
 # Install NixOS on this machine from the live ISO (nixos-anywhere via root@localhost).
 deploy-local name:
@@ -472,6 +550,10 @@ deploy-local name:
     fi
     # nixos_anywhere prefers an installed binary, else `nix run` (see common.sh).
     nixos_anywhere --flake ".#${NAME}" --phases disko,install --no-reboot --extra-files "${TMPDIR}" root@localhost
+    # Try to push the snowflakes committed above. A live-ISO/self-provisioned host
+    # usually has no push access — git_push_branch then warns (with the `ft capture`
+    # pointer) instead of failing, so they can be captured later from an operator.
+    git_push_branch
 
 # Full bootstrap: git-init → add-machine (includes generate-facts) → secrets-init → deploy.
 bootstrap name ip:
@@ -505,6 +587,8 @@ bootstrap-local name:
 bootstrap-kexec name:
     #!/usr/bin/env bash
     set -e
+    # shellcheck source=lib/common.sh
+    source "{{justfile_directory()}}/lib/common.sh"
     NAME="{{name}}"
     MACHINE_CFG="machines/${NAME}/default.nix"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init
@@ -529,6 +613,10 @@ bootstrap-kexec name:
     touch "machines/${NAME}/var/kexec"
     git add "machines/${NAME}/var/kexec"
     git diff --cached --quiet || git commit -m "bootstrap: enable kexec installer image for ${NAME}"
+    # Push the committed config to git BEFORE the destructive wipe so it's never
+    # only on a disk we're about to erase. Warns (with the `ft capture` pointer)
+    # if this host has no push access.
+    git_push_branch
     echo ":: Building kexec installer image for ${NAME} (bakes the full system) ::"
     nix build ".#${NAME}-kexec" -o "/tmp/${NAME}-kexec"
     # Point of no return: confirm before handing off to the unattended installer.

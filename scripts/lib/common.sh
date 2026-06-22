@@ -34,3 +34,29 @@ nixos_anywhere() {
       github:nix-community/nixos-anywhere -- "$@"
   fi
 }
+
+# Push the current branch to origin with exponential backoff (2s, 4s, 8s).
+# Warns instead of failing on persistent error, so a credential-less or offline
+# host never aborts a bootstrap that already succeeded locally — the commits stay
+# local and can be pushed later (e.g. via `ft capture` from a machine that has
+# push access). This is what keeps provisioning snowflakes (facter.json, disk
+# device, sops recipient) from silently living only on the box.
+# Usage: git_push_branch
+git_push_branch() {
+  local branch delay=2 i
+  branch=$(git rev-parse --abbrev-ref HEAD)
+  for i in 1 2 3 4; do
+    if git push -u origin "$branch"; then
+      return 0
+    fi
+    if [ "$i" -lt 4 ]; then
+      echo ":: push failed (attempt ${i}/4) — retrying in ${delay}s ::" >&2
+      sleep "$delay"
+      delay=$((delay * 2))
+    fi
+  done
+  echo ":: WARN: could not push '${branch}' to origin (no credentials/network?)." >&2
+  echo "::       Commits are local. Push from a machine with access, or run there:" >&2
+  echo "::         ft capture <name> <ip>   (captures + pushes this host's state) ::" >&2
+  return 0
+}
