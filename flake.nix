@@ -136,6 +136,12 @@
       url = "github:nlewo/comin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # nixos-images — builds the per-machine kexec installer image (flake-parts/kexec.nix).
+    nixos-images = {
+      url = "github:nix-community/nixos-images";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
