@@ -28,6 +28,7 @@ in
           imports = [
             ./generator.nix
             ./colmena.nix
+            ./kexec.nix
             ./checks.nix
             ./formatter.nix
           ];

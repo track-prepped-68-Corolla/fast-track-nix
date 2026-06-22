@@ -51,6 +51,12 @@ let
   imageMachines = builtins.filter isImageMachine nixosMachines;
   deployableMachines = builtins.filter (m: !isImageMachine m) nixosMachines;
 
+  # machines/<name>/var/kexec — presence opts the machine into a per-machine
+  # kexec installer image (packages.<system>.<name>-kexec, see flake-parts/kexec.nix).
+  # Gated by a marker file (like var/format) so flake-check stays lean for
+  # machines that don't use the kexec self-install path.
+  kexecMachines = builtins.filter (m: builtins.pathExists (m.path + "/var/kexec")) deployableMachines;
+
   # The standard module list for a deployable NixOS machine — shared by the
   # generator's nixosConfigurations and the colmena hive nodes.
   #
@@ -75,6 +81,7 @@ in
     darwinMachines
     imageMachines
     deployableMachines
+    kexecMachines
     mkNixosModules
     ;
 }

@@ -284,21 +284,33 @@ generate-facts name ip:
     NAME="{{name}}"
     IP="{{ip}}"
     mkdir -p "machines/${NAME}/var"
-    echo ":: Scanning hardware on ${IP} ::"
     TMP=$(mktemp)
     trap 'rm -f "$TMP"' EXIT
-    # Send nixos-facter's own stdout/stderr to the remote's /dev/null so only the
-    # JSON emitted by `cat` reaches our captured stdout — a progress line or SSH
-    # banner would otherwise corrupt the report. Capture to a temp file and only
-    # overwrite facter.json once we've confirmed the payload is non-empty JSON,
-    # so a failed scan never clobbers a good report (or commits an empty one).
-    # The stock NixOS live ISO ships with nix-command/flakes disabled, so the
-    # remote `nix run` must enable them inline or it aborts before facter runs.
-    if ! ssh "root@${IP}" \
-        'nix --extra-experimental-features "nix-command flakes" run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json' \
-        > "$TMP"; then
-      echo ":: Error: hardware scan over ssh failed for ${IP}. ::" >&2
-      exit 1
+    # Capture facter's JSON to a temp file and only overwrite facter.json once
+    # we've confirmed the payload is non-empty JSON, so a failed scan never
+    # clobbers a good report (or commits an empty one). nix-command/flakes are
+    # enabled inline because a stock NixOS live ISO ships with them disabled.
+    if [ "$IP" = "localhost" ]; then
+      # Local mode (self-conversion via kexec, or running on the live ISO): run
+      # facter on this machine — no ssh-to-self, which a stock distro's sshd
+      # often won't accept for root.
+      echo ":: Scanning local hardware ::"
+      if ! nix --extra-experimental-features "nix-command flakes" \
+          run github:numtide/nixos-facter -- -o "$TMP" >/dev/null 2>&1; then
+        echo ":: Error: local hardware scan failed. ::" >&2
+        exit 1
+      fi
+    else
+      # Remote mode: facter's own stdout/stderr go to the target's /dev/null so
+      # only the JSON emitted by `cat` reaches our captured stdout — a progress
+      # line or SSH banner would otherwise corrupt the report.
+      echo ":: Scanning hardware on ${IP} ::"
+      if ! ssh "root@${IP}" \
+          'nix --extra-experimental-features "nix-command flakes" run github:numtide/nixos-facter -- -o /tmp/facter.json >/dev/null 2>&1 && cat /tmp/facter.json' \
+          > "$TMP"; then
+        echo ":: Error: hardware scan over ssh failed for ${IP}. ::" >&2
+        exit 1
+      fi
     fi
     if ! is_json_object "$TMP"; then
       echo ":: Error: facter produced empty or non-JSON output; leaving machines/${NAME}/var/facter.json untouched. ::" >&2
@@ -480,3 +492,58 @@ bootstrap-local name:
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" secrets-init "{{name}}"
     just --justfile "{{justfile()}}" --working-directory "$FT_REPO" deploy-local "{{name}}"
     echo ":: Bootstrap complete for {{name}} ::"
+
+# Convert THIS running Linux machine into the framework via kexec — no USB, no
+# live ISO. Prepares config, builds a per-machine kexec installer with the full
+# target system baked in, then kexecs into it; the image partitions the disk,
+# installs offline, and reboots — all unattended. Run as root (kexec needs it).
+#
+# sops and the consumer repo are wired AFTERWARD (host-key option B): the
+# installed system generates a fresh SSH host key on first boot, so on a machine
+# with ft.sops.enable, secret-dependent services stay down until you complete the
+# post-install steps printed at the end.
+bootstrap-kexec name:
+    #!/usr/bin/env bash
+    set -e
+    NAME="{{name}}"
+    MACHINE_CFG="machines/${NAME}/default.nix"
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" git-init
+    # add-machine runs generate-facts; localhost selects facter's local mode.
+    just --justfile "{{justfile()}}" --working-directory "$FT_REPO" add-machine "${NAME}" "localhost"
+    # Pin + confirm the target disk locally (writes device + confirmDevice). This
+    # is the interactive safety gate — nothing prompts after kexec.
+    set +e
+    NEW_DEVICE=$(bash "{{justfile_directory()}}/select-disk.sh" "$MACHINE_CFG")
+    SELECT_RC=$?
+    set -e
+    if [ "$SELECT_RC" -eq 0 ]; then
+      git add "$MACHINE_CFG"
+      git diff --cached --quiet || git commit -m "bootstrap: set OS disk to ${NEW_DEVICE} for ${NAME}"
+    elif [ "$SELECT_RC" -ne 2 ]; then
+      echo "Disk selection failed or was declined; aborting." >&2
+      exit 1
+    fi
+    # Mark the machine for kexec-image generation so .#${NAME}-kexec exists, then
+    # build it (bakes the full target system — this can take a while).
+    mkdir -p "machines/${NAME}/var"
+    touch "machines/${NAME}/var/kexec"
+    git add "machines/${NAME}/var/kexec"
+    git diff --cached --quiet || git commit -m "bootstrap: enable kexec installer image for ${NAME}"
+    echo ":: Building kexec installer image for ${NAME} (bakes the full system) ::"
+    nix build ".#${NAME}-kexec" -o "/tmp/${NAME}-kexec"
+    # Point of no return: confirm before handing off to the unattended installer.
+    DEVICE=$(grep -oP 'device\s*=\s*"\K[^"]+' "$MACHINE_CFG" | head -1 || true)
+    echo ""
+    echo ":: READY TO CONVERT THIS MACHINE ::"
+    echo "   kexec will boot an installer that WIPES ${DEVICE:-the configured disk},"
+    echo "   installs '${NAME}' unattended, and reboots. This is IRREVERSIBLE."
+    read -rp "Type the machine name '${NAME}' to proceed: " CONFIRM
+    [ "$CONFIRM" = "${NAME}" ] || { echo "Aborted — nothing was touched."; exit 1; }
+    echo ""
+    echo ":: After it reboots into '${NAME}', finish setup on the machine: ::"
+    echo "     git clone <your remote> /src/${NAME}   # the repo this was built from"
+    echo "     ft secrets-init ${NAME}                 # key sops to the new host key"
+    echo "     ft switch                               # rebuild with secrets wired"
+    echo ""
+    echo ":: kexec'ing now — this box goes down and comes back installed ::"
+    exec /tmp/${NAME}-kexec
