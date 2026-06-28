@@ -142,6 +142,26 @@
       url = "github:nix-community/nixos-images";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Python packaging trio for the in-development ft_py CLI (scripts/ft_py) —
+    # builds the uv.lock-pinned workspace with pure Nix. Framework-internal for
+    # now (devShell + a not-yet-consumer-facing package); not part of
+    # lib.mkFlake's consumer-facing import list.
+    pyproject-nix = {
+      url = "github:nix-community/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.uv2nix.follows = "uv2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
