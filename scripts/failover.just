@@ -12,6 +12,8 @@ _max_retries := "5"
 failover-switch:
     #!/usr/bin/env bash
     set -uo pipefail
+    # shellcheck source=lib/failover.sh
+    source "{{justfile_directory()}}/lib/failover.sh"
 
     OVERRIDES="{{_overrides}}"
     MAX={{_max_retries}}
@@ -29,17 +31,9 @@ failover-switch:
         fi
         build_status=$?
 
-        # Extract pname from failed .drv paths.
-        # Input:    /nix/store/<32hex>-<pname>-<version>.drv
-        # Strategy: strip hash prefix and .drv suffix, then strip -VERSION
-        #           (everything from the first -digit onward).
-        # Caveat:   compound names like python312-requests map to "python312"
-        #           rather than the real pkgs attribute; manual correction may
-        #           be needed for those cases.
-        attrs=$(grep -oP '(?<=/nix/store/[a-z0-9]{32}-)[^/\n]+(?=\.drv)' "$LOG" \
-            | sed 's/-[0-9].*$//' \
-            | sort -u \
-            | grep -v '^$' || true)
+        # Extract failing package attrs from the .drv paths in the log
+        # (see lib/failover.sh for the strategy and its compound-name caveat).
+        attrs=$(failover_extract_attrs "$LOG")
         rm -f "$LOG"
 
         if [[ -z "$attrs" ]]; then

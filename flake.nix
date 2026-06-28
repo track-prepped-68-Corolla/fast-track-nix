@@ -123,6 +123,25 @@
 
     # Official Nous Research hermes-agent flake — provides nixosModules.default.
     hermes-agent.url = "github:NousResearch/hermes-agent";
+
+    # Colmena fleet deployment — consumed by flake-parts/colmena.nix to emit the
+    # colmenaHive output (lib.makeHive).
+    colmena = {
+      url = "github:zhaofengli/colmena";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Comin — pull-based GitOps daemon, wrapped by the ft.gitops module.
+    comin = {
+      url = "github:nlewo/comin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # nixos-images — builds the per-machine kexec installer image (flake-parts/kexec.nix).
+    nixos-images = {
+      url = "github:nix-community/nixos-images";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

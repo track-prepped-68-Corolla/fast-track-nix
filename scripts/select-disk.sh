@@ -25,6 +25,10 @@ set -euo pipefail
 MACHINE_CFG="${1:?usage: select-disk.sh <machine-config-path> [ssh-target]}"
 SSH_TARGET="${2:-}"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/disk.sh
+source "${SCRIPT_DIR}/lib/disk.sh"
+
 log() { printf '%s\n' "$*" >&2; }
 
 run() {
@@ -35,7 +39,10 @@ run() {
   fi
 }
 
-CURRENT_DEVICE=$(grep -oP 'device\s*=\s*"\K[^"]+' "$MACHINE_CFG" 2>/dev/null | head -1 || true)
+# Read the currently-configured ft.diskBtrfs.device (see lib/disk.sh: the search
+# is scoped to the ft.diskBtrfs block so an unrelated `device = "..."` is never
+# picked up, with a fallback to the dotted form).
+CURRENT_DEVICE=$(disk_current_device "$MACHINE_CFG")
 if [ -z "$CURRENT_DEVICE" ]; then
   log ":: No ft.diskBtrfs.device assignment found in ${MACHINE_CFG} — skipping disk selection. ::"
   exit 2
@@ -49,8 +56,10 @@ BOOT_DISK=$(
 )
 
 log ":: Disks visible on ${SSH_TARGET:-this machine} (current: ${CURRENT_DEVICE}) ::"
+# TYPE is the last column, so filter on $NF=="disk" rather than a bare `grep
+# disk`, which would also match a MODEL string containing the word "disk".
 mapfile -t CANDIDATES < <(
-  run "lsblk -d -n -o NAME,SIZE,MODEL,TYPE 2>/dev/null | grep disk" | awk -v boot="$BOOT_DISK" '$1 != boot'
+  run "lsblk -d -n -o NAME,SIZE,MODEL,TYPE 2>/dev/null" | awk -v boot="$BOOT_DISK" '$NF=="disk" && $1 != boot'
 )
 
 if [ "${#CANDIDATES[@]}" -eq 0 ]; then
@@ -81,15 +90,9 @@ log ""
 read -rp "This WIPES ALL DATA on ${NEW_DEVICE}. This is IRREVERSIBLE. Continue? [y/N]: " CONFIRM
 [[ "$CONFIRM" =~ ^[yY]$ ]] || { log "Aborted."; exit 1; }
 
-if [ "$NEW_DEVICE" != "$CURRENT_DEVICE" ]; then
-  sed -i "s|device = \"${CURRENT_DEVICE}\"|device = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
-fi
-
-if grep -qE 'confirmDevice[[:space:]]*=' "$MACHINE_CFG"; then
-  sed -i -E "s|confirmDevice[[:space:]]*=[[:space:]]*\"[^\"]*\"|confirmDevice = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
-else
-  sed -i "s|device = \"${NEW_DEVICE}\"|device = \"${NEW_DEVICE}\"\n    confirmDevice = \"${NEW_DEVICE}\"|" "$MACHINE_CFG"
-fi
+# Rewrite device and confirmDevice within the ft.diskBtrfs block only (see
+# lib/disk.sh: anchored, indentation-preserving, inserts confirmDevice if absent).
+disk_write_device "$MACHINE_CFG" "$NEW_DEVICE"
 
 log ":: ft.diskBtrfs.device and confirmDevice set to ${NEW_DEVICE} in ${MACHINE_CFG} ::"
 printf '%s\n' "$NEW_DEVICE"

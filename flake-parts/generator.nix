@@ -40,50 +40,21 @@ let
   inherit (nixpkgs) lib;
   darwin = inputs.darwin or null;
 
-  getDirs =
-    path:
-    if builtins.pathExists path then
-      lib.attrNames (lib.filterAttrs (_: t: t == "directory") (builtins.readDir path))
-    else
-      [ ];
-
   # ==========================================
-  # 1. MACHINES DISCOVERY
+  # 1. MACHINES DISCOVERY (shared helper)
   # ==========================================
-  machinesDir = self + "/machines";
-  machineNames = getDirs machinesDir;
-
-  mkMachineEntry =
-    name:
-    let
-      factsFile = self + "/machines/${name}/var/facter.json";
-      facter =
-        if builtins.pathExists factsFile then builtins.fromJSON (builtins.readFile factsFile) else { };
-      system = facter.system or "x86_64-linux";
-      isDarwin = lib.hasSuffix "-darwin" system;
-    in
-    {
-      inherit name system isDarwin;
-      path = machinesDir + "/${name}";
-    };
-
-  machineList = map mkMachineEntry machineNames;
-  nixosMachines = builtins.filter (x: !x.isDarwin) machineList;
-  darwinMachines = builtins.filter (x: x.isDarwin) machineList;
-
-  # ==========================================
-  # 1b. IMAGE MACHINE DETECTION
-  # ==========================================
-  # machines/<name>/var/format — presence of this file marks the machine as an
-  # ISO image build rather than a deployable system.  The generator emits
-  # packages.<system>.<name> for image machines and excludes them from
-  # nixosConfigurations so they don't fail filesystem/bootloader assertions.
-  isImageMachine = machine: builtins.pathExists (machine.path + "/var/format");
-
-  imageMachines = builtins.filter isImageMachine nixosMachines;
-  # Image machines are not deployable NixOS systems — exclude them from
-  # nixosConfigurations so they don't fail the filesystem/bootloader assertions.
-  deployableMachines = builtins.filter (m: !isImageMachine m) nixosMachines;
+  # Machine discovery and the deployable-machine module list live in
+  # ./lib/machines.nix so the generator and flake-parts/colmena.nix evaluate
+  # machines identically. See that file for the discovery rules.
+  machinesLib = import ./lib/machines.nix { inherit inputs; };
+  inherit (machinesLib)
+    getDirs
+    machineList
+    darwinMachines
+    imageMachines
+    deployableMachines
+    mkNixosModules
+    ;
 
   mkImagePackage =
     machine:
@@ -176,18 +147,7 @@ in
         lib.nameValuePair machine.name (
           lib.nixosSystem {
             specialArgs = { inherit inputs; };
-            modules = [
-              # Disko and microvm host module are captured in the closure here
-              # (not via module args) so they are available before any module
-              # imports are resolved.  Accessing inputs inside `imports` causes
-              # infinite recursion when inputs is provided via _module.args
-              # rather than specialArgs (e.g. in NixOS VM smoke tests).
-              inputs.Disko.nixosModules.disko
-              inputs.microvm.nixosModules.host
-              ../modules/nixos
-              machine.path
-              { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
-            ];
+            modules = mkNixosModules machine;
           }
         )
       ) deployableMachines
