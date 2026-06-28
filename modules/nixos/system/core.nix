@@ -34,7 +34,12 @@ in
   config = lib.mkIf cfg.enable {
 
     # --- 1. SYSTEM IDENTITY ---
-    system.stateVersion = lib.mkDefault cfg.stateVersion;
+    # Plain assignment, not mkDefault: cfg.stateVersion has no default (every
+    # consumer must set it explicitly), so this is always a deliberate,
+    # consumer-directed value. It must outrank nixpkgs' own mkDefault (e.g.
+    # installation-cd-base.nix's mkDefault lib.trivial.release for ISO image
+    # machines) rather than conflict with it at equal priority.
+    system.stateVersion = cfg.stateVersion;
 
     # --- 2. HARDWARE & CONNECTIVITY ---
     networking.networkmanager.enable = lib.mkDefault true;
