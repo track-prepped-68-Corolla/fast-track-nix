@@ -32,6 +32,13 @@ in
     {
       packages.ft-py = pythonSet.mkVirtualEnv "ft-py-env" workspace.deps.default;
 
+      # Consumed by ft-testing's tests/python/package.nix via the ft-framework
+      # input — a venv with the `dev` dependency group (pytest, pytest-asyncio)
+      # plus ft_py itself already built in, so the pytest suite can be run
+      # against this package without a writable checkout or local Nix tooling
+      # beyond what the venv already provides.
+      packages.ft-py-test-env = pythonSet.mkVirtualEnv "ft-py-test-env" workspace.deps.all;
+
       devShells.ft-py = pkgs.mkShell {
         packages = [
           (editablePythonSet.mkVirtualEnv "ft-py-dev-env" workspace.deps.all)
