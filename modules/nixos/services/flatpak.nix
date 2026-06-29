@@ -45,6 +45,8 @@ in
       ];
     };
 
+    xdg.portal.enable = lib.mkDefault true;
+
     environment.systemPackages = lib.optional cfg.frontend.enable cfg.frontend.package;
   };
 }
