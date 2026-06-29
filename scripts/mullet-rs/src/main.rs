@@ -41,7 +41,10 @@ enum Commands {
 }
 
 fn mullet_file() -> PathBuf {
-    let user = env::var("USER").unwrap_or_default();
+    let user = env::var("USER").unwrap_or_else(|_| {
+        eprintln!(":: Error: USER environment variable is not set. ::");
+        exit(1);
+    });
     PathBuf::from(format!("users/{user}/var/mullet.txt"))
 }
 
@@ -89,9 +92,16 @@ fn cmd_search(query: &str) {
 
 fn cmd_add(pkg: &str) {
     let file = mullet_file();
-    if mullet_contains(&file, pkg) {
-        println!(":: '{pkg}' is already in The Mullet. ::");
-        return;
+    match mullet_contains(&file, pkg) {
+        Ok(true) => {
+            println!(":: '{pkg}' is already in The Mullet. ::");
+            return;
+        }
+        Ok(false) => {}
+        Err(err) => {
+            eprintln!(":: Error: failed to read The Mullet: {err} ::");
+            exit(1);
+        }
     }
 
     println!(":: Verifying '{pkg}' exists... ::");
@@ -113,17 +123,30 @@ fn cmd_add(pkg: &str) {
         exit(1);
     }
 
-    mullet_add_line(&file, pkg);
+    if let Err(err) = mullet_add_line(&file, pkg) {
+        eprintln!(":: Error: failed to add '{pkg}' to The Mullet: {err} ::");
+        exit(1);
+    }
     println!(":: Added {pkg}. Run 'ft switch' to apply. ::");
 }
 
 fn cmd_rm(pkg: &str) {
     let file = mullet_file();
-    if !mullet_contains(&file, pkg) {
-        eprintln!(":: Error: '{pkg}' not found in The Mullet. ::");
+    match mullet_contains(&file, pkg) {
+        Ok(true) => {}
+        Ok(false) => {
+            eprintln!(":: Error: '{pkg}' not found in The Mullet. ::");
+            exit(1);
+        }
+        Err(err) => {
+            eprintln!(":: Error: failed to read The Mullet: {err} ::");
+            exit(1);
+        }
+    }
+    if let Err(err) = mullet_rm_line(&file, pkg) {
+        eprintln!(":: Error: failed to remove '{pkg}' from The Mullet: {err} ::");
         exit(1);
     }
-    mullet_rm_line(&file, pkg);
     println!(":: Removed {pkg}. Run 'ft switch' to apply. ::");
 }
 
@@ -141,7 +164,10 @@ fn cmd_haircut() {
     let mut input = String::new();
     io::stdin().lock().read_line(&mut input).ok();
     if matches!(input.trim(), "y" | "Y") {
-        let _ = std::fs::write(mullet_file(), "");
+        if let Err(err) = std::fs::write(mullet_file(), "") {
+            eprintln!(":: Error: failed to clear The Mullet: {err} ::");
+            exit(1);
+        }
         println!(":: Haircut complete. Run 'ft switch' to apply the clean slate. ::");
     } else {
         println!("Cancelled.");
