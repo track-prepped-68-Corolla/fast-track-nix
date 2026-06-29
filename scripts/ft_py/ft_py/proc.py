@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import AsyncIterator, Mapping, Sequence
 
+from ft_py.errors import CommandFailedError
+
 Stream = str  # "stdout" | "stderr"
 
 
@@ -157,5 +159,9 @@ async def run_piped(
         yield OutputLine("stdout", raw.decode(errors="replace").rstrip("\n"))
 
     await relay_task
-    await proc1.wait()
-    await proc2.wait()
+    rc1 = await proc1.wait()
+    rc2 = await proc2.wait()
+    if rc1:
+        raise CommandFailedError(list(argv1), rc1)
+    if rc2:
+        raise CommandFailedError(list(argv2), rc2)

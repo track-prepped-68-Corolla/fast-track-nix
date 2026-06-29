@@ -42,6 +42,7 @@ in
       devShells.ft-py = pkgs.mkShell {
         packages = [
           (editablePythonSet.mkVirtualEnv "ft-py-dev-env" workspace.deps.all)
+          pkgs.git
           pkgs.uv
         ];
         env = {

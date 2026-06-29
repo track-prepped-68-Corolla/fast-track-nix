@@ -145,8 +145,11 @@ async def switch_preview(repo_path: Path) -> AsyncIterator[OutputLine]:
     yield OutputLine("stdout", ":: Previewing Build ::")
     async for line in stage(repo_path):
         yield line
-    async for line in StreamedCommand(["nh", "os", "test", ".", "--dry"], cwd=repo_path):
+    cmd = StreamedCommand(["nh", "os", "test", ".", "--dry"], cwd=repo_path)
+    async for line in cmd:
         yield line
+    if cmd.returncode:
+        raise CommandFailedError(cmd.argv, cmd.returncode)
     yield OutputLine("stdout", ":: Source Code Changes ::")
     async for line in diff_src(repo_path):
         yield line
@@ -207,7 +210,7 @@ async def switch_apply(
     staged = await run_capture(["git", "diff", "--cached", "--quiet"], cwd=repo_path)
     committed = False
     if not staged.ok:  # non-zero exit means there ARE staged changes
-        await run_capture(
+        commit_result = await run_capture(
             [
                 "git",
                 "commit",
@@ -220,6 +223,8 @@ async def switch_apply(
             ],
             cwd=repo_path,
         )
+        if not commit_result.ok:
+            raise CommandFailedError(["git", "commit"], commit_result.returncode)
         committed = True
     else:
         yield OutputLine("stdout", ":: No source changes detected. Skipping git commit. ::")
