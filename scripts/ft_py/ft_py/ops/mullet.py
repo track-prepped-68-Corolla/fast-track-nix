@@ -20,9 +20,10 @@ _ADD_FALLBACK_LINES = 10
 
 
 def _line_pattern(pkg: str) -> re.Pattern[str]:
-    # Mirrors lib/mullet.sh's grep/sed pattern verbatim, including its
-    # unescaped use of pkg as a regex fragment (e.g. "." matches any char).
-    return re.compile(rf"^[ \t]*{pkg}[ \t]*$")
+    # Mirrors lib/mullet.sh's grep/sed pattern, but escapes pkg so package
+    # names containing regex metacharacters (e.g. "python3Packages.foo")
+    # match only themselves rather than being interpreted as a pattern.
+    return re.compile(rf"^[ \t]*{re.escape(pkg)}[ \t]*$")
 
 
 def mullet_contains(mullet_file: Path, pkg: str) -> bool:

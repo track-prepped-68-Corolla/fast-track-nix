@@ -127,9 +127,9 @@ async def test_(repo_path: Path) -> AsyncIterator[OutputLine]:
     cmd = StreamedCommand(["nh", "os", "test", ".", "--ask"], cwd=repo_path)
     async for line in cmd:
         yield line
-    yield OutputLine("stdout", ":: Test complete. Reboot to revert. ::")
     if cmd.returncode:
         raise CommandFailedError(cmd.argv, cmd.returncode)
+    yield OutputLine("stdout", ":: Test complete. Reboot to revert. ::")
 
 
 async def switch_preview(repo_path: Path) -> AsyncIterator[OutputLine]:
