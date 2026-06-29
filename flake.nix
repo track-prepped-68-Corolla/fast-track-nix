@@ -124,6 +124,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Declarative per-game Steam launch options, compat tools, and non-Steam
+    # shortcuts — used by ft.steamConfig.
+    steam-config-nix = {
+      url = "github:different-name/steam-config-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Opt-in state persistence on tmpfs root systems — used by ft.diskBtrfs.impermanence.
     impermanence.url = "github:nix-community/impermanence";
 
