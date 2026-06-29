@@ -3,8 +3,7 @@
 # unmodified and remains the canonical implementation; this package exists
 # side by side with it for comparison only. Built with stock
 # rustPlatform.buildRustPackage — no extra flake input required.
-{ ... }:
-{
+_: {
   perSystem =
     { pkgs, ... }:
     {
