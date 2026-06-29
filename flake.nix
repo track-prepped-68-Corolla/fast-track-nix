@@ -124,6 +124,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Native, Raycast-compatible launcher for Linux — used by ft.vicinae.
+    vicinae = {
+      url = "github:vicinaehq/vicinae";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Opt-in state persistence on tmpfs root systems — used by ft.diskBtrfs.impermanence.
     impermanence.url = "github:nix-community/impermanence";
 
