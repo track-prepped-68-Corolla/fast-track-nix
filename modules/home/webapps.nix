@@ -31,9 +31,7 @@ let
   };
 
   browserFor = app: if app.browser != null then app.browser else cfg.browser;
-  usedBrowsers = lib.unique (
-    lib.mapAttrsToList (_id: app: browserFor app) cfg.apps ++ [ cfg.browser ]
-  );
+  usedBrowsers = lib.unique (lib.mapAttrsToList (_id: browserFor) cfg.apps ++ [ cfg.browser ]);
 
   iconDir = "${config.xdg.dataHome}/ft-webapps/icons";
   profileDir = id: "${config.xdg.dataHome}/ft-webapps/${id}";
@@ -97,9 +95,8 @@ in
 
     xdg.desktopEntries = lib.mkDefault (
       lib.mapAttrs (id: app: {
-        name = app.name;
+        inherit (app) name categories;
         icon = if app.icon != null then "${app.icon}" else faviconPath id;
-        categories = app.categories;
         exec = lib.concatStringsSep " " [
           (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
           "--app=${lib.escapeShellArg app.url}"
