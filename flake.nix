@@ -124,6 +124,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Native, Raycast-compatible launcher for Linux — used by ft.vicinae.
+    vicinae = {
+      url = "github:vicinaehq/vicinae";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Declarative per-game Steam launch options, compat tools, and non-Steam
     # shortcuts — used by ft.steamConfig.
     steam-config-nix = {

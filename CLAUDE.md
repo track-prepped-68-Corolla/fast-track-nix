@@ -140,6 +140,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.dotfiles` | Dotfile symlinking — Home Manager |
 | `ft.plasmaManager` | Declarative KDE Plasma settings via plasma-manager — Home Manager |
 | `ft.karousel` | Karousel KWin tiling script — Home Manager |
+| `ft.vicinae` | Vicinae Raycast-compatible launcher: binary cache + opt-in input-server capability wrapper (NixOS) / systemd launcher service (HM) |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
 
