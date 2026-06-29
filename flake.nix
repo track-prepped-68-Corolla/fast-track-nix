@@ -112,6 +112,12 @@
       inputs.home-manager.follows = "home-manager";
     };
 
+    # Declarative Flatpak remotes and package lists — used by ft.flatpak.
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Lightweight VMs (Firecracker, QEMU, Cloud Hypervisor) — used by ft.dockervm.
     microvm = {
       url = "github:astro/microvm.nix";
