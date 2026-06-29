@@ -124,6 +124,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.komodo` | Komodo Core + Periphery (NixOS) / user-level Komodo (HM) |
 | `ft.microvms` | Generic microVM host infrastructure |
 | `ft.nfs` | NFS client mount management |
+| `ft.flatpak` | Flatpak service, Flathub remote, and Plasma Discover frontend (NixOS) / per-user declarative app list (HM) |
 | `ft.ociStack` | Guest-side OCI runtime with docker-compose |
 | `ft.podmanRootless` | Rootless Podman service user |
 | `ft.printing` | CUPS printing service |
