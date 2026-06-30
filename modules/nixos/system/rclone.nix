@@ -45,5 +45,9 @@ in
       pkgs.fuse
     ];
     programs.fuse.userAllowOther = lib.mkDefault true;
+    # programs.fuse.userAllowOther alone does not reliably generate /etc/fuse.conf
+    # in all nixpkgs-unstable versions; write it explicitly so the FUSE kernel
+    # module honours allow_other mounts regardless of the NixOS fuse module version.
+    environment.etc."fuse.conf".text = lib.mkDefault "user_allow_other\n";
   };
 }
