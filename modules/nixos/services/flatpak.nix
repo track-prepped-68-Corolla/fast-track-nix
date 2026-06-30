@@ -45,7 +45,10 @@ in
       ];
     };
 
-    xdg.portal.enable = lib.mkDefault true;
+    xdg.portal = {
+      enable = lib.mkDefault true;
+      extraPortals = lib.mkDefault [ pkgs.xdg-desktop-portal-gtk ];
+    };
 
     environment.systemPackages = lib.optional cfg.frontend.enable cfg.frontend.package;
   };
