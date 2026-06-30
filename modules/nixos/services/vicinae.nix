@@ -38,7 +38,9 @@ in
     };
 
     security.wrappers.vicinae-input-server = lib.mkIf cfg.inputServer.enable {
-      source = lib.mkDefault "${inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default}/libexec/vicinae/vicinae-input-server";
+      source = lib.mkDefault "${
+        inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default
+      }/libexec/vicinae/vicinae-input-server";
       capabilities = lib.mkDefault "cap_dac_override+ep";
       owner = lib.mkDefault "root";
       group = lib.mkDefault "root";
