@@ -93,16 +93,27 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = lib.mkDefault (map (b: pkgs.${b}) usedBrowsers);
 
-    xdg.desktopEntries = lib.mapAttrs (id: app: {
-      inherit (app) name categories;
-      icon = if app.icon != null then "${app.icon}" else faviconPath id;
-      exec = lib.concatStringsSep " " [
-        (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
-        "--app=${lib.escapeShellArg app.url}"
-        "--user-data-dir=${lib.escapeShellArg (profileDir id)}"
-        "--class=ft-webapp-${id}"
-      ];
-    }) cfg.apps;
+    xdg.dataFile = lib.mapAttrs' (
+      id: app:
+      lib.nameValuePair "applications/${id}.desktop" {
+        source =
+          let
+            item = pkgs.makeDesktopItem {
+              name = id;
+              desktopName = app.name;
+              inherit (app) categories;
+              icon = if app.icon != null then toString app.icon else faviconPath id;
+              exec = lib.concatStringsSep " " [
+                (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
+                "--app=${lib.escapeShellArg app.url}"
+                "--user-data-dir=${lib.escapeShellArg (profileDir id)}"
+                "--class=ft-webapp-${id}"
+              ];
+            };
+          in
+          "${item}/share/applications/${id}.desktop";
+      }
+    ) cfg.apps;
 
     home.activation.ftWebappFavicons =
       let
