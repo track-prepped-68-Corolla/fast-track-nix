@@ -101,7 +101,7 @@ in
             item = pkgs.makeDesktopItem {
               name = id;
               desktopName = app.name;
-              categories = app.categories;
+              inherit (app) categories;
               icon = if app.icon != null then toString app.icon else faviconPath id;
               exec = lib.concatStringsSep " " [
                 (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
