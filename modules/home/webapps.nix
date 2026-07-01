@@ -105,8 +105,8 @@ in
               icon = if app.icon != null then toString app.icon else faviconPath id;
               exec = lib.concatStringsSep " " [
                 (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
-                "--app=${lib.escapeShellArg app.url}"
-                "--user-data-dir=${lib.escapeShellArg (profileDir id)}"
+                "--app=${app.url}"
+                "--user-data-dir=${profileDir id}"
                 "--class=ft-webapp-${id}"
               ];
             };
