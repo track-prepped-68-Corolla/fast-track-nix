@@ -205,13 +205,18 @@ in
     # setgid ensures new files/dirs inherit the wheel group.
     systemd.tmpfiles.rules = [ "d /src 2775 root wheel - -" ];
 
-    # setgid only inherits group *ownership*, not the write bit: a file created
-    # with a restrictive umask (e.g. cloned as root under the default 022) ends
-    # up group-owned by wheel but not group-writable, silently locking wheel
-    # members out despite /src itself looking correct. A default ACL forces
-    # group-write on everything created under /src from here on, regardless of
-    # the creating process's umask; it propagates to new subdirectories
-    # automatically since they inherit their parent's default ACL as their own.
+    # setgid only inherits group *ownership*, not the write bit. This bites on
+    # every fresh install via the documented bootstrap flow, not just unusual
+    # setups: bootstrap.just's deploy/deploy-local recipes stage this repo with
+    # `cp -a` (preserving the operator's own clone's permission bits verbatim,
+    # which have no group-write since a plain `git clone` has no reason to
+    # anticipate landing in a group-writable directory) and hand it to
+    # nixos-anywhere's --extra-files, so the very first /src/<repo> on a new
+    # machine is already group-owned by wheel but not group-writable. A default
+    # ACL forces group-write on everything created under /src from here on,
+    # regardless of the creating process's umask; it propagates to new
+    # subdirectories automatically since they inherit their parent's default
+    # ACL as their own.
     systemd.services.ftSrcDefaultAcl = {
       description = "Apply default ACL to /src so new files are group-writable regardless of umask";
       after = [ "local-fs.target" ];
