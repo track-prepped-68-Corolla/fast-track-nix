@@ -19,7 +19,7 @@
           specialArgs = { inherit inputs; };
           modules = [
             inputs.Disko.nixosModules.disko
-            (inputs.self + "/modules/nixos/hardware/disko-btrfs.nix")
+            ../modules/nixos/hardware/disko-btrfs.nix
             { ft.diskBtrfs.enable = true; }
           ];
         }).config.systemd.services.ftSrcDefaultAcl;
