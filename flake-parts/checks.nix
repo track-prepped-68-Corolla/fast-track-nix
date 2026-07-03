@@ -1,13 +1,38 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     let
       statixConfig = inputs.self + "/statix.toml";
       configArg = pkgs.lib.optionalString (builtins.pathExists statixConfig) "--config ${statixConfig}";
+
+      # Eval-only regression test for the /src default ACL (disko-btrfs.nix):
+      # ft.diskBtrfs is hardware-dependent and exempt from the ft-testing VM
+      # smoke-test suite (no real/virtual block device in the eval sandbox),
+      # so this checks the generated systemd unit's shape directly instead of
+      # exercising it end-to-end. Catches a future refactor silently dropping
+      # the ACL, the ordering, or the mountpoint guard — not whether setfacl
+      # actually works on real hardware.
+      srcAclUnit =
+        (inputs.nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = [
+            inputs.Disko.nixosModules.disko
+            (inputs.self + "/modules/nixos/hardware/disko-btrfs.nix")
+            { ft.diskBtrfs.enable = true; }
+          ];
+        }).config.systemd.services.ftSrcDefaultAcl;
     in
     {
       checks = {
+        srcDefaultAcl =
+          assert lib.hasInfix "setfacl" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "-d -m g:wheel:rwx /src" srcAclUnit.serviceConfig.ExecStart;
+          assert srcAclUnit.unitConfig.ConditionPathIsMountPoint == "/src";
+          assert lib.elem "local-fs.target" srcAclUnit.after;
+          assert srcAclUnit.serviceConfig.Type == "oneshot";
+          pkgs.runCommand "src-default-acl-check" { } "touch $out";
         format =
           pkgs.runCommand "format-check"
             {
