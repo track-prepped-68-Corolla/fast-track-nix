@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   inputs,
   ...
 }:
@@ -75,7 +76,7 @@ in
 
   options.ft.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state.";
+      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it, so wheel members can write without sudo regardless of the creating process's umask.";
     };
 
     device = lib.mkOption {
@@ -203,6 +204,25 @@ in
     # All users can read /src; wheel group members can write without sudo.
     # setgid ensures new files/dirs inherit the wheel group.
     systemd.tmpfiles.rules = [ "d /src 2775 root wheel - -" ];
+
+    # setgid only inherits group *ownership*, not the write bit: a file created
+    # with a restrictive umask (e.g. cloned as root under the default 022) ends
+    # up group-owned by wheel but not group-writable, silently locking wheel
+    # members out despite /src itself looking correct. A default ACL forces
+    # group-write on everything created under /src from here on, regardless of
+    # the creating process's umask; it propagates to new subdirectories
+    # automatically since they inherit their parent's default ACL as their own.
+    systemd.services.ftSrcDefaultAcl = {
+      description = "Apply default ACL to /src so new files are group-writable regardless of umask";
+      after = [ "local-fs.target" ];
+      wantedBy = [ "multi-user.target" ];
+      unitConfig.ConditionPathIsMountPoint = "/src";
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${lib.getExe' pkgs.acl "setfacl"} -d -m g:wheel:rwx /src";
+      };
+    };
 
     # TPM2+PIN unlock: the systemd-based initrd plus tpm2-device=auto on the
     # crypttab entry disko generates for the LUKS device. The TPM+PIN keyslot is
