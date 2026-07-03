@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -31,6 +32,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = config.ft.repoPath != options.ft.repoPath.default;
+        message = "ft.cli.enable requires ft.repoPath to point at your consumer repo's real path — it is still the framework default (\"${options.ft.repoPath.default}\"), so the ft wrapper would run recipes against a path that doesn't exist on this machine.";
+      }
+    ];
+
     home.packages = lib.mkDefault [
       pkgs.just
       ftWrapper

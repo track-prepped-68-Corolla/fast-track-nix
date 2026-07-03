@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  options,
   inputs,
   pkgs,
   ...
@@ -25,6 +26,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = config.ft.repoPath != options.ft.repoPath.default;
+        message = "ft.sops.enable requires ft.repoPath to point at your consumer repo's real path — it is still the framework default (\"${options.ft.repoPath.default}\"), so sops.defaultSopsFile would resolve to a path that doesn't exist on this machine.";
+      }
+    ];
+
     environment.systemPackages = [
       pkgs.sops
       pkgs.age

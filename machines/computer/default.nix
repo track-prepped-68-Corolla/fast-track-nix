@@ -39,6 +39,8 @@ _:
     core.stateVersion = "25.05";
     limine.enable = true;
     plasma.enable = true;
+    # Placeholder path — replace with your real consumer repo root.
+    repoPath = "/home/alice/ft-home";
     cli.enable = true;
     users.mainUser = "guest";
     users.superUsers = [ "admin" ];
