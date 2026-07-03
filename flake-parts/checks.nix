@@ -6,32 +6,39 @@
       statixConfig = inputs.self + "/statix.toml";
       configArg = pkgs.lib.optionalString (builtins.pathExists statixConfig) "--config ${statixConfig}";
 
-      # Eval-only regression test for the /src default ACL (disko-btrfs.nix):
-      # ft.diskBtrfs is hardware-dependent and exempt from the ft-testing VM
-      # smoke-test suite (no real/virtual block device in the eval sandbox),
-      # so this checks the generated systemd unit's shape directly instead of
-      # exercising it end-to-end. Catches a future refactor silently dropping
-      # the ACL, the ordering, or the mountpoint guard — not whether setfacl
-      # actually works on real hardware.
-      srcAclUnit =
-        (inputs.nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = { inherit inputs; };
-          modules = [
-            inputs.Disko.nixosModules.disko
-            ../modules/nixos/hardware/disko-btrfs.nix
-            { ft.diskBtrfs.enable = true; }
-          ];
-        }).config.systemd.services.ftSrcDefaultAcl;
+      # Eval-only regression test for /src's permission hardening
+      # (disko-btrfs.nix): ft.diskBtrfs is hardware-dependent and exempt from
+      # the ft-testing VM smoke-test suite (no real/virtual block device in
+      # the eval sandbox), so this checks the generated config's shape
+      # directly instead of exercising it end-to-end. Catches a future
+      # refactor silently dropping the ACL, the repair pass, the ordering, the
+      # mountpoint guard, or the git safe.directory override — not whether any
+      # of it actually works on real hardware.
+      srcHardeningConfig = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs; };
+        modules = [
+          inputs.Disko.nixosModules.disko
+          ../modules/nixos/hardware/disko-btrfs.nix
+          { ft.diskBtrfs.enable = true; }
+        ];
+      };
+      srcAclUnit = srcHardeningConfig.config.systemd.services.ftSrcDefaultAcl;
     in
     {
       checks = {
         srcDefaultAcl =
           assert lib.hasInfix "setfacl" srcAclUnit.serviceConfig.ExecStart;
           assert lib.hasInfix "-d -m g:wheel:rwx /src" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "chown" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "-R root:wheel /src" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "chmod" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "-R g+rwX /src" srcAclUnit.serviceConfig.ExecStart;
+          assert lib.hasInfix "g+s" srcAclUnit.serviceConfig.ExecStart;
           assert srcAclUnit.unitConfig.ConditionPathIsMountPoint == "/src";
           assert lib.elem "local-fs.target" srcAclUnit.after;
           assert srcAclUnit.serviceConfig.Type == "oneshot";
+          assert lib.hasInfix "directory = *" srcHardeningConfig.config.environment.etc."gitconfig".text;
           pkgs.runCommand "src-default-acl-check" { } "touch $out";
         format =
           pkgs.runCommand "format-check"

@@ -76,7 +76,7 @@ in
 
   options.ft.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it, so wheel members can write without sudo regardless of the creating process's umask.";
+      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.";
     };
 
     device = lib.mkOption {
@@ -212,22 +212,54 @@ in
     # which have no group-write since a plain `git clone` has no reason to
     # anticipate landing in a group-writable directory) and hand it to
     # nixos-anywhere's --extra-files, so the very first /src/<repo> on a new
-    # machine is already group-owned by wheel but not group-writable. A default
-    # ACL forces group-write on everything created under /src from here on,
-    # regardless of the creating process's umask; it propagates to new
-    # subdirectories automatically since they inherit their parent's default
-    # ACL as their own.
+    # machine is already group-owned by wheel but not group-writable.
+    #
+    # This unit does two things on every boot, both idempotent:
+    #   1. A default ACL (setfacl -d) so everything created under /src from
+    #      here on is group-writable regardless of the creating process's
+    #      umask — propagates to new subdirectories automatically, since they
+    #      inherit their parent's default ACL as their own.
+    #   2. A recursive chown/chmod repair pass, so files that already existed
+    #      before this unit ever ran (e.g. the very first nixos-anywhere
+    #      bundle, which predates the default ACL) get fixed automatically on
+    #      the next boot instead of requiring a one-time manual chmod. Safe to
+    #      re-run indefinitely: chown/chmod are no-ops once permissions are
+    #      already correct.
     systemd.services.ftSrcDefaultAcl = {
-      description = "Apply default ACL to /src so new files are group-writable regardless of umask";
+      description = "Apply and repair /src group-write permissions so they survive any umask or pre-existing state";
       after = [ "local-fs.target" ];
       wantedBy = [ "multi-user.target" ];
       unitConfig.ConditionPathIsMountPoint = "/src";
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = "${lib.getExe' pkgs.acl "setfacl"} -d -m g:wheel:rwx /src";
+        # A plain string (bash -c + a quoted script), not writeShellScript:
+        # keeps ExecStart eval-inspectable as a literal string (see
+        # checks.srcDefaultAcl) without needing to build a wrapper derivation.
+        ExecStart = "${lib.getExe' pkgs.bash "bash"} -c ${lib.escapeShellArg ''
+          ${lib.getExe' pkgs.acl "setfacl"} -d -m g:wheel:rwx /src
+          ${lib.getExe' pkgs.coreutils "chown"} -R root:wheel /src
+          ${lib.getExe' pkgs.coreutils "chmod"} -R g+rwX /src
+          ${lib.getExe' pkgs.findutils "find"} /src -type d -exec ${lib.getExe' pkgs.coreutils "chmod"} g+s {} +
+        ''}";
       };
     };
+
+    # git refuses to operate on a repository whose files are owned by a
+    # different UID than the process running git (a guard against local
+    # privilege escalation via untrusted repos placed by another user). Every
+    # repo under /src is bundled by nixos-anywhere's --extra-files as root
+    # during provisioning, so any non-root user hitting this is guaranteed,
+    # not an edge case — matches the golden-path framing above. /src is
+    # wholly owned by this module's own group-based trust model (root:wheel,
+    # setgid, default ACL), not a general-purpose location where an untrusted
+    # party could plant a repo, so disabling git's ownership check entirely
+    # (the `*` sentinel is git's own documented way to do this) is a
+    # deliberate, scoped trade-off rather than a blanket security regression.
+    environment.etc."gitconfig".text = lib.mkDefault ''
+      [safe]
+        directory = *
+    '';
 
     # TPM2+PIN unlock: the systemd-based initrd plus tpm2-device=auto on the
     # crypttab entry disko generates for the LUKS device. The TPM+PIN keyslot is
