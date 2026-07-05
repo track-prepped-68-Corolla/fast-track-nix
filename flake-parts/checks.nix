@@ -39,6 +39,12 @@
           specialArgs = { inherit inputs; };
           modules = [
             ../modules/nixos/services/gitops.nix
+            # gitops.nix unconditionally references the sops.secrets option
+            # (guarded by ft.sops.enable, which defaults to false, but the
+            # option must still exist to be assigned an empty value) - pull in
+            # the framework's own ft.sops module so that namespace exists,
+            # without actually enabling it.
+            ../modules/nixos/system/sops.nix
             {
               ft.gitops = {
                 enable = true;
