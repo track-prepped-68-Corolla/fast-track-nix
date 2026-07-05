@@ -45,6 +45,37 @@ let
       auth.access_token_path = config.sops.secrets.${r.tokenSecret}.path;
     };
 
+  # comin deliberately deploys into its own isolated profile
+  # (/nix/var/nix/profiles/system-profiles/comin), never touching
+  # /nix/var/nix/profiles/system — the profile the bootloader actually reads
+  # as the default boot entry. That's on purpose (a bad automated deploy can
+  # never silently become the reboot default), but it means every successful
+  # switch shows up as a separate "comin" submenu entry in the bootloader and
+  # never becomes the thing that boots by default on its own. This hook runs
+  # after every deployment via comin's own postDeploymentCommand and, only for
+  # successful deploys of deployBranch specifically (never the ephemeral
+  # per-host test branch, which must stay revertible on reboot), promotes
+  # comin's profile into the main one and re-registers the bootloader default
+  # — trading comin's safety net for the convenience of not needing a manual
+  # `nixos-rebuild switch` after every automated deploy.
+  autoPromoteScript = pkgs.writeShellScript "ft-gitops-auto-promote" ''
+    set -euo pipefail
+
+    if [ "$COMIN_STATUS" != "done" ]; then
+      exit 0
+    fi
+
+    # COMIN_GIT_REF is "<remoteName>/<branchName>" - compare only the branch
+    # portion, since the remote name varies across failover remotes.
+    if [ "''${COMIN_GIT_REF##*/}" != "${cfg.deployBranch}" ]; then
+      exit 0
+    fi
+
+    outPath=$(${pkgs.coreutils}/bin/readlink -f /nix/var/nix/profiles/system-profiles/comin)
+    ${pkgs.nix}/bin/nix-env --profile /nix/var/nix/profiles/system --set "$outPath"
+    "$outPath"/bin/switch-to-configuration boot
+  '';
+
   # comin never retries an eval, build, or deployment failure on its own — it
   # only reprocesses a commit when a *new* commit arrives (its in-memory "last
   # seen commit" only resets on process start). This watchdog polls comin's own
@@ -155,6 +186,12 @@ in
         description = "How often, in seconds, the watchdog polls comin's exporter for a failure. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt.";
       };
     };
+
+    autoPromote.enable =
+      lib.mkEnableOption "promoting successful comin switch deployments to the bootloader default"
+      // {
+        description = "comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default. Normally a human must explicitly boot the \"comin\" bootloader submenu entry, or run a manual `nixos-rebuild switch`, to make a comin deployment the reboot default. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin's ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience.";
+      };
   };
 
   config = lib.mkIf cfg.enable {
@@ -171,7 +208,9 @@ in
 
     warnings =
       lib.optional (cfg.signingKeys == [ ])
-        "ft.gitops.signingKeys is empty: comin will deploy unsigned commits unattended. Set signingKeys to a list of trusted GPG public keys.";
+        "ft.gitops.signingKeys is empty: comin will deploy unsigned commits unattended. Set signingKeys to a list of trusted GPG public keys."
+      ++ lib.optional cfg.autoPromote.enable
+        "ft.gitops.autoPromote.enable is on: successful deployBranch deployments become the bootloader default automatically, with no human confirmation step.";
 
     # Declare a sops secret for each token-authenticated remote so comin's
     # access_token_path resolves to a decrypted credential at runtime.
@@ -183,6 +222,7 @@ in
       enable = true;
       remotes = map mkRemote cfg.remotes;
       gpgPublicKeyPaths = cfg.signingKeys;
+      postDeploymentCommand = lib.mkIf cfg.autoPromote.enable autoPromoteScript;
     };
 
     # Degraded/recovery path: when the self-hosted binary cache is unreachable or
