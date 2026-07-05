@@ -137,9 +137,11 @@ in
     };
 
     retry = {
-      enable = lib.mkEnableOption "automatic retry of failed comin evaluations, builds, and deployments" // {
-        description = "Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.";
-      };
+      enable =
+        lib.mkEnableOption "automatic retry of failed comin evaluations, builds, and deployments"
+        // {
+          description = "Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.";
+        };
 
       maxAttempts = lib.mkOption {
         type = lib.types.int;
