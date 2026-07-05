@@ -81,7 +81,10 @@ home-switch user="" arch="":
     U="{{user}}"; A="{{arch}}"
     U="${U:-$USER}"
     A="${A:-$(uname -m)-linux}"
-    home-manager switch --flake ".#${U}@${A}"
+    # -b backup: a first switch for a user commonly collides with dotfiles a
+    # desktop session already wrote (e.g. KDE's kdeglobals/kwinrc) before HM
+    # ever ran; renaming the conflict aside beats failing the switch outright.
+    home-manager switch -b backup --flake ".#${U}@${A}"
 
 # --- 4. Remote Syncing ---
 
