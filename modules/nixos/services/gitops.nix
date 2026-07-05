@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   config,
   inputs,
   ...
@@ -43,6 +44,47 @@ let
     // lib.optionalAttrs (hasToken r && config.ft.sops.enable) {
       auth.access_token_path = config.sops.secrets.${r.tokenSecret}.path;
     };
+
+  # comin never retries an eval, build, or deployment failure on its own — it
+  # only reprocesses a commit when a *new* commit arrives (its in-memory "last
+  # seen commit" only resets on process start). This watchdog polls comin's own
+  # Prometheus exporter for a failure and restarts comin.service to force it to
+  # reprocess the current commit, up to retry.maxAttempts times before giving up
+  # until a new commit is pushed.
+  retryWatchdogScript = pkgs.writeShellScript "ft-gitops-retry-watchdog" ''
+    set -euo pipefail
+
+    metrics=$(${pkgs.curl}/bin/curl -fsS "http://127.0.0.1:${toString config.services.comin.exporter.port}/metrics") || {
+      echo "ft-gitops-retry-watchdog: could not reach comin's exporter, skipping this check"
+      exit 0
+    }
+
+    failed=0
+    for metric in comin_last_eval_failed comin_last_build_failed comin_last_deployment_failed; do
+      if ${pkgs.gnugrep}/bin/grep -qE "^''${metric} 1(\.0)?$" <<<"$metrics"; then
+        failed=1
+      fi
+    done
+
+    state="$STATE_DIRECTORY/attempts"
+    attempts=0
+    if [[ -f "$state" ]]; then
+      attempts=$(<"$state")
+    fi
+
+    if [[ "$failed" -eq 1 ]]; then
+      if [[ "$attempts" -lt ${toString cfg.retry.maxAttempts} ]]; then
+        attempts=$((attempts + 1))
+        echo "$attempts" > "$state"
+        echo "ft-gitops-retry-watchdog: comin reported a failure (attempt $attempts/${toString cfg.retry.maxAttempts}), restarting comin.service"
+        ${pkgs.systemd}/bin/systemctl restart comin.service
+      else
+        echo "ft-gitops-retry-watchdog: still failing after ${toString cfg.retry.maxAttempts} attempts, giving up until a new commit is pushed"
+      fi
+    else
+      echo 0 > "$state"
+    fi
+  '';
 in
 {
   imports = [ inputs.comin.nixosModules.comin ];
@@ -93,6 +135,24 @@ in
       default = [ ];
       description = "Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths). An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing.";
     };
+
+    retry = {
+      enable = lib.mkEnableOption "automatic retry of failed comin evaluations, builds, and deployments" // {
+        description = "Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.";
+      };
+
+      maxAttempts = lib.mkOption {
+        type = lib.types.int;
+        default = 3;
+        description = "Maximum number of times the watchdog restarts comin.service to recover the current failing commit before giving up on it until a new commit is pushed.";
+      };
+
+      checkInterval = lib.mkOption {
+        type = lib.types.int;
+        default = 300;
+        description = "How often, in seconds, the watchdog polls comin's exporter for a failure. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -127,5 +187,25 @@ in
     # lacks a path (e.g. an emergency fix pushed to the Codeberg fallback that no
     # Forgejo runner pre-built), build locally instead of failing.
     nix.settings.fallback = lib.mkDefault true;
+
+    systemd.services.ft-gitops-retry-watchdog = lib.mkIf cfg.retry.enable {
+      description = "Restart comin after an eval, build, or deployment failure (ft.gitops.retry)";
+      after = [ "comin.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        StateDirectory = "ft-gitops-retry-watchdog";
+        ExecStart = "${retryWatchdogScript}";
+      };
+    };
+
+    systemd.timers.ft-gitops-retry-watchdog = lib.mkIf cfg.retry.enable {
+      description = "Periodically checks comin for a failure to retry (ft.gitops.retry)";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = cfg.retry.checkInterval;
+        OnUnitActiveSec = cfg.retry.checkInterval;
+        Unit = "ft-gitops-retry-watchdog.service";
+      };
+    };
   };
 }
