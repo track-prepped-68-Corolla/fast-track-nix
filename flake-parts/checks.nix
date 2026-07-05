@@ -24,6 +24,41 @@
         ];
       };
       srcAclUnit = srcHardeningConfig.config.systemd.services.ftSrcDefaultAcl;
+
+      # Eval-only regression test for ft.gitops.autoPromote: the real behavior
+      # (comin actually running the hook after a deployment) is explicitly out
+      # of scope for the ft-testing gitops VM test too — a real deploy needs
+      # comin to rebuild this machine's nixosConfiguration *inside* the VM
+      # sandbox, which isn't feasible there either. This only checks that the
+      # option correctly wires (or doesn't wire) services.comin's
+      # postDeploymentCommand.
+      mkGitopsConfig =
+        autoPromote:
+        inputs.nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = [
+            ../modules/nixos/services/gitops.nix
+            # gitops.nix unconditionally references the sops.secrets option
+            # (guarded by ft.sops.enable, which defaults to false, but the
+            # option must still exist to be assigned an empty value) - pull in
+            # the framework's own ft.sops module so that namespace exists,
+            # without actually enabling it.
+            ../modules/nixos/system/sops.nix
+            {
+              ft.gitops = {
+                enable = true;
+                remotes = [
+                  {
+                    name = "test-remote";
+                    url = "file:///dev/null";
+                  }
+                ];
+                autoPromote.enable = autoPromote;
+              };
+            }
+          ];
+        };
     in
     {
       checks = {
@@ -40,6 +75,12 @@
           assert srcAclUnit.serviceConfig.Type == "oneshot";
           assert lib.hasInfix "directory = *" srcHardeningConfig.config.environment.etc."gitconfig".text;
           pkgs.runCommand "src-default-acl-check" { } "touch $out";
+
+        gitopsAutoPromote =
+          assert (mkGitopsConfig true).config.services.comin.postDeploymentCommand != null;
+          assert (mkGitopsConfig false).config.services.comin.postDeploymentCommand == null;
+          pkgs.runCommand "gitops-auto-promote-check" { } "touch $out";
+
         format =
           pkgs.runCommand "format-check"
             {
