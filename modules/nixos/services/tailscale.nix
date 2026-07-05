@@ -48,6 +48,10 @@ in
         auto-join silently stops working for any newly built machine.
       '';
     };
+
+    useSSH = lib.mkEnableOption "Tailscale SSH" // {
+      description = "Enables Tailscale's built-in SSH server (`tailscale up --ssh`), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale's browser-based SSH Console, with no client app or authorized_keys entry needed. Access is governed entirely by your tailnet's ACL policy (configured in the Tailscale admin console), not by this option.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -62,6 +66,7 @@ in
       enable = true;
       inherit (cfg) useRoutingFeatures;
       authKeyFile = lib.mkIf cfg.autoJoin (lib.mkDefault config.sops.secrets."tailscale/authkey".path);
+      extraUpFlags = lib.mkIf cfg.useSSH (lib.mkDefault [ "--ssh" ]);
     };
 
     sops.secrets."tailscale/authkey" = lib.mkIf cfg.autoJoin { };
