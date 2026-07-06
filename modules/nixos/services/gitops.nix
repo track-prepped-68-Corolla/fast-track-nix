@@ -209,8 +209,7 @@ in
     warnings =
       lib.optional (cfg.signingKeys == [ ])
         "ft.gitops.signingKeys is empty: comin will deploy unsigned commits unattended. Set signingKeys to a list of trusted GPG public keys."
-      ++ lib.optional cfg.autoPromote.enable
-        "ft.gitops.autoPromote.enable is on: successful deployBranch deployments become the bootloader default automatically, with no human confirmation step.";
+      ++ lib.optional cfg.autoPromote.enable "ft.gitops.autoPromote.enable is on: successful deployBranch deployments become the bootloader default automatically, with no human confirmation step.";
 
     # Declare a sops secret for each token-authenticated remote so comin's
     # access_token_path resolves to a decrypted credential at runtime.
