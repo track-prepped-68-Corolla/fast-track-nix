@@ -191,6 +191,7 @@ in
     systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
       "d /opt/komodo 0770 root container -"
       "d /opt/komodo/backups 0770 root container -"
+      "d /opt/komodo/periphery 0770 root container -"
     ];
 
     # ── Infrastructure: delegate to ft.microvms ────────────────────
@@ -259,6 +260,18 @@ in
               ;
             host = cfg.komodo.host;
             backupsPath = "/opt/komodo/backups";
+            # Periphery's root directory lives on the /opt/komodo virtiofs share
+            # (guest /opt/komodo → host /opt/komodo), so every stack Periphery
+            # deploys and the source side of every bind mount it manages is
+            # browsable directly on the host under /opt/komodo/periphery.
+            peripheryRootDirectory = "/opt/komodo/periphery";
+            # Report disk usage for the guest's real data mounts in the Komodo
+            # UI: the guest root, the Docker data volume, and the virtiofs share.
+            includeDiskMounts = [
+              "/"
+              "/var/lib/docker"
+              "/opt/komodo"
+            ];
             requireMountUnit = lib.mkIf cfg.komodo.enable "opt-komodo.mount";
           };
         };
