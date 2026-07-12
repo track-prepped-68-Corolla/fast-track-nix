@@ -16,6 +16,13 @@
 let
   cfg = config.ft.ociStack;
 
+  # PERIPHERY_INCLUDE_DISK_MOUNTS line for the compose env file: rendered only
+  # when the consumer lists mount points, otherwise omitted so Periphery falls
+  # back to reporting every detected mount.
+  peripheryDiskMountsLine = lib.optionalString (
+    cfg.komodo.includeDiskMounts != [ ]
+  ) "PERIPHERY_INCLUDE_DISK_MOUNTS=${lib.concatStringsSep "," cfg.komodo.includeDiskMounts}";
+
   komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
     services:
       postgres:
@@ -75,7 +82,7 @@ let
           - keys:/config/keys
           - /var/run/docker.sock:/var/run/docker.sock
           - /proc:/proc
-          - /etc/komodo:/etc/komodo
+          - ${cfg.komodo.peripheryRootDirectory}:${cfg.komodo.peripheryRootDirectory}
 
     volumes:
       postgres-data:
@@ -121,10 +128,10 @@ let
     PERIPHERY_CORE_ADDRESS=ws://core:9120
     PERIPHERY_CONNECT_AS=${cfg.komodo.serverName}
     PERIPHERY_CORE_PUBLIC_KEYS=file:/config/keys/core.pub
-    PERIPHERY_ROOT_DIRECTORY=/etc/komodo
+    PERIPHERY_ROOT_DIRECTORY=${cfg.komodo.peripheryRootDirectory}
     PERIPHERY_DISABLE_TERMINALS=false
     PERIPHERY_DISABLE_CONTAINER_TERMINALS=false
-    PERIPHERY_INCLUDE_DISK_MOUNTS=/etc/hostname
+    ${peripheryDiskMountsLine}
     PERIPHERY_LOGGING_PRETTY=false
     PERIPHERY_PRETTY_STARTUP_CONFIG=false
   '';
@@ -225,6 +232,18 @@ in
         type = lib.types.nullOr lib.types.str;
         default = null;
         description = "Systemd mount unit that must be active before the Komodo service starts (e.g. opt-komodo.mount when backupsPath is on a virtiofs share). Set automatically by ft.dockervm; null disables the dependency.";
+      };
+
+      peripheryRootDirectory = lib.mkOption {
+        type = lib.types.str;
+        default = "/etc/komodo";
+        description = "Periphery's root directory inside the guest (PERIPHERY_ROOT_DIRECTORY), also bind-mounted into the periphery container at the same path. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory. When using the ft.dockervm wrapper this is placed on a virtiofs share so the whole managed tree is browsable on the host.";
+      };
+
+      includeDiskMounts = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting entirely so Periphery reports every detected mount; set specific paths (e.g. the Docker data root and virtiofs shares) to focus reporting on the mounts you care about.";
       };
     };
   };
