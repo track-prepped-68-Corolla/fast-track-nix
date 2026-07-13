@@ -192,6 +192,8 @@ in
       "d /opt/komodo 0770 root container -"
       "d /opt/komodo/backups 0770 root container -"
       "d /opt/komodo/periphery 0770 root container -"
+      "d /opt/komodo/repo-cache 0770 root container -"
+      "d /opt/komodo/syncs 0770 root container -"
     ];
 
     # ── Infrastructure: delegate to ft.microvms ────────────────────
@@ -272,6 +274,12 @@ in
               "/var/lib/docker"
               "/opt/komodo"
             ];
+            # Komodo Core's git working directories live on the /opt/komodo
+            # virtiofs share so repo/sync clones (e.g. a managed Resource Sync
+            # backing config up to a git repo) persist across guest restarts and
+            # are browsable on the host under /opt/komodo/{repo-cache,syncs}.
+            repoCachePath = "/opt/komodo/repo-cache";
+            syncPath = "/opt/komodo/syncs";
             requireMountUnit = lib.mkIf cfg.komodo.enable "opt-komodo.mount";
           };
         };
