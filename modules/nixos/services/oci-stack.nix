@@ -23,6 +23,18 @@ let
     cfg.komodo.includeDiskMounts != [ ]
   ) "PERIPHERY_INCLUDE_DISK_MOUNTS=${lib.concatStringsSep "," cfg.komodo.includeDiskMounts}";
 
+  # Optional extra bind mounts for Komodo Core's git working directories, appended
+  # to the core service's volume list. Each is a full YAML list item at the sibling
+  # indentation (6 spaces after the heredoc's 4-space dedent), rendered only when
+  # the consumer sets a path.
+  repoCacheVolume = lib.optionalString (
+    cfg.komodo.repoCachePath != null
+  ) "\n      - ${cfg.komodo.repoCachePath}:/repo-cache";
+  syncVolume = lib.optionalString (
+    cfg.komodo.syncPath != null
+  ) "\n      - ${cfg.komodo.syncPath}:/syncs";
+  coreGitVolumes = repoCacheVolume + syncVolume;
+
   komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
     services:
       postgres:
@@ -69,7 +81,7 @@ let
           KOMODO_DATABASE_ADDRESS: ferretdb:27017
         volumes:
           - keys:/config/keys
-          - ${cfg.komodo.backupsPath}:/backups
+          - ${cfg.komodo.backupsPath}:/backups${coreGitVolumes}
 
       periphery:
         image: ghcr.io/moghtech/komodo-periphery:${cfg.komodo.imageTag}
@@ -244,6 +256,18 @@ in
         type = lib.types.listOf lib.types.str;
         default = [ ];
         description = "Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting entirely so Periphery reports every detected mount; set specific paths (e.g. the Docker data root and virtiofs shares) to focus reporting on the mounts you care about.";
+      };
+
+      repoCachePath = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Host-backed guest path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs (Komodo's KOMODO_REPO_DIRECTORY default). null adds no mount, leaving the clones on the container's ephemeral layer. When using the ft.dockervm wrapper this is placed on a virtiofs share so clones persist across guest restarts and are browsable on the host.";
+      };
+
+      syncPath = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Host-backed guest path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs (Komodo's KOMODO_SYNC_DIRECTORY default). null adds no mount, leaving the files on the container's ephemeral layer. When using the ft.dockervm wrapper this is placed on a virtiofs share so sync files persist across guest restarts and are browsable on the host.";
       };
     };
   };
