@@ -10,13 +10,13 @@ in
 {
   options.ft.liveIso = {
     enable = lib.mkEnableOption "bootstrap live ISO environment" // {
-      description = "Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. Build the ISO with lib.mkLiveIso; inject SSH keys and additional config via its extraModules argument.";
+      description = "Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.";
     };
 
     authorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "SSH public keys authorised for the root account on boot. Pass via extraModules in lib.mkLiveIso.";
+      description = "SSH public keys authorised for the root account on boot. Set this in the machine's default.nix.";
     };
   };
 
