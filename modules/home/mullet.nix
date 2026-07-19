@@ -58,6 +58,14 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = lib.mkDefault mulletPackages;
+    # NOTE: deliberately NOT wrapped in lib.mkDefault. `home.packages` is a
+    # list-type option: the module system filters definitions by override
+    # priority *before* merging, so a mkDefault (priority 1000) list is
+    # dropped wholesale whenever any other module contributes home.packages at
+    # normal priority (100) — which stylix, git-workflow, karousel and others
+    # all do. Wrapping this in mkDefault silently discards every mullet package.
+    # Contribute at normal priority so the list concatenates. (The NixOS
+    # counterpart already does this for environment.systemPackages.)
+    home.packages = mulletPackages;
   };
 }
