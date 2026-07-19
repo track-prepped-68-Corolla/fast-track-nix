@@ -50,5 +50,28 @@ in
     targets.genericLinux.enable = lib.mkDefault cfg.genericLinux;
     xdg.enable = true;
     nixpkgs.config.allowUnfree = true;
+
+    # Make GUI apps installed into the user's Home Manager profile (home.packages,
+    # e.g. via the ft.mullet escape hatch) appear in the desktop launcher.
+    #
+    # Standalone Home Manager installs home.packages into config.home.profileDirectory
+    # (~/.nix-profile). On NixOS the graphical session (display manager -> Plasma/COSMIC)
+    # runs under the systemd --user manager and never sources hm-session-vars.sh, so the
+    # profile's share/applications never reaches XDG_DATA_DIRS and those apps get no
+    # .desktop entry. environment.d IS imported by systemd --user, so exporting
+    # XDG_DATA_DIRS there reaches the graphical session. The current-system and /usr/share
+    # dirs are restated so the base menu is never lost if XDG_DATA_DIRS is unset when
+    # systemd --user evaluates this; the trailing ${XDG_DATA_DIRS} preserves anything
+    # already present (duplicate entries are harmless to XDG lookup).
+    #
+    # Skipped under targets.genericLinux, where Home Manager wires session variables
+    # itself and /run/current-system does not exist.
+    xdg.configFile."environment.d/10-ft-hm-profile.conf" =
+      lib.mkIf (!config.targets.genericLinux.enable)
+        {
+          text = ''
+            XDG_DATA_DIRS=${config.home.profileDirectory}/share:/run/current-system/sw/share:/usr/local/share:/usr/share:''${XDG_DATA_DIRS}
+          '';
+        };
   };
 }
