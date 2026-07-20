@@ -104,20 +104,19 @@ in
           environmentFiles = lib.mkDefault [
             config.sops.secrets."komodo/core_env".path
           ];
-          volumes = lib.mkDefault (
+          # List options are left unwrapped so the module system merges consumer
+          # additions instead of a mkDefault base being silently replaced.
+          volumes =
             [ "/opt/containers/komodo/core:/data" ]
             ++ lib.optional cfg.secrets.core.enable "${
               config.sops.secrets."komodo/core_secrets".path
-            }:${coreSecretsTarget}:ro"
-          );
+            }:${coreSecretsTarget}:ro";
           # Load the [secrets] file for global [[KEY]] interpolation.
-          cmd = lib.mkIf cfg.secrets.core.enable (
-            lib.mkDefault [
-              "core"
-              "--config-path"
-              coreSecretsTarget
-            ]
-          );
+          cmd = lib.mkIf cfg.secrets.core.enable [
+            "core"
+            "--config-path"
+            coreSecretsTarget
+          ];
           ports = lib.mkDefault [ "9120:9120" ];
           dependsOn = lib.mkDefault [ "komodo-postgres" ];
           extraOptions = lib.mkDefault [ "--network=komodo-net" ];
@@ -128,19 +127,15 @@ in
           environmentFiles = lib.mkDefault [
             config.sops.secrets."komodo/periphery_env".path
           ];
-          volumes = lib.mkIf cfg.secrets.periphery.enable (
-            lib.mkDefault [
-              "${config.sops.secrets."komodo/periphery_secrets".path}:${peripherySecretsTarget}:ro"
-            ]
-          );
+          volumes = lib.mkIf cfg.secrets.periphery.enable [
+            "${config.sops.secrets."komodo/periphery_secrets".path}:${peripherySecretsTarget}:ro"
+          ];
           # Load the [secrets] file for Periphery-local [[KEY]] interpolation.
-          cmd = lib.mkIf cfg.secrets.periphery.enable (
-            lib.mkDefault [
-              "periphery"
-              "--config-path"
-              peripherySecretsTarget
-            ]
-          );
+          cmd = lib.mkIf cfg.secrets.periphery.enable [
+            "periphery"
+            "--config-path"
+            peripherySecretsTarget
+          ];
           ports = lib.mkDefault [ "8120:8120" ];
           dependsOn = lib.mkDefault [ "komodo-core" ];
           extraOptions = lib.mkDefault [ "--network=komodo-net" ];

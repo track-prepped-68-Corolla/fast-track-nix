@@ -165,7 +165,7 @@ komodo:
 
 Then, in a Komodo Stack/Deployment environment:
 
-```
+```env
 CF_DNS_API_TOKEN=[[CLOUDFLARE_TOKEN]]
 ```
 
@@ -217,14 +217,18 @@ feature up in two phases (this mirrors how real machines onboard to sops):
    guest boots and generates its persistent ed25519 host key. The Komodo Stack
    may error until step 4 — expected.
 2. Read the guest's host key and convert it to an age recipient:
+
    ```sh
    ssh-keyscan <guest-ip> 2>/dev/null | ssh-to-age
    ```
+
 3. Add that recipient to a `creation_rule` for `komodo.yaml` in
    `var/secrets/.sops.yaml`, then create/encrypt the file:
+
    ```sh
    sops var/secrets/komodo.yaml   # add the komodo/{periphery,core}_secrets keys
    ```
+
 4. Redeploy (or restart the guest). sops-nix decrypts on the persistent host key
    and Komodo loads the `[secrets]` file; `[[KEY]]` references now resolve.
 

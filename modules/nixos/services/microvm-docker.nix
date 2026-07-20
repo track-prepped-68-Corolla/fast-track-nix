@@ -326,8 +326,12 @@ in
             # sops-nix (below) decrypts these to /run/secrets inside the guest;
             # ft.ociStack mounts them into Core/Periphery and loads them via
             # `--config-path`. Left null (the default) when the tier is disabled.
-            coreSecretsFile = lib.mkIf cfg.komodo.coreSecrets.enable "/run/secrets/komodo/core_secrets";
-            peripherySecretsFile = lib.mkIf cfg.komodo.peripherySecrets.enable "/run/secrets/komodo/periphery_secrets";
+            coreSecretsFile = lib.mkIf cfg.komodo.coreSecrets.enable (
+              lib.mkDefault "/run/secrets/komodo/core_secrets"
+            );
+            peripherySecretsFile = lib.mkIf cfg.komodo.peripherySecrets.enable (
+              lib.mkDefault "/run/secrets/komodo/periphery_secrets"
+            );
           };
         };
 
@@ -336,8 +340,8 @@ in
         # host key. var/secrets is shared in read-only at /var/secrets; only
         # komodo.yaml is encrypted to the guest recipient.
         sops = lib.mkIf komodoSecretsEnabled {
-          defaultSopsFile = "/var/secrets/komodo.yaml";
-          validateSopsFiles = false;
+          defaultSopsFile = lib.mkDefault "/var/secrets/komodo.yaml";
+          validateSopsFiles = lib.mkDefault false;
           age.sshKeyPaths = [ "/var/lib/ssh/ssh_host_ed25519_key" ];
           gnupg.sshKeyPaths = [ ];
           secrets =
@@ -350,7 +354,8 @@ in
         # public key to `ssh-keyscan` for the one-time recipient bootstrap.
         services.openssh = lib.mkIf komodoSecretsEnabled {
           enable = lib.mkDefault true;
-          hostKeys = lib.mkDefault [
+          # List option left unwrapped so consumer-defined host keys merge.
+          hostKeys = [
             {
               path = "/var/lib/ssh/ssh_host_ed25519_key";
               type = "ed25519";
