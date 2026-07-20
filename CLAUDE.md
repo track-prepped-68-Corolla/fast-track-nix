@@ -71,7 +71,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # every value wrapped in lib.mkDefault unless it is a security invariant
+    # scalar values wrapped in lib.mkDefault (unless a security invariant);
+    # list/attrset options left unwrapped so they merge — see the rules below
   };
 }
 ```
@@ -80,7 +81,8 @@ in
 
 - Bind `cfg = config.ft.<feature>;` at the top with `let-in`. Never repeat the full attribute path inside the `config` block.
 - Prefer `inherit (cfg) foo bar;` over `foo = cfg.foo; bar = cfg.bar;` repetition.
-- All `config` values use `lib.mkDefault` so consumers can override without `lib.mkForce`.
+- Wrap **scalar** `config` values in `lib.mkDefault` so consumers can override without `lib.mkForce`.
+- **Do not wrap list or attrset options in `lib.mkDefault`.** `mkDefault` lowers a definition's merge priority, and for a `listOf` / `attrsOf` option that causes a consumer defining entries at normal priority to *replace* the module's base wholesale instead of the two being merged (lists concatenated, attrsets combined). Leave lists and attrsets unwrapped so their definitions merge — wrap the individual scalar leaves inside them instead if they need defaulting. (A genuinely replaceable default list is a deliberate exception: use `mkDefault` there and comment why.)
 - `lib.mkForce` is reserved exclusively for security or safety invariants that must not be overridden. Comment the reason when used.
 - `lib.optional` / `lib.optionals` / `lib.optionalAttrs` instead of `if … then … else []`.
 - `with pkgs;` is acceptable only inside list literals (e.g., `environment.systemPackages = with pkgs; [ … ]`). Never open `with pkgs;` at module scope.
