@@ -207,6 +207,7 @@ scripts/                   # ft CLI just-recipes, bundled into the framework
   mullet.just                 # package escape hatch: add/remove/list packages
   store.just                  # dotfile store management (experimental)
   drives.just                  # drive/disk utilities (mount, format, SMART checks)
+  komodo.just                  # komodo-sync: generate Komodo resource-sync TOML from containers/*.yaml
 ```
 
 `scripts/` is the single canonical copy of the `ft` CLI justfiles, baked into the Nix store at build time and run by the `ft.cli` wrapper (`modules/nixos/system/just.nix`) against whichever consumer repo `ft.repoPath` names. Consumer repos do not keep their own copies.

@@ -7,6 +7,7 @@ import "./store.just"
 import "./drives.just"
 import "./failover.just"
 import "./fleet.just"
+import "./komodo.just"
 
 default:
     just --list

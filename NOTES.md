@@ -234,3 +234,86 @@ feature up in two phases (this mirrors how real machines onboard to sops):
 
 `ft.dockervm.komodo.{peripherySecrets,coreSecrets}` require `ft.repoPath` to be
 set (an assertion enforces this) so `var/secrets` can be located and shared in.
+
+---
+
+# Komodo GitOps — auto-deploy every compose file in `containers/`
+
+The secret injection above handles the values a stack needs; this section is
+about getting Komodo to **deploy the stacks themselves** from your consumer
+repo's `containers/` directory, GitOps-style, so a `git push` redeploys them.
+
+Komodo deploys sets of resources via a **Resource Sync**: TOML that declares one
+git-backed **Stack** per compose file. `ft komodo-sync` generates that TOML for
+you from `containers/*.yaml`, so you never hand-write it.
+
+## Generate the sync file
+
+From your consumer repo (anywhere `ft` runs):
+
+```sh
+ft komodo-sync                       # server="Local", account=<repo owner>
+ft komodo-sync my-server my-account  # override the Komodo server / git account
+```
+
+This writes `containers/komodo-sync.toml`:
+
+- one `[[stack]]` per top-level `containers/*.yaml` (subdirectories like
+  `containers/config/` are ignored), git-backed at your repo + branch, with
+  `deploy = true`;
+- a self-managing `[[resource_sync]]` pointing back at the file;
+- each stack's `environment` populated from a sibling `containers/<name>.env`
+  if present (see below).
+
+`server` must match the Komodo Server resource name Periphery connects as — the
+`serverName` option of `ft.ociStack` / `ft.dockervm` (default `Local`).
+`account` is the **git account alias configured in Komodo** for private-repo
+access (Settings → Git Accounts), not a GitHub username; it defaults to the repo
+owner. Pass `account=""` for a public repo.
+
+Re-run `ft komodo-sync` whenever you add or remove a compose file, and commit the
+regenerated `containers/komodo-sync.toml`.
+
+## Supplying compose variables
+
+Compose files interpolate `${VAR}` at deploy time. For each `containers/<name>.yaml`,
+add an optional `containers/<name>.env` whose lines become the stack's
+`environment`:
+
+```env
+PUID=1000
+TZ=Europe/London
+WIREGUARD_PRIVATE_KEY=[[WIREGUARD_PRIVATE_KEY]]
+```
+
+Non-secret defaults sit inline; secret values use Komodo's `[[KEY]]`
+interpolation, resolved from the Periphery `[secrets]` wired above (or Komodo
+Variables/Secrets). Never commit real secret values here — only `[[KEY]]` refs.
+
+## One-time bootstrap (Komodo has no "create sync on startup")
+
+1. In Komodo → **Syncs → New**, create a **git-backed** ResourceSync pointing at
+   your repo + branch, `Resource Path = containers/komodo-sync.toml`. (This is
+   the one resource you create by hand; every Stack flows from the synced file.)
+2. Execute the sync once — it creates the Stacks and, with `deploy = true`,
+   deploys them.
+
+## Auto-deploy on push
+
+Enable the sync's **git webhook** (copy the webhook URL from the ResourceSync and
+add it to the repo's GitHub webhooks). Pushes then re-execute the sync
+automatically.
+
+> Note: `deploy = true` on a synced Stack does not always redeploy on the sync
+> webhook (Komodo [#1120](https://github.com/moghtech/komodo/issues/1120)). If a
+> push updates a compose file but the container does not redeploy, the robust
+> pattern is a **Procedure** that batch-deploys the stacks, triggered by the same
+> webhook — point the repo webhook at the Procedure instead of (or in addition
+> to) the sync.
+
+## Managed mode
+
+The generated sync sets `managed = false`, so it never deletes resources it does
+not define. Once you are confident the generated file is the single source of
+truth for these stacks, flip it to `true` so removing a compose file also removes
+its Stack from Komodo.
