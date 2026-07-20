@@ -1,6 +1,8 @@
 {
   config,
+  options,
   lib,
+  inputs,
   ...
 }:
 
@@ -14,6 +16,13 @@
 
 let
   cfg = config.ft.dockervm;
+
+  # Guest-side Komodo [secrets] injection: when either tier is enabled, sops-nix
+  # runs inside the guest (decrypting on the guest's own persistent SSH host key),
+  # var/secrets is shared in read-only, and the decrypted files are handed to
+  # ft.ociStack for mounting into Core/Periphery. See NOTES.md.
+  komodoSecretsEnabled = cfg.komodo.peripherySecrets.enable || cfg.komodo.coreSecrets.enable;
+  secretsShareSource = "${config.ft.repoPath}/var/secrets";
 in
 {
   # ft.dockervm uses a two-level name (like ft.cli, ft.keepass) because the
@@ -183,10 +192,25 @@ in
         default = "Etc/UTC";
         description = "Timezone for Komodo schedules (tz database name, e.g. America/New_York).";
       };
+
+      peripherySecrets.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets] for the guest Komodo" // {
+        description = "Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.";
+      };
+
+      coreSecrets.enable = lib.mkEnableOption "sops-decrypted Core [secrets] for the guest Komodo" // {
+        description = "Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.";
+      };
     };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = !komodoSecretsEnabled || config.ft.repoPath != options.ft.repoPath.default;
+        message = "ft.dockervm.komodo.peripherySecrets/coreSecrets require ft.repoPath to point at your consumer repo so var/secrets/komodo.yaml can be shared into the guest — it is still the framework default (\"${options.ft.repoPath.default}\").";
+      }
+    ];
+
     # ── Host-side Komodo directories (shared into the VM via virtiofs) ───────
     systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
       "d /opt/komodo 0770 root container -"
@@ -220,7 +244,15 @@ in
           mountPoint = "/opt/compose";
           size = cfg.composeVolumeSize;
         }
-      ];
+      ]
+      # Persist the guest's SSH host key so it is a stable sops age recipient
+      # across guest restarts (mounted at /var/lib/ssh, not /etc/ssh, so the
+      # NixOS-managed sshd_config is not shadowed).
+      ++ lib.optional komodoSecretsEnabled {
+        image = "/var/lib/microvm/${cfg.vmName}/sshkeys.img";
+        mountPoint = "/var/lib/ssh";
+        size = 16;
+      };
 
       shares = lib.optionals cfg.komodo.enable [
         {
@@ -229,14 +261,24 @@ in
           tag = "komodo";
           proto = "virtiofs";
         }
-      ];
+      ]
+      # Consumer's encrypted sops tree, read-only. The guest only holds a
+      # recipient on var/secrets/komodo.yaml, so the other (host-recipient)
+      # secrets in this directory remain undecryptable inside the guest.
+      ++ lib.optional komodoSecretsEnabled {
+        source = secretsShareSource;
+        mountPoint = "/var/secrets";
+        tag = "komodo-secrets";
+        proto = "virtiofs";
+      };
 
       # ── Application: inject ft.ociStack and ft.guacamole into the guest ─────
       extraGuestConfig = {
         imports = [
           ./oci-stack.nix
           ./guacamole.nix
-        ];
+        ]
+        ++ lib.optional komodoSecretsEnabled inputs.sops-nix.nixosModules.sops;
         ft.guacamole = {
           enable = lib.mkDefault cfg.guacamole.enable;
           runtime = lib.mkDefault "docker";
@@ -281,7 +323,40 @@ in
             repoCachePath = "/opt/komodo/repo-cache";
             syncPath = "/opt/komodo/syncs";
             requireMountUnit = lib.mkIf cfg.komodo.enable "opt-komodo.mount";
+            # sops-nix (below) decrypts these to /run/secrets inside the guest;
+            # ft.ociStack mounts them into Core/Periphery and loads them via
+            # `--config-path`. Left null (the default) when the tier is disabled.
+            coreSecretsFile = lib.mkIf cfg.komodo.coreSecrets.enable "/run/secrets/komodo/core_secrets";
+            peripherySecretsFile = lib.mkIf cfg.komodo.peripherySecrets.enable "/run/secrets/komodo/periphery_secrets";
           };
+        };
+
+        # ── Guest-side sops-nix ────────────────────────────────────────────────
+        # Decrypts the Komodo [secrets] TOML on the guest's own persistent SSH
+        # host key. var/secrets is shared in read-only at /var/secrets; only
+        # komodo.yaml is encrypted to the guest recipient.
+        sops = lib.mkIf komodoSecretsEnabled {
+          defaultSopsFile = "/var/secrets/komodo.yaml";
+          validateSopsFiles = false;
+          age.sshKeyPaths = [ "/var/lib/ssh/ssh_host_ed25519_key" ];
+          gnupg.sshKeyPaths = [ ];
+          secrets =
+            lib.optionalAttrs cfg.komodo.coreSecrets.enable { "komodo/core_secrets" = { }; }
+            // lib.optionalAttrs cfg.komodo.peripherySecrets.enable { "komodo/periphery_secrets" = { }; };
+        };
+
+        # Persist the guest's ed25519 host key on the sshkeys volume so it stays a
+        # stable age recipient. sshd generates it on first boot and serves the
+        # public key to `ssh-keyscan` for the one-time recipient bootstrap.
+        services.openssh = lib.mkIf komodoSecretsEnabled {
+          enable = lib.mkDefault true;
+          hostKeys = lib.mkDefault [
+            {
+              path = "/var/lib/ssh/ssh_host_ed25519_key";
+              type = "ed25519";
+            }
+          ];
+          settings.PasswordAuthentication = lib.mkDefault false;
         };
       };
     };

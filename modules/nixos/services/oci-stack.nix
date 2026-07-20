@@ -35,6 +35,29 @@ let
   ) "\n      - ${cfg.komodo.syncPath}:/syncs";
   coreGitVolumes = repoCacheVolume + syncVolume;
 
+  # Optional Komodo [secrets] TOML files. Each is mounted read-only into its
+  # container at a fixed .toml path (so Komodo picks the TOML parser) and loaded
+  # via `--config-path`, which is the only way to supply a [secrets] section —
+  # it cannot be set through environment variables. The values become
+  # [[KEY]]-interpolatable into the Stacks/Deployments Komodo runs and are hidden
+  # from the Komodo UI and logs. The source paths are provided by the wrapper
+  # (e.g. ft.dockervm decrypts them with sops-nix inside the guest); this module
+  # only mounts whatever path it is handed.
+  coreSecretsTarget = "/run/komodo-secrets/core.toml";
+  peripherySecretsTarget = "/run/komodo-secrets/periphery.toml";
+  coreSecretsMount = lib.optionalString (
+    cfg.komodo.coreSecretsFile != null
+  ) "\n      - ${cfg.komodo.coreSecretsFile}:${coreSecretsTarget}:ro";
+  peripherySecretsMount = lib.optionalString (
+    cfg.komodo.peripherySecretsFile != null
+  ) "\n      - ${cfg.komodo.peripherySecretsFile}:${peripherySecretsTarget}:ro";
+  coreSecretsCommand = lib.optionalString (
+    cfg.komodo.coreSecretsFile != null
+  ) "\n    command: core --config-path ${coreSecretsTarget}";
+  peripherySecretsCommand = lib.optionalString (
+    cfg.komodo.peripherySecretsFile != null
+  ) "\n    command: periphery --config-path ${peripherySecretsTarget}";
+
   komodoCompose = pkgs.writeText "komodo-compose.yaml" ''
     services:
       postgres:
@@ -76,12 +99,12 @@ let
           - ferretdb
         ports:
           - 9120:9120
-        env_file: ./compose.env
+        env_file: ./compose.env${coreSecretsCommand}
         environment:
           KOMODO_DATABASE_ADDRESS: ferretdb:27017
         volumes:
           - keys:/config/keys
-          - ${cfg.komodo.backupsPath}:/backups${coreGitVolumes}
+          - ${cfg.komodo.backupsPath}:/backups${coreGitVolumes}${coreSecretsMount}
 
       periphery:
         image: ghcr.io/moghtech/komodo-periphery:${cfg.komodo.imageTag}
@@ -89,12 +112,12 @@ let
         restart: unless-stopped
         depends_on:
           - core
-        env_file: ./compose.env
+        env_file: ./compose.env${peripherySecretsCommand}
         volumes:
           - keys:/config/keys
           - /var/run/docker.sock:/var/run/docker.sock
           - /proc:/proc
-          - ${cfg.komodo.peripheryRootDirectory}:${cfg.komodo.peripheryRootDirectory}
+          - ${cfg.komodo.peripheryRootDirectory}:${cfg.komodo.peripheryRootDirectory}${peripherySecretsMount}
 
     volumes:
       postgres-data:
@@ -268,6 +291,18 @@ in
         type = lib.types.nullOr lib.types.str;
         default = null;
         description = "Host-backed guest path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs (Komodo's KOMODO_SYNC_DIRECTORY default). null adds no mount, leaving the files on the container's ephemeral layer. When using the ft.dockervm wrapper this is placed on a virtiofs share so sync files persist across guest restarts and are browsable on the host.";
+      };
+
+      coreSecretsFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Path inside the guest to a TOML file containing a [secrets] section, mounted read-only into the Komodo Core container and loaded via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment and are hidden from the Komodo UI and logs. null omits the mount. Supply the value of a sops-decrypted secret (e.g. ft.dockervm.komodo.coreSecrets wires this to /run/secrets/komodo/core_secrets in the guest); this module does not decrypt anything itself.";
+      };
+
+      peripherySecretsFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Path inside the guest to a TOML file containing a [secrets] section, mounted read-only into the Komodo Periphery container and loaded via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into Stacks/Deployments that run on this Periphery only, never traverse the network, and are hidden from the Komodo UI and logs. null omits the mount. Supply the value of a sops-decrypted secret (e.g. ft.dockervm.komodo.peripherySecrets wires this to /run/secrets/komodo/periphery_secrets in the guest); this module does not decrypt anything itself.";
       };
     };
   };

@@ -41,12 +41,34 @@ in
         description = "Komodo Periphery container image ref. Override with an immutable digest to lock the version.";
       };
     };
+
+    secrets = {
+      periphery.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets]" // {
+        description = "Declares the komodo/periphery_secrets user sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. Populate the key as a TOML [secrets] blob — see NOTES.md.";
+      };
+      core.enable = lib.mkEnableOption "sops-decrypted Core [secrets]" // {
+        description = "Declares the komodo/core_secrets user sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. Populate the key as a TOML [secrets] blob — see NOTES.md.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable (
     let
       podman = lib.getExe pkgs.podman;
       sleep = lib.getExe' pkgs.coreutils "sleep";
+
+      # Optional Komodo [secrets] TOML files, loaded via `--config-path` (the only
+      # way to supply a [secrets] section). Each fragment is empty unless its tier
+      # is enabled: a read-only volume flag (trailing space) placed before the
+      # image, and the `<bin> --config-path` container command placed after it.
+      coreSecretsTarget = "/run/komodo-secrets/core.toml";
+      peripherySecretsTarget = "/run/komodo-secrets/periphery.toml";
+      coreSecretsPath = config.sops.secrets."komodo/core_secrets".path;
+      peripherySecretsPath = config.sops.secrets."komodo/periphery_secrets".path;
+      coreSecretsVol = lib.optionalString cfg.secrets.core.enable "--volume=${coreSecretsPath}:${coreSecretsTarget}:ro ";
+      coreSecretsCmd = lib.optionalString cfg.secrets.core.enable " core --config-path ${coreSecretsTarget}";
+      peripherySecretsVol = lib.optionalString cfg.secrets.periphery.enable "--volume=${peripherySecretsPath}:${peripherySecretsTarget}:ro ";
+      peripherySecretsCmd = lib.optionalString cfg.secrets.periphery.enable " periphery --config-path ${peripherySecretsTarget}";
 
       postgresStart = pkgs.writeShellScript "podman-run-komodo-postgres" ''
         exec ${podman} run \
@@ -69,7 +91,7 @@ in
           --volume=${cfg.dataDir}/core:/data \
           --publish=9120:9120 \
           --network=komodo-net \
-          ${cfg.images.core}
+          ${coreSecretsVol}${cfg.images.core}${coreSecretsCmd}
       '';
 
       peripheryStart = pkgs.writeShellScript "podman-run-komodo-periphery" ''
@@ -78,7 +100,7 @@ in
           --env-file=${config.sops.secrets."komodo/periphery_env".path} \
           --publish=8120:8120 \
           --network=komodo-net \
-          ${cfg.images.periphery}
+          ${peripherySecretsVol}${cfg.images.periphery}${peripherySecretsCmd}
       '';
 
       createNet = pkgs.writeShellScript "create-komodo-net" ''
@@ -104,11 +126,15 @@ in
       home.packages = lib.mkDefault [ pkgs.podman ];
 
       # User-level sops-nix env-file secrets (KEY=VALUE format) — see NOTES.md.
+      # The optional *_secrets keys are TOML [secrets] blobs, added only when the
+      # corresponding tier is enabled.
       sops.secrets = {
         "komodo/postgres_env" = { };
         "komodo/core_env" = { };
         "komodo/periphery_env" = { };
-      };
+      }
+      // lib.optionalAttrs cfg.secrets.core.enable { "komodo/core_secrets" = { }; }
+      // lib.optionalAttrs cfg.secrets.periphery.enable { "komodo/periphery_secrets" = { }; };
 
       # Create persistent data directories at activation time.
       home.activation.createKomodoDataDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
