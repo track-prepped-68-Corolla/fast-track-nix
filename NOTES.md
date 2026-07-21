@@ -330,13 +330,35 @@ Instead of (or alongside) `ft komodo-apply`, enable the sync's **git webhook**
 pushes re-execute it automatically. Pair it with a batch-deploy **Procedure** on
 the same webhook to work around #1120.
 
-## Fully hands-off on deploy (proposed next step)
+## Fully hands-off on deploy (`ft.dockervm.komodo.autoApply`)
 
-An opt-in systemd oneshot in the ociStack/dockervm guest could run
-`ft komodo-apply` against the local Core after Core is healthy, so every
-`ft switch` reconciles Komodo with `containers/` with zero commands. That needs a
-small option surface (Core URL, the sops API-key file, and Core health-gating) —
-tracked as the follow-up to the `ft komodo-apply` work.
+For the microVM deployment, an opt-in host-side systemd oneshot runs
+`ft komodo-apply` automatically after each rebuild, so every `ft switch`
+reconciles Komodo with `containers/` — zero commands.
+
+```nix
+ft.dockervm.enable = true;
+ft.cli.enable = true;                          # provides the `ft` runner
+ft.sops.enable = true;                          # decrypts the API key
+ft.dockervm.komodo.autoApply.enable = true;
+```
+
+It runs on the **host** (which has the repo checkout, sops, and network access to
+the guest's Core), waits for Core to answer at `ft.dockervm.komodo.host`, then
+drives the same `komodo-apply` recipe over the API. Credentials come from a
+`komodo/api_env` sops secret in your host `secrets.yaml`:
+
+```yaml
+komodo:
+    api_env: |
+        KOMODO_API_KEY=K-xxxxxxxx
+        KOMODO_API_SECRET=S-xxxxxxxx
+```
+
+Create the API key once in Komodo → Settings → API Keys. On the very first deploy
+(before the key exists) the service just logs a failure and the next `ft switch`
+picks it up — nothing blocks. The service is a `RemainAfterExit` oneshot, so it
+re-runs on each rebuild; the sync itself is idempotent.
 
 ## Managed mode
 
