@@ -193,9 +193,11 @@ in
         description = "Timezone for Komodo schedules (tz database name, e.g. America/New_York).";
       };
 
-      peripherySecrets.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets] for the guest Komodo" // {
-        description = "Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.";
-      };
+      peripherySecrets.enable =
+        lib.mkEnableOption "sops-decrypted Periphery [secrets] for the guest Komodo"
+        // {
+          description = "Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.";
+        };
 
       coreSecrets.enable = lib.mkEnableOption "sops-decrypted Core [secrets] for the guest Komodo" // {
         description = "Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.";
@@ -254,23 +256,24 @@ in
         size = 16;
       };
 
-      shares = lib.optionals cfg.komodo.enable [
-        {
-          source = "/opt/komodo";
-          mountPoint = "/opt/komodo";
-          tag = "komodo";
+      shares =
+        lib.optionals cfg.komodo.enable [
+          {
+            source = "/opt/komodo";
+            mountPoint = "/opt/komodo";
+            tag = "komodo";
+            proto = "virtiofs";
+          }
+        ]
+        # Consumer's encrypted sops tree, read-only. The guest only holds a
+        # recipient on var/secrets/komodo.yaml, so the other (host-recipient)
+        # secrets in this directory remain undecryptable inside the guest.
+        ++ lib.optional komodoSecretsEnabled {
+          source = secretsShareSource;
+          mountPoint = "/var/secrets";
+          tag = "komodo-secrets";
           proto = "virtiofs";
-        }
-      ]
-      # Consumer's encrypted sops tree, read-only. The guest only holds a
-      # recipient on var/secrets/komodo.yaml, so the other (host-recipient)
-      # secrets in this directory remain undecryptable inside the guest.
-      ++ lib.optional komodoSecretsEnabled {
-        source = secretsShareSource;
-        mountPoint = "/var/secrets";
-        tag = "komodo-secrets";
-        proto = "virtiofs";
-      };
+        };
 
       # ── Application: inject ft.ociStack and ft.guacamole into the guest ─────
       extraGuestConfig = {

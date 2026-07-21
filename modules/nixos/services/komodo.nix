@@ -106,11 +106,12 @@ in
           ];
           # List options are left unwrapped so the module system merges consumer
           # additions instead of a mkDefault base being silently replaced.
-          volumes =
-            [ "/opt/containers/komodo/core:/data" ]
-            ++ lib.optional cfg.secrets.core.enable "${
-              config.sops.secrets."komodo/core_secrets".path
-            }:${coreSecretsTarget}:ro";
+          volumes = [
+            "/opt/containers/komodo/core:/data"
+          ]
+          ++ lib.optional cfg.secrets.core.enable "${
+            config.sops.secrets."komodo/core_secrets".path
+          }:${coreSecretsTarget}:ro";
           # Load the [secrets] file for global [[KEY]] interpolation.
           cmd = lib.mkIf cfg.secrets.core.enable [
             "core"
