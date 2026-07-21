@@ -290,26 +290,75 @@ Non-secret defaults sit inline; secret values use Komodo's `[[KEY]]`
 interpolation, resolved from the Periphery `[secrets]` wired above (or Komodo
 Variables/Secrets). Never commit real secret values here — only `[[KEY]]` refs.
 
-## One-time bootstrap (Komodo has no "create sync on startup")
+## Applying the sync — no UI (`ft komodo-apply`)
 
-1. In Komodo → **Syncs → New**, create a **git-backed** ResourceSync pointing at
-   your repo + branch, `Resource Path = containers/komodo-sync.toml`. (This is
-   the one resource you create by hand; every Stack flows from the synced file.)
-2. Execute the sync once — it creates the Stacks and, with `deploy = true`,
-   deploys them.
+Komodo Core is API-first (the UI is just a client), so the ResourceSync can be
+created and executed over the API — nothing needs clicking. `ft komodo-apply`
+does exactly that: it derives the repo/branch from `git remote`, **creates the
+git-backed ResourceSync if it does not exist** (idempotent), then executes it so
+Komodo pulls `containers/komodo-sync.toml` and applies the diff.
 
-## Auto-deploy on push
+```sh
+export KOMODO_URL=http://localhost:9120
+export KOMODO_API_KEY=$(cat /run/secrets/komodo/api_key)
+export KOMODO_API_SECRET=$(cat /run/secrets/komodo/api_secret)
 
-Enable the sync's **git webhook** (copy the webhook URL from the ResourceSync and
-add it to the repo's GitHub webhooks). Pushes then re-execute the sync
-automatically.
+ft komodo-sync            # regenerate the TOML, then commit + push it
+ft komodo-apply           # create/update the sync + execute it
+```
 
-> Note: `deploy = true` on a synced Stack does not always redeploy on the sync
-> webhook (Komodo [#1120](https://github.com/moghtech/komodo/issues/1120)). If a
-> push updates a compose file but the container does not redeploy, the robust
-> pattern is a **Procedure** that batch-deploys the stacks, triggered by the same
-> webhook — point the repo webhook at the Procedure instead of (or in addition
-> to) the sync.
+The only genuine one-time step is creating an **API key** in Komodo (Settings →
+API Keys) and storing the key/secret in sops (e.g. `komodo/api_key`,
+`komodo/api_secret`) — a normal credential, not a per-deploy click. Run
+`ft komodo-apply` from your workstation, from CI on push, or from a deploy hook.
+
+### Forcing deploys (`ft komodo-deploy`)
+
+`deploy = true` on a synced Stack does not always redeploy a changed stack
+(Komodo [#1120](https://github.com/moghtech/komodo/issues/1120)). When a push
+updated a compose file but the container did not restart, force it over the API:
+
+```sh
+ft komodo-deploy media    # one stack
+ft komodo-deploy          # every containers/*.yaml stack
+```
+
+## Alternative: auto-deploy on push via webhook
+
+Instead of (or alongside) `ft komodo-apply`, enable the sync's **git webhook**
+(copy the webhook URL from the ResourceSync into the repo's GitHub webhooks) so
+pushes re-execute it automatically. Pair it with a batch-deploy **Procedure** on
+the same webhook to work around #1120.
+
+## Fully hands-off on deploy (`ft.dockervm.komodo.autoApply`)
+
+For the microVM deployment, an opt-in host-side systemd oneshot runs
+`ft komodo-apply` automatically after each rebuild, so every `ft switch`
+reconciles Komodo with `containers/` — zero commands.
+
+```nix
+ft.dockervm.enable = true;
+ft.cli.enable = true;                          # provides the `ft` runner
+ft.sops.enable = true;                          # decrypts the API key
+ft.dockervm.komodo.autoApply.enable = true;
+```
+
+It runs on the **host** (which has the repo checkout, sops, and network access to
+the guest's Core), waits for Core to answer at `ft.dockervm.komodo.host`, then
+drives the same `komodo-apply` recipe over the API. Credentials come from a
+`komodo/api_env` sops secret in your host `secrets.yaml`:
+
+```yaml
+komodo:
+    api_env: |
+        KOMODO_API_KEY=K-xxxxxxxx
+        KOMODO_API_SECRET=S-xxxxxxxx
+```
+
+Create the API key once in Komodo → Settings → API Keys. On the very first deploy
+(before the key exists) the service just logs a failure and the next `ft switch`
+picks it up — nothing blocks. The service is a `RemainAfterExit` oneshot, so it
+re-runs on each rebuild; the sync itself is idempotent.
 
 ## Managed mode
 

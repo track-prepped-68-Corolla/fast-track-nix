@@ -3,6 +3,7 @@
   options,
   lib,
   inputs,
+  pkgs,
   ...
 }:
 
@@ -23,6 +24,34 @@ let
   # ft.ociStack for mounting into Core/Periphery. See NOTES.md.
   komodoSecretsEnabled = cfg.komodo.peripherySecrets.enable || cfg.komodo.coreSecrets.enable;
   secretsShareSource = "${config.ft.repoPath}/var/secrets";
+
+  # Host-side GitOps auto-apply: once the guest Core answers, reconcile Komodo
+  # with containers/ by running the bundled `komodo-apply` recipe against Core's
+  # API — the same justfile invocation the `ft` CLI wrapper uses. Runs as root
+  # (to read the api_env secret) so it forces git safe.directory for the repo.
+  scriptsDir = ../../../scripts;
+  autoApplyScript = pkgs.writeShellScript "komodo-auto-apply" ''
+    set -euo pipefail
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.git
+        pkgs.jq
+        pkgs.curl
+        pkgs.just
+        pkgs.coreutils
+      ]
+    }:$PATH
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+    # Bounded wait for Komodo Core to come up before applying.
+    for _ in $(seq 1 60); do
+      if curl -sf -o /dev/null "${cfg.komodo.host}"; then break; fi
+      sleep 5
+    done
+    exec just --shell ${pkgs.bash}/bin/bash \
+      --justfile ${scriptsDir}/ft.just \
+      --working-directory ${config.ft.repoPath} \
+      komodo-apply
+  '';
 in
 {
   # ft.dockervm uses a two-level name (like ft.cli, ft.keepass) because the
@@ -202,6 +231,10 @@ in
       coreSecrets.enable = lib.mkEnableOption "sops-decrypted Core [secrets] for the guest Komodo" // {
         description = "Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.";
       };
+
+      autoApply.enable = lib.mkEnableOption "host-side Komodo GitOps auto-apply" // {
+        description = "After the guest's Komodo Core answers, run the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). See NOTES.md.";
+      };
     };
   };
 
@@ -211,7 +244,37 @@ in
         assertion = !komodoSecretsEnabled || config.ft.repoPath != options.ft.repoPath.default;
         message = "ft.dockervm.komodo.peripherySecrets/coreSecrets require ft.repoPath to point at your consumer repo so var/secrets/komodo.yaml can be shared into the guest — it is still the framework default (\"${options.ft.repoPath.default}\").";
       }
+      {
+        assertion =
+          !cfg.komodo.autoApply.enable
+          || (config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default);
+        message = "ft.dockervm.komodo.autoApply requires ft.cli.enable, ft.sops.enable and ft.repoPath set to your consumer repo — it drives `ft komodo-apply` from the host and reads the komodo/api_env sops secret.";
+      }
     ];
+
+    # ── Host-side GitOps auto-apply ─────────────────────────────────────────
+    sops.secrets = lib.mkIf cfg.komodo.autoApply.enable {
+      # env-file: KOMODO_API_KEY=... and KOMODO_API_SECRET=... (create a Komodo
+      # API key once and store it here). owner/mode default to root / 0400.
+      "komodo/api_env" = { };
+    };
+
+    systemd.services.komodo-auto-apply = lib.mkIf cfg.komodo.autoApply.enable {
+      description = "Reconcile Komodo with containers/ over the API (ft komodo-apply)";
+      after = [
+        "microvm@${cfg.vmName}.service"
+        "network-online.target"
+      ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        EnvironmentFile = config.sops.secrets."komodo/api_env".path;
+        Environment = [ "KOMODO_URL=${cfg.komodo.host}" ];
+        ExecStart = "${autoApplyScript}";
+      };
+    };
 
     # ── Host-side Komodo directories (shared into the VM via virtiofs) ───────
     systemd.tmpfiles.rules = lib.optionals cfg.komodo.enable [
