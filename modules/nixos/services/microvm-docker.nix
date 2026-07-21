@@ -340,11 +340,17 @@ in
 
       # ── Application: inject ft.ociStack and ft.guacamole into the guest ─────
       extraGuestConfig = {
+        # sops-nix is imported unconditionally so the `sops` option is always
+        # declared in the guest: a `sops = lib.mkIf komodoSecretsEnabled {...}`
+        # definition below is only *suppressed* (not undeclared) by mkIf, so the
+        # option must exist even when secrets are off, or evaluation fails with
+        # "option microvm.vms.<name>.config.sops does not exist". With no secrets
+        # defined, sops-nix is inert.
         imports = [
           ./oci-stack.nix
           ./guacamole.nix
-        ]
-        ++ lib.optional komodoSecretsEnabled inputs.sops-nix.nixosModules.sops;
+          inputs.sops-nix.nixosModules.sops
+        ];
         ft.guacamole = {
           enable = lib.mkDefault cfg.guacamole.enable;
           runtime = lib.mkDefault "docker";
