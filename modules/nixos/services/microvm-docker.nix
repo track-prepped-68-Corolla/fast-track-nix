@@ -247,7 +247,9 @@ in
       {
         assertion =
           !cfg.komodo.autoApply.enable
-          || (config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default);
+          || (
+            config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default
+          );
         message = "ft.dockervm.komodo.autoApply requires ft.cli.enable, ft.sops.enable and ft.repoPath set to your consumer repo — it drives `ft komodo-apply` from the host and reads the komodo/api_env sops secret.";
       }
     ];
