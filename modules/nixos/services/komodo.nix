@@ -37,6 +37,10 @@ let
   # runs as: the rootless service account, or root for a rootful daemon.
   komodoOwner = if cCfg.rootless then cCfg.user else "root";
 
+  # Generated (non-secret) files are overwritten every deploy so option changes
+  # (imageTag, host, mounts, …) actually take effect; creds.env is copied
+  # no-clobber so a hand-edited local credentials file survives.
+  cpForce = src: dst: "${pkgs.coreutils}/bin/cp -f ${src} ${dst}";
   cpNoClobber = src: dst: "${pkgs.coreutils}/bin/cp --no-clobber ${src} ${dst}";
 
   # Credentials env-file: the sops-decrypted secret when sopsEnv is on, otherwise
@@ -351,6 +355,9 @@ in
     systemd.tmpfiles.rules = [
       "d ${stateDir} 0770 ${komodoOwner} ${komodoOwner} -"
       "d ${cfg.backupsPath} 0770 ${komodoOwner} ${komodoOwner} -"
+      # Periphery bind-mounts this each start; create it up front so the runtime
+      # doesn't materialise it with the wrong ownership.
+      "d ${cfg.peripheryRootDirectory} 0770 ${komodoOwner} ${komodoOwner} -"
     ];
 
     systemd.services.komodo = {
@@ -365,12 +372,13 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         Environment = [ "DOCKER_HOST=unix://${cCfg.socket}" ];
-        # The trailing cp stages store-baked credential defaults only when sops
-        # is not supplying them.
+        # Generated files are refreshed every deploy; the trailing cp stages
+        # store-baked credential defaults (no-clobber) only when sops is not
+        # supplying them.
         ExecStartPre = [
           "${waitForSocket}"
-          (cpNoClobber komodoCompose "${stateDir}/compose.yaml")
-          (cpNoClobber komodoEnv "${stateDir}/compose.env")
+          (cpForce komodoCompose "${stateDir}/compose.yaml")
+          (cpForce komodoEnv "${stateDir}/compose.env")
         ]
         ++ lib.optional (!cfg.sopsEnv.enable) (cpNoClobber credsEnv "${stateDir}/creds.env");
         ExecStart = "${pkgs.docker-compose}/bin/docker-compose --env-file ${stateDir}/compose.env --env-file ${credsPath} -f ${stateDir}/compose.yaml up -d --remove-orphans";

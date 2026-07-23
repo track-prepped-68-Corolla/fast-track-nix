@@ -169,18 +169,20 @@ After `home-manager switch`, reload the user daemon and start the stack:
 
 ```sh
 systemctl --user daemon-reload
-systemctl --user start podman-komodo-postgres podman-komodo-core podman-komodo-periphery
+systemctl --user start komodo
 ```
 
-`podman-create-komodo-net` is pulled in automatically as a `Requires=`
-dependency of the container services and does not need to be started manually.
+The stack is a single `komodo` user service running `docker-compose up`; it
+pulls the FerretDB/Postgres, Core, and Periphery containers up in dependency
+order via the generated compose file — no per-container units to start.
 
 ## Post-deploy checklist
 
 1. Komodo Core UI is available at `http://<host>:9120`.
-2. Log in with the `KOMODO_FIRST_SERVER_ADMIN` / `KOMODO_FIRST_SERVER_PASSWORD` credentials.
-3. In the Komodo UI add Periphery as a server: address `http://<host>:8120`,
-   passkey matching `KOMODO_PASSKEY`.
+2. Log in with the `KOMODO_INIT_ADMIN_USERNAME` / `KOMODO_INIT_ADMIN_PASSWORD`
+   credentials (from `ft.komodo.adminUsername` / the `komodo/env` sops key).
+3. Core and Periphery authenticate over the generated key pair automatically
+   (`KOMODO_FIRST_SERVER` points Core at `https://periphery:8120`).
 4. On subsequent rebuilds the first-server credentials are ignored; change the
    admin password inside Komodo after first login.
 
@@ -196,8 +198,10 @@ ensures Periphery starts only after Core.
 
 # Injecting secrets into the Stacks Komodo deploys
 
-The `*_env` keys above are Komodo's **own** bootstrap secrets. To feed secrets to
-the **app Stacks/Deployments Komodo runs**, use Komodo's `[[KEY]]` interpolation:
+Komodo's **own** credentials come from the `komodo/env` sops key
+(`ft.komodo.sopsEnv`, described above); the `*_env` keys are legacy-only and no
+longer read. To instead feed secrets to the **app Stacks/Deployments Komodo
+runs**, use Komodo's `[[KEY]]` interpolation:
 a `[secrets]` TOML file is loaded into Core and/or Periphery, and any reference
 like `SOME_ENV = [[MY_KEY]]` in a Stack/Deployment environment is substituted at
 deploy time. The values are hidden from the Komodo UI and scrubbed from logs.

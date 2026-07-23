@@ -86,7 +86,8 @@ in
         ListenStream = "%t/podman/podman.sock";
         SocketMode = lib.mkDefault "0660";
       };
-      Install.WantedBy = lib.mkDefault [ "sockets.target" ];
+      # List option left unwrapped so it merges rather than being replaced.
+      Install.WantedBy = [ "sockets.target" ];
     };
 
     systemd.user.services.podman = lib.mkIf (cfg.runtime == "podman") {

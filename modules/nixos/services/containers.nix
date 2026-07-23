@@ -172,7 +172,9 @@ in
           documentation = [ "man:podman-system-service(1)" ];
           listenStreams = [ "%t/podman/podman.sock" ];
           socketConfig.SocketMode = lib.mkDefault "0660";
-          wantedBy = lib.mkDefault [ "sockets.target" ];
+          # List option: leave unwrapped so it merges rather than being replaced
+          # (an override at normal priority would silently drop sockets.target).
+          wantedBy = [ "sockets.target" ];
         };
 
         systemd.user.services.podman = {

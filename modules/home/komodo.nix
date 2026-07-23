@@ -332,8 +332,8 @@ in
           ${lib.escapeShellArg cfg.dataDir} \
           ${lib.escapeShellArg cfg.backupsPath} \
           ${lib.escapeShellArg cfg.peripheryRootDirectory}
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} ${lib.escapeShellArg "${cfg.dataDir}/compose.yaml"}
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} ${lib.escapeShellArg "${cfg.dataDir}/compose.env"}
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp -f ${komodoCompose} ${lib.escapeShellArg "${cfg.dataDir}/compose.yaml"}
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp -f ${komodoEnv} ${lib.escapeShellArg "${cfg.dataDir}/compose.env"}
       ''
       + lib.optionalString (!cfg.sopsEnv.enable) ''
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${credsEnv} ${lib.escapeShellArg "${cfg.dataDir}/creds.env"}
@@ -343,10 +343,15 @@ in
     systemd.user.services.komodo = {
       Unit = {
         Description = "Komodo docker-compose stack";
+        # The --user manager never reaches network-online.target, so the podman
+        # runtime's user socket is the real readiness dependency; order + pull it
+        # in when podman is the backend (docker's socket is managed outside HM).
         After = [
           "network-online.target"
         ]
+        ++ lib.optional (cCfg.runtime == "podman") "podman.socket"
         ++ lib.optional cfg.sopsEnv.enable "sops-nix.service";
+        Wants = lib.optional (cCfg.runtime == "podman") "podman.socket";
       };
       Service = {
         Type = "oneshot";
@@ -358,7 +363,8 @@ in
         ExecStart = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env --env-file ${credsPath} -f ${cfg.dataDir}/compose.yaml up -d --remove-orphans";
         ExecStop = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env --env-file ${credsPath} -f ${cfg.dataDir}/compose.yaml down";
       };
-      Install.WantedBy = lib.mkDefault [ "default.target" ];
+      # List option left unwrapped so it merges rather than being replaced.
+      Install.WantedBy = [ "default.target" ];
     };
   };
 }
