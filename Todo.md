@@ -247,6 +247,35 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 ---
 
+## 🧹 Container Module Cleanup / Redundancy
+
+> From a container-module inventory (docker / podman / komodo) across
+> fast-track-nix, ft-home, ft-testing. The Komodo/runtime consolidation is done;
+> the microVM cleanup and `ft.hermesVm` remain.
+
+- [x] **Consolidate the container/Komodo modules** — collapsed the three
+  overlapping Komodo implementations into one runtime substrate plus one app,
+  each split only by module system: `ft.containers` (NixOS + HM;
+  docker/podman × rootful/rootless, real Compose v2, optional Distrobox) and
+  `ft.komodo` (NixOS + HM; the upstream Komodo compose + FerretDB stack layered
+  on `ft.containers`, credentials in sops via `ft.komodo.sopsEnv`). Folded
+  `ft.podmanRootless` into `ft.containers` and deleted it. The `ft.komodo` pair
+  is now the supported, cooperating docker-compose implementation — not to be
+  removed.
+- [ ] **MicroVM cleanup (next step)** — retarget `ft.dockervm`'s guest onto
+  `ft.containers` + `ft.komodo`, then delete `ft.ociStack`
+  (`modules/nixos/services/oci-stack.nix`) and `ft.guacamole`
+  (`modules/nixos/services/guacamole.nix`), which are only reachable through the
+  microVM wrapper. This is where the net line count drops (the compose stack
+  currently lives in both `ft.komodo` and `oci-stack.nix` on purpose).
+- [ ] **`ft.hermesVm` — possibly abandoned VM wrapper** — `modules/nixos/services/microvm-hermes.nix`
+  is a full microVM wrapper whose only footprint anywhere is a *commented-out*
+  block in `ft-home/machines/strix/default.nix`. Not redundant with Komodo (a
+  distinct Hermes-agent feature), so tracked separately from the Komodo trim.
+  Confirm whether it's still wanted before removing.
+
+---
+
 ## 📖 Documentation
 
 - [x] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
