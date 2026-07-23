@@ -247,6 +247,35 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 ---
 
+## 🧹 Container Module Cleanup / Redundancy
+
+> From a container-module inventory (docker / podman / komodo) across
+> fast-track-nix, ft-home, ft-testing. Recorded for later; nothing deleted yet.
+
+- [ ] **Redundant standalone `ft.komodo` pair** — there are three separate Komodo
+  implementations. `ft.ociStack` (docker-compose + FerretDB, wrapped by
+  `ft.dockervm`) is the live one: enabled by `ft-home`'s `strix` and `mimir`,
+  guarded by `ft-testing`'s `dockervm-plain`/`dockervm-full` eval fixtures. The
+  other two — `modules/nixos/services/komodo.nix` (`ft.komodo`, oci-containers
+  under a rootless-podman service user) and `modules/home/komodo.nix`
+  (`ft.komodo`, podman user services) — are enabled by **no** machine/template,
+  have **no** VM smoke test, and are functionally superseded. They also collide
+  on the `ft.komodo` name without being a cooperating NixOS/HM pair. Candidate
+  for removal (cascade: the `CLAUDE.md` option table, `NOTES.md`'s "Rootless
+  Podman (`ft.komodo`)" section, and this file's line 22 "Done" entry).
+- [ ] **`ft.podmanRootless` has no live consumer** — its only in-repo user is the
+  unused `ft.komodo` NixOS module above. It does have a standalone VM test
+  (`ft-testing/tests/vm/podman-rootless.nix`), so it stands alone as a generic
+  primitive; decide whether to keep it as such or retire it alongside
+  `ft.komodo`.
+- [ ] **`ft.hermesVm` — possibly abandoned VM wrapper** — `modules/nixos/services/microvm-hermes.nix`
+  is a full microVM wrapper whose only footprint anywhere is a *commented-out*
+  block in `ft-home/machines/strix/default.nix`. Not redundant with Komodo (a
+  distinct Hermes-agent feature), so tracked separately from the Komodo trim.
+  Confirm whether it's still wanted before removing.
+
+---
+
 ## 📖 Documentation
 
 - [x] Inline comments on all functions in `flake-parts/` (generator.nix is well-commented; audit remaining files)
