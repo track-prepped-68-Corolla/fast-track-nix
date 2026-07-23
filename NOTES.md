@@ -409,23 +409,42 @@ Instead of (or alongside) `ft komodo-apply`, enable the sync's **git webhook**
 pushes re-execute it automatically. Pair it with a batch-deploy **Procedure** on
 the same webhook to work around #1120.
 
-## Fully hands-off on deploy (`ft.dockervm.komodo.autoApply`)
+## Fully hands-off on deploy (`ft.komodo.autoApply` / `ft.dockervm.komodo.autoApply`)
 
-For the microVM deployment, an opt-in host-side systemd oneshot runs
-`ft komodo-apply` automatically after each rebuild, so every `ft switch`
-reconciles Komodo with `containers/` — zero commands.
+An opt-in systemd oneshot runs `ft komodo-apply` automatically after each
+rebuild, so every `ft switch` reconciles Komodo with `containers/` — zero
+commands. Two entry points depending on where Komodo runs:
+
+**Host-local Komodo (`ft.komodo`):**
+
+```nix
+ft.containers.enable = true;
+ft.komodo.enable = true;
+ft.cli.enable = true;                          # provides the `ft` runner
+ft.sops.enable = true;                          # decrypts the API key
+ft.repoPath = "/path/to/your/consumer/repo";
+ft.komodo.autoApply.enable = true;
+```
+
+The oneshot runs after `komodo.service`, waits for Core to answer at
+`ft.komodo.host`, then drives `komodo-apply` over the API. Override the sops key
+name with `ft.komodo.autoApply.apiEnvSecret` (default `komodo/api_env`).
+
+**microVM Komodo (`ft.dockervm`):**
 
 ```nix
 ft.dockervm.enable = true;
-ft.cli.enable = true;                          # provides the `ft` runner
-ft.sops.enable = true;                          # decrypts the API key
+ft.cli.enable = true;
+ft.sops.enable = true;
 ft.dockervm.komodo.autoApply.enable = true;
 ```
 
-It runs on the **host** (which has the repo checkout, sops, and network access to
-the guest's Core), waits for Core to answer at `ft.dockervm.komodo.host`, then
-drives the same `komodo-apply` recipe over the API. Credentials come from a
-`komodo/api_env` sops secret in your host `secrets.yaml`:
+This one runs on the **host** (which has the repo checkout, sops, and network
+access to the *guest's* Core), waits for Core at `ft.dockervm.komodo.host`, then
+drives the same recipe.
+
+In both cases credentials come from a `komodo/api_env` sops secret in your
+`secrets.yaml`:
 
 ```yaml
 komodo:
