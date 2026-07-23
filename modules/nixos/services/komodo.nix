@@ -373,6 +373,13 @@ in
         description = "sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply service to authenticate to Komodo's API.";
       };
     };
+
+    assumeSopsConfigured = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      internal = true;
+      description = "Escape hatch for hosts that configure sops-nix directly instead of via the framework ft.sops module (e.g. the ft.dockervm microVM guest, which decrypts on its own SSH host key). When true, the [secrets]-tier assertion accepts that direct setup. Not for general use.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -384,8 +391,8 @@ in
       {
         assertion =
           (cfg.sopsEnv.enable || cfg.secrets.core.enable || cfg.secrets.periphery.enable)
-          -> config.ft.sops.enable;
-        message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true to decrypt their sops keys.";
+          -> (config.ft.sops.enable || cfg.assumeSopsConfigured);
+        message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true (or ft.komodo.assumeSopsConfigured, for a host that configures sops-nix directly) to decrypt their sops keys.";
       }
       {
         assertion =

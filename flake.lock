@@ -613,29 +613,6 @@
         "type": "gitlab"
       }
     },
-    "hermes-agent": {
-      "inputs": {
-        "flake-parts": "flake-parts_2",
-        "nixpkgs": "nixpkgs_4",
-        "npm-lockfile-fix": "npm-lockfile-fix",
-        "pyproject-build-systems": "pyproject-build-systems",
-        "pyproject-nix": "pyproject-nix",
-        "uv2nix": "uv2nix"
-      },
-      "locked": {
-        "lastModified": 1784785517,
-        "narHash": "sha256-txUJ37jy9lXdsh9d2JqirSAOyuBteH8OZl0UTwBZGAE=",
-        "owner": "NousResearch",
-        "repo": "hermes-agent",
-        "rev": "de5ece994415276d215976836161f871f1d6d8f5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NousResearch",
-        "repo": "hermes-agent",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -1398,7 +1375,6 @@
         "comin": "comin",
         "darwin": "darwin",
         "flake-parts": "flake-parts",
-        "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "microvm": "microvm",

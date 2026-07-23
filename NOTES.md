@@ -263,7 +263,7 @@ Populate the keys in the same sops file the base module uses
 (`var/secrets/secrets.yaml` for NixOS; `users/<username>/var/secrets.yaml` for
 standalone Home Manager).
 
-## Rootful Docker microVM (`ft.dockervm` / `ft.ociStack`)
+## Rootful Docker microVM (`ft.dockervm`)
 
 Here Periphery runs inside the guest, so sops-nix runs **inside the guest** too —
 decrypting on the guest's own persistent SSH host key. Enable a tier with:
@@ -345,7 +345,7 @@ This writes `containers/komodo-sync.toml`:
   if present (see below).
 
 `server` must match the Komodo Server resource name Periphery connects as — the
-`serverName` option of `ft.ociStack` / `ft.dockervm` (default `Local`).
+`serverName` option of `ft.komodo` / `ft.dockervm` (default `Local`).
 `account` is the **git account alias configured in Komodo** for private-repo
 access (Settings → Git Accounts), not a GitHub username; it defaults to the repo
 owner. Pass `account=""` for a public repo.
