@@ -1,10 +1,37 @@
-# Komodo + Rootless Podman — Setup Notes
+# Komodo on `ft.containers` — Setup Notes
 
-## Required sops secret keys
+`ft.komodo` (NixOS and Home Manager) deploys the upstream Komodo compose stack
+(Core + Periphery + FerretDB/Postgres) with the genuine `docker-compose` binary,
+layered on the `ft.containers` runtime substrate. Enable a runtime first, then
+Komodo:
 
-Before deploying, populate the following keys in `secrets/secrets.yaml` (the
-file pointed to by `ft.repoPath`) and re-encrypt with `sops secrets/secrets.yaml`.
-Do **not** commit plaintext values.
+```nix
+# NixOS — machine config
+ft.containers.enable = true;   # docker/podman × rootful/rootless; defaults to rootless podman
+ft.komodo.enable = true;       # requires ft.containers with compose.enable (default true)
+```
+
+Database and admin credentials come from `ft.komodo.*` options (baked into the
+compose env file in the Nix store — fine for local-only deployments; change the
+admin password after first login). The **only** sops-managed material is the two
+optional `[secrets]` tiers below, so no `*_env` sops keys are required to bring
+the stack up.
+
+> **Legacy note:** earlier `ft.komodo` ran Komodo as rootless-Podman
+> `oci-containers` and required `komodo/postgres_env`, `komodo/core_env`, and
+> `komodo/periphery_env` sops keys. The compose-based module does **not** use
+> those keys — the section below is retained only for the optional `[secrets]`
+> tiers (`komodo/core_secrets`, `komodo/periphery_secrets`).
+
+## Legacy sops env keys (no longer used by `ft.komodo`)
+
+The keys documented in this section — `komodo/postgres_env`, `komodo/core_env`,
+`komodo/periphery_env` — belonged to the old rootless-Podman `oci-containers`
+module and are **not** read by the compose-based `ft.komodo`. They are retained
+here only for consumers still carrying the old secrets file; new deployments can
+skip straight to *"Enabling the NixOS module"* below. The optional `[secrets]`
+tiers are documented separately under *"Secret format (single TOML blob per
+tier)"*.
 
 ### `komodo/postgres_env`
 
@@ -62,29 +89,39 @@ Verify your `.sops.yaml` `creation_rules` covers `secrets/secrets.yaml`.
 
 ## Enabling the NixOS module
 
-In your machine's NixOS configuration:
+In your machine's NixOS configuration, pick a runtime cell with `ft.containers`
+and turn on Komodo:
 
 ```nix
-ft.podmanRootless.enable = true;
+ft.containers = {
+  enable = true;
+  runtime = "podman";   # or "docker"
+  rootless = true;      # default with podman; set false for a rootful daemon
+};
 ft.komodo.enable = true;
 ```
 
-`ft.podmanRootless.uid` defaults to `2000`. Change it if that UID is
-already taken on your system — the Podman socket path derives from it.
+`ft.containers.uid` defaults to `2000` for the rootless service account — change
+it if that UID is taken (the rootless socket path derives from it). `ft.komodo`
+reaches whichever runtime `ft.containers` set up via `ft.containers.socket`, so no
+Komodo-specific socket wiring is needed.
 
 ## Enabling the Home Manager module
 
-In your user profile (`users/<username>/default.nix`):
+In your user profile (`users/<username>/default.nix`), enable the user-level
+runtime and Komodo (Home Manager is inherently rootless):
 
 ```nix
+ft.containers.enable = true;   # user-level docker/podman + real docker-compose
 ft.sops.enable = true;
 ft.komodo.enable = true;
 ```
 
-The module reuses the same three sops secret keys above. For a standalone Home
-Manager deployment, store them in `users/<username>/var/secrets.yaml` (the
-default `sops.defaultSopsFile` set by `ft.sops`). Container data is
-written to `~/.local/share/komodo` by default; override with:
+Only the optional `[secrets]` tiers use sops; for a standalone Home Manager
+deployment store `komodo/{core,periphery}_secrets` in
+`users/<username>/var/secrets.yaml` (the default `sops.defaultSopsFile` set by
+`ft.sops`). The compose project and its data live under
+`~/.local/share/komodo` by default; override with:
 
 ```nix
 ft.komodo.dataDir = "/path/to/custom/dir";
@@ -169,7 +206,7 @@ Then, in a Komodo Stack/Deployment environment:
 CF_DNS_API_TOKEN=[[CLOUDFLARE_TOKEN]]
 ```
 
-## Rootless Podman (`ft.komodo`, NixOS and Home Manager)
+## Host-local Komodo (`ft.komodo`, NixOS and Home Manager)
 
 Sops already runs on the same host, so enabling a tier declares the key, mounts
 its decrypted path into the container, and adds the `--config-path` command:
