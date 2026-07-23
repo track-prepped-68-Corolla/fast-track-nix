@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   pkgs,
   ...
@@ -42,6 +43,35 @@ let
   # no-clobber so a hand-edited local credentials file survives.
   cpForce = src: dst: "${pkgs.coreutils}/bin/cp -f ${src} ${dst}";
   cpNoClobber = src: dst: "${pkgs.coreutils}/bin/cp --no-clobber ${src} ${dst}";
+
+  # ── GitOps auto-apply ──────────────────────────────────────────────────────
+  # Once Core answers, reconcile Komodo with the consumer repo's containers/ by
+  # running the bundled `komodo-apply` recipe against Core's API — the same
+  # justfile invocation the `ft` CLI wrapper uses. Runs as root (to read the
+  # api_env secret), so it forces git safe.directory for the repo.
+  scriptsDir = ../../../scripts;
+  autoApplyScript = pkgs.writeShellScript "komodo-auto-apply" ''
+    set -euo pipefail
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.git
+        pkgs.jq
+        pkgs.curl
+        pkgs.just
+        pkgs.coreutils
+      ]
+    }:$PATH
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+    # Bounded wait for Komodo Core to come up before applying.
+    for _ in $(seq 1 60); do
+      if curl -sf -o /dev/null "${cfg.host}"; then break; fi
+      sleep 5
+    done
+    exec just --shell ${pkgs.bash}/bin/bash \
+      --justfile ${scriptsDir}/ft.just \
+      --working-directory ${config.ft.repoPath} \
+      komodo-apply
+  '';
 
   # Credentials env-file: the sops-decrypted secret when sopsEnv is on, otherwise
   # the store-baked defaults copied to stateDir. docker-compose reads it both as a
@@ -331,6 +361,18 @@ in
         description = "Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires ft.sops.enable.";
       };
     };
+
+    autoApply = {
+      enable = lib.mkEnableOption "Komodo GitOps auto-apply" // {
+        description = "After Komodo Core answers, run the bundled `komodo-apply` recipe from ft.repoPath to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with the consumer repo's containers/ directory with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Exempt from VM smoke tests: reconciles against a live Komodo API. See NOTES.md.";
+      };
+
+      apiEnvSecret = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo/api_env";
+        description = "sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply service to authenticate to Komodo's API.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -345,12 +387,21 @@ in
           -> config.ft.sops.enable;
         message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true to decrypt their sops keys.";
       }
+      {
+        assertion =
+          cfg.autoApply.enable
+          -> (config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default);
+        message = "ft.komodo.autoApply requires ft.cli.enable, ft.sops.enable and ft.repoPath set to your consumer repo — it drives `ft komodo-apply` from the host and reads the ${cfg.autoApply.apiEnvSecret} sops secret.";
+      }
     ];
 
     sops.secrets =
       lib.optionalAttrs cfg.sopsEnv.enable { ${cfg.sopsEnv.secretName} = { }; }
       // lib.optionalAttrs cfg.secrets.core.enable { "komodo/core_secrets" = { }; }
-      // lib.optionalAttrs cfg.secrets.periphery.enable { "komodo/periphery_secrets" = { }; };
+      // lib.optionalAttrs cfg.secrets.periphery.enable { "komodo/periphery_secrets" = { }; }
+      # env-file: KOMODO_API_KEY=... and KOMODO_API_SECRET=... (owner/mode default
+      # to root / 0400, which the root-run auto-apply service reads).
+      // lib.optionalAttrs cfg.autoApply.enable { ${cfg.autoApply.apiEnvSecret} = { }; };
 
     systemd.tmpfiles.rules = [
       "d ${stateDir} 0770 ${komodoOwner} ${komodoOwner} -"
@@ -385,6 +436,24 @@ in
         ExecStop = "${pkgs.docker-compose}/bin/docker-compose --env-file ${stateDir}/compose.env --env-file ${credsPath} -f ${stateDir}/compose.yaml down";
         StandardOutput = "append:${stateDir}/komodo.log";
         StandardError = "append:${stateDir}/komodo.log";
+      };
+    };
+
+    # ── GitOps auto-apply oneshot ───────────────────────────────────────────
+    systemd.services.komodo-auto-apply = lib.mkIf cfg.autoApply.enable {
+      description = "Reconcile Komodo with the consumer repo's containers/ over the API (ft komodo-apply)";
+      after = [
+        "komodo.service"
+        "network-online.target"
+      ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        EnvironmentFile = config.sops.secrets.${cfg.autoApply.apiEnvSecret}.path;
+        Environment = [ "KOMODO_URL=${cfg.host}" ];
+        ExecStart = "${autoApplyScript}";
       };
     };
   };
