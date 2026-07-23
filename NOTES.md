@@ -428,7 +428,9 @@ ft.komodo.autoApply.enable = true;
 
 The oneshot runs after `komodo.service`, waits for Core to answer at
 `ft.komodo.host`, then drives `komodo-apply` over the API. Override the sops key
-name with `ft.komodo.autoApply.apiEnvSecret` (default `komodo/api_env`).
+name with `ft.komodo.autoApply.apiEnvSecret` (default `komodo/api_env`). The same
+options work in a Home Manager profile — there it's a `systemd --user` oneshot
+reading a user `komodo/api_env` sops key.
 
 **microVM Komodo (`ft.dockervm`):**
 
