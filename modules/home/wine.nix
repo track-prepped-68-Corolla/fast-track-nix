@@ -28,7 +28,9 @@ let
     _: prev: {
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (_: pyprev: {
-          patool = pyprev.patool.overridePythonAttrs (_: { doCheck = false; });
+          patool = pyprev.patool.overridePythonAttrs (_: {
+            doCheck = false;
+          });
         })
       ];
     }
