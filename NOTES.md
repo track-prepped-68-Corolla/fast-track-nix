@@ -11,17 +11,54 @@ ft.containers.enable = true;   # docker/podman × rootful/rootless; defaults to 
 ft.komodo.enable = true;       # requires ft.containers with compose.enable (default true)
 ```
 
-Database and admin credentials come from `ft.komodo.*` options (baked into the
-compose env file in the Nix store — fine for local-only deployments; change the
-admin password after first login). The **only** sops-managed material is the two
-optional `[secrets]` tiers below, so no `*_env` sops keys are required to bring
-the stack up.
+Credentials are split from the non-secret config. The sensitive vars — DB
+password, initial admin password, JWT secret, webhook secret — live in a
+**credentials env-file**, kept separate from the store-baked `compose.env`:
 
-> **Legacy note:** earlier `ft.komodo` ran Komodo as rootless-Podman
-> `oci-containers` and required `komodo/postgres_env`, `komodo/core_env`, and
-> `komodo/periphery_env` sops keys. The compose-based module does **not** use
-> those keys — the section below is retained only for the optional `[secrets]`
-> tiers (`komodo/core_secrets`, `komodo/periphery_secrets`).
+- **`ft.komodo.sopsEnv.enable = true`** (recommended) sources them from a
+  sops-decrypted secret (default key `komodo/env`), so **credentials never touch
+  the Nix store**. See *"Storing Komodo credentials in sops"* below.
+- **Left off** (default), the `ft.komodo.{dbPassword,adminPassword,jwtSecret,webhookSecret}`
+  option defaults are written to the store — fine for a purely local deployment,
+  like a compose file you'd commit. Change the admin password after first login.
+
+The separate `[secrets]` tiers (`komodo/core_secrets`, `komodo/periphery_secrets`)
+are a **different** feature — they inject `[[KEY]]`-interpolatable values into the
+Stacks Komodo *deploys*, not Komodo's own credentials — and are documented later.
+
+## Storing Komodo credentials in sops (`ft.komodo.sopsEnv`)
+
+Enable the sops-backed credentials env-file and populate the `komodo/env` key
+(the same sops file the rest of your machine/user uses):
+
+```nix
+# NixOS
+ft.sops.enable = true;
+ft.komodo.sopsEnv.enable = true;   # declares + decrypts the komodo/env key
+```
+
+`komodo/env` is a plain env-file (`KEY=VALUE` lines). Only the sensitive vars
+need to be present — anything you omit falls back to the store-baked default:
+
+```yaml
+komodo:
+    env: |
+        KOMODO_DATABASE_PASSWORD=<value>
+        KOMODO_INIT_ADMIN_PASSWORD=<value>
+        KOMODO_JWT_SECRET=<value>
+        KOMODO_WEBHOOK_SECRET=<value>
+```
+
+`docker-compose` loads this file as its highest-precedence `--env-file`, so the
+DB password interpolates into the FerretDB connection URL and the rest reach the
+Core container — all at deploy time, never via the store. Override the key name
+with `ft.komodo.sopsEnv.secretName` if you prefer a different path.
+
+> **Legacy note:** the pre-compose `ft.komodo` (rootless-Podman `oci-containers`)
+> used three separate `komodo/postgres_env`, `komodo/core_env`,
+> `komodo/periphery_env` keys instead of the single `komodo/env` above. The
+> section immediately below documents those legacy keys and is retained only for
+> consumers still carrying the old secrets file.
 
 ## Legacy sops env keys (no longer used by `ft.komodo`)
 
@@ -115,10 +152,11 @@ runtime and Komodo (Home Manager is inherently rootless):
 ft.containers.enable = true;   # user-level docker/podman + real docker-compose
 ft.sops.enable = true;
 ft.komodo.enable = true;
+ft.komodo.sopsEnv.enable = true;   # keep credentials in sops (komodo/env)
 ```
 
-Only the optional `[secrets]` tiers use sops; for a standalone Home Manager
-deployment store `komodo/{core,periphery}_secrets` in
+For a standalone Home Manager deployment store the sops keys — `komodo/env` and,
+if used, `komodo/{core,periphery}_secrets` — in
 `users/<username>/var/secrets.yaml` (the default `sops.defaultSopsFile` set by
 `ft.sops`). The compose project and its data live under
 `~/.local/share/komodo` by default; override with:

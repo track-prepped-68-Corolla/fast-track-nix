@@ -11,8 +11,13 @@
 # The per-user counterpart of the NixOS ft.komodo module. Deploys the same
 # upstream Komodo compose stack via the genuine docker-compose binary, driven
 # through the user runtime's socket (ft.containers.socket). Requires the
-# user-level ft.containers with compose.enable and ft.sops for the optional
-# [secrets] tiers.
+# user-level ft.containers with compose.enable.
+#
+# Credentials handling mirrors the NixOS module: the sensitive vars live in a
+# credentials env-file kept separate from the non-secret compose.env. With
+# ft.komodo.sopsEnv.enable that file is a sops-decrypted secret (default key
+# komodo/env) so credentials never touch the Nix store; otherwise the credential
+# defaults are written to the store (local-only).
 #
 # Exempt from VM smoke tests: pulls container images from ghcr.io at runtime.
 ################################################################################
@@ -23,10 +28,18 @@ let
 
   docker-compose = lib.getExe pkgs.docker-compose;
 
-  # Socket path is resolved at runtime from XDG_RUNTIME_DIR (KOMODO_DOCKER_SOCK
-  # in the unit Environment, expanded from the systemd %t specifier) and injected
-  # into the compose file via docker-compose's ${VAR} interpolation — %t itself
-  # is not understood inside compose YAML.
+  # Credentials env-file: sops-decrypted secret when sopsEnv is on, else the
+  # store-baked defaults copied to dataDir at activation.
+  credsPath =
+    if cfg.sopsEnv.enable then
+      config.sops.secrets.${cfg.sopsEnv.secretName}.path
+    else
+      "${cfg.dataDir}/creds.env";
+
+  # The runtime socket is resolved at runtime from XDG_RUNTIME_DIR
+  # (KOMODO_DOCKER_SOCK in the unit Environment, expanded from the systemd %t
+  # specifier) and injected into the compose file via ${VAR} interpolation — %t
+  # itself is not understood inside compose YAML.
   coreSecretsTarget = "/run/komodo-secrets/core.toml";
   peripherySecretsTarget = "/run/komodo-secrets/periphery.toml";
   coreSecretsMount = lib.optionalString cfg.secrets.core.enable "\n      - ${
@@ -57,7 +70,7 @@ let
           - postgres-data:/var/lib/postgresql/data
         environment:
           POSTGRES_USER: ${cfg.dbUsername}
-          POSTGRES_PASSWORD: ${cfg.dbPassword}
+          POSTGRES_PASSWORD: ''${KOMODO_DATABASE_PASSWORD}
           POSTGRES_DB: postgres
         healthcheck:
           test: ["CMD-SHELL", "pg_isready -U ${cfg.dbUsername}"]
@@ -77,7 +90,7 @@ let
         volumes:
           - ferretdb-state:/state
         environment:
-          FERRETDB_POSTGRESQL_URL: postgres://${cfg.dbUsername}:${cfg.dbPassword}@postgres:5432/postgres
+          FERRETDB_POSTGRESQL_URL: postgres://${cfg.dbUsername}:''${KOMODO_DATABASE_PASSWORD}@postgres:5432/postgres
 
       core:
         image: ghcr.io/moghtech/komodo-core:${cfg.imageTag}
@@ -87,7 +100,9 @@ let
           - ferretdb
         ports:
           - 9120:9120
-        env_file: ./compose.env${coreSecretsCommand}
+        env_file:
+          - ./compose.env
+          - ${credsPath}${coreSecretsCommand}
         environment:
           KOMODO_DATABASE_ADDRESS: ferretdb:27017
         volumes:
@@ -100,7 +115,9 @@ let
         restart: unless-stopped
         depends_on:
           - core
-        env_file: ./compose.env${peripherySecretsCommand}
+        env_file:
+          - ./compose.env
+          - ${credsPath}${peripherySecretsCommand}
         volumes:
           - keys:/config/keys
           - ''${KOMODO_DOCKER_SOCK}:/var/run/docker.sock
@@ -118,7 +135,6 @@ let
     COMPOSE_KOMODO_BACKUPS_PATH=${cfg.backupsPath}
 
     KOMODO_DATABASE_USERNAME=${cfg.dbUsername}
-    KOMODO_DATABASE_PASSWORD=${cfg.dbPassword}
 
     TZ=${cfg.timezone}
 
@@ -127,12 +143,9 @@ let
     KOMODO_PERIPHERY_PUBLIC_KEY=file:/config/keys/periphery.pub
     KOMODO_LOCAL_AUTH=true
     KOMODO_INIT_ADMIN_USERNAME=${cfg.adminUsername}
-    KOMODO_INIT_ADMIN_PASSWORD=${cfg.adminPassword}
     KOMODO_FIRST_SERVER_NAME=${cfg.serverName}
     KOMODO_FIRST_SERVER=https://periphery:8120
     KOMODO_DISABLE_CONFIRM_DIALOG=false
-    KOMODO_WEBHOOK_SECRET=${cfg.webhookSecret}
-    KOMODO_JWT_SECRET=${cfg.jwtSecret}
     KOMODO_JWT_TTL=1-day
     KOMODO_MONITORING_INTERVAL=15-sec
     KOMODO_RESOURCE_POLL_INTERVAL=1-hr
@@ -158,17 +171,26 @@ let
     PERIPHERY_LOGGING_PRETTY=false
     PERIPHERY_PRETTY_STARTUP_CONFIG=false
   '';
+
+  # Store-baked credential defaults, used only when sopsEnv is disabled
+  # (local-only). With sopsEnv on, the sops secret supplies these instead.
+  credsEnv = pkgs.writeText "komodo-creds.env" ''
+    KOMODO_DATABASE_PASSWORD=${cfg.dbPassword}
+    KOMODO_INIT_ADMIN_PASSWORD=${cfg.adminPassword}
+    KOMODO_WEBHOOK_SECRET=${cfg.webhookSecret}
+    KOMODO_JWT_SECRET=${cfg.jwtSecret}
+  '';
 in
 {
   options.ft.komodo = {
     enable = lib.mkEnableOption "Komodo Core + Periphery + FerretDB (user-level)" // {
-      description = "Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) as a user-level docker-compose service on top of the Home Manager ft.containers. Requires ft.containers.enable with compose.enable and ft.sops.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.";
+      description = "Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) as a user-level docker-compose service on top of the Home Manager ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.";
     };
 
     dataDir = lib.mkOption {
       type = lib.types.str;
       default = "${config.xdg.dataHome}/komodo";
-      description = "Base directory for the Komodo compose project (compose files, logs) and the default backups/periphery trees.";
+      description = "Base directory for the Komodo compose project (compose files, credentials env-file, logs) and the default backups/periphery trees.";
     };
 
     imageTag = lib.mkOption {
@@ -180,37 +202,49 @@ in
     dbUsername = lib.mkOption {
       type = lib.types.str;
       default = "komodo";
-      description = "Username for the FerretDB/Postgres database.";
+      description = "Username for the FerretDB/Postgres database (not a secret — baked into the compose config).";
     };
 
     dbPassword = lib.mkOption {
       type = lib.types.str;
       default = "komodo";
-      description = "Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.";
+      description = "Default password for the FerretDB/Postgres database, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it.";
     };
 
     adminUsername = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "Initial Komodo admin username created on first launch.";
+      description = "Initial Komodo admin username created on first launch (not a secret).";
     };
 
     adminPassword = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "Initial Komodo admin password. Stored in the Nix store — change after first login.";
+      description = "Default initial Komodo admin password, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.";
     };
 
     webhookSecret = lib.mkOption {
       type = lib.types.str;
       default = "komodo-webhook-secret";
-      description = "Secret used to authenticate incoming Komodo webhooks. Stored in the Nix store.";
+      description = "Default secret for authenticating incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.";
     };
 
     jwtSecret = lib.mkOption {
       type = lib.types.str;
       default = "komodo-jwt-secret";
-      description = "Secret used to sign Komodo JWT tokens. Stored in the Nix store.";
+      description = "Default secret for signing Komodo JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.";
+    };
+
+    sopsEnv = {
+      enable = lib.mkEnableOption "sops-backed Komodo credentials env-file" // {
+        description = "Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a user-level sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. Requires ft.sops.enable; populate the key as KEY=VALUE lines — see NOTES.md.";
+      };
+
+      secretName = lib.mkOption {
+        type = lib.types.str;
+        default = "komodo/env";
+        description = "User sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines). Declared and decrypted when sopsEnv.enable is true.";
+      };
     };
 
     host = lib.mkOption {
@@ -263,10 +297,10 @@ in
 
     secrets = {
       periphery.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets]" // {
-        description = "Declares the komodo/periphery_secrets user sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. Requires ft.sops.enable.";
+        description = "Declares the komodo/periphery_secrets user sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires ft.sops.enable.";
       };
       core.enable = lib.mkEnableOption "sops-decrypted Core [secrets]" // {
-        description = "Declares the komodo/core_secrets user sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. Requires ft.sops.enable.";
+        description = "Declares the komodo/core_secrets user sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires ft.sops.enable.";
       };
     };
   };
@@ -278,29 +312,41 @@ in
         message = "ft.komodo requires ft.containers.enable with ft.containers.compose.enable = true (it deploys via docker-compose).";
       }
       {
-        assertion = config.ft.sops.enable;
-        message = "ft.komodo requires ft.sops.enable = true.";
+        assertion =
+          (cfg.sopsEnv.enable || cfg.secrets.core.enable || cfg.secrets.periphery.enable)
+          -> config.ft.sops.enable;
+        message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true to decrypt their sops keys.";
       }
     ];
 
     sops.secrets =
-      lib.optionalAttrs cfg.secrets.core.enable { "komodo/core_secrets" = { }; }
+      lib.optionalAttrs cfg.sopsEnv.enable { ${cfg.sopsEnv.secretName} = { }; }
+      // lib.optionalAttrs cfg.secrets.core.enable { "komodo/core_secrets" = { }; }
       // lib.optionalAttrs cfg.secrets.periphery.enable { "komodo/periphery_secrets" = { }; };
 
-    # Provision the compose project + data directories at activation.
-    home.activation.komodoDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p \
-        ${lib.escapeShellArg cfg.dataDir} \
-        ${lib.escapeShellArg cfg.backupsPath} \
-        ${lib.escapeShellArg cfg.peripheryRootDirectory}
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} ${lib.escapeShellArg "${cfg.dataDir}/compose.yaml"}
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} ${lib.escapeShellArg "${cfg.dataDir}/compose.env"}
-    '';
+    # Provision the compose project + data directories at activation, and stage
+    # the store-baked credential defaults unless sops supplies them instead.
+    home.activation.komodoDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      ''
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p \
+          ${lib.escapeShellArg cfg.dataDir} \
+          ${lib.escapeShellArg cfg.backupsPath} \
+          ${lib.escapeShellArg cfg.peripheryRootDirectory}
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoCompose} ${lib.escapeShellArg "${cfg.dataDir}/compose.yaml"}
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${komodoEnv} ${lib.escapeShellArg "${cfg.dataDir}/compose.env"}
+      ''
+      + lib.optionalString (!cfg.sopsEnv.enable) ''
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp --no-clobber ${credsEnv} ${lib.escapeShellArg "${cfg.dataDir}/creds.env"}
+      ''
+    );
 
     systemd.user.services.komodo = {
       Unit = {
         Description = "Komodo docker-compose stack";
-        After = [ "network-online.target" ];
+        After = [
+          "network-online.target"
+        ]
+        ++ lib.optional cfg.sopsEnv.enable "sops-nix.service";
       };
       Service = {
         Type = "oneshot";
@@ -309,8 +355,8 @@ in
           "DOCKER_HOST=unix://${cCfg.socket}"
           "KOMODO_DOCKER_SOCK=${cCfg.socket}"
         ];
-        ExecStart = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env -f ${cfg.dataDir}/compose.yaml up -d --remove-orphans";
-        ExecStop = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env -f ${cfg.dataDir}/compose.yaml down";
+        ExecStart = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env --env-file ${credsPath} -f ${cfg.dataDir}/compose.yaml up -d --remove-orphans";
+        ExecStop = "${docker-compose} --project-directory ${cfg.dataDir} --env-file ${cfg.dataDir}/compose.env --env-file ${credsPath} -f ${cfg.dataDir}/compose.yaml down";
       };
       Install.WantedBy = lib.mkDefault [ "default.target" ];
     };
