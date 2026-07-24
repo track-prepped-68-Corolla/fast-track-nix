@@ -123,13 +123,11 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.yubikey` | YubiKey hardware support |
 | `ft.sops` | sops-nix secret management (NixOS) / per-user sops age key (HM) |
 | `ft.bulkPool` | mergerfs + snapraid-btrfs bulk storage pool |
-| `ft.hermesVm` | Hermes NixOS microVM |
 | `ft.containers` | OCI container runtime substrate — docker/podman × rootful/rootless, real Docker Compose v2, optional Distrobox (NixOS) / user-level rootless counterpart (HM) |
 | `ft.komodo` | Komodo Core + Periphery + FerretDB via docker-compose, layered on `ft.containers`, with opt-in GitOps auto-apply (NixOS) / user-level counterpart (HM) |
 | `ft.microvms` | Generic microVM host infrastructure |
 | `ft.nfs` | NFS client mount management |
 | `ft.flatpak` | Flatpak service, Flathub remote, and Plasma Discover frontend (NixOS) / per-user declarative app list (HM) |
-| `ft.ociStack` | Guest-side OCI runtime with docker-compose (used by `ft.dockervm`; slated to be replaced by `ft.containers` + `ft.komodo` in the microVM cleanup) |
 | `ft.printing` | CUPS printing service |
 | `ft.tailscale` | Tailscale VPN client |
 | `ft.virt` | Libvirt/QEMU, Incus, VMware host |

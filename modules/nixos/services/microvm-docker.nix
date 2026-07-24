@@ -10,9 +10,9 @@
 ################################################################################
 # MICROVM WITH ROOTFUL DOCKER COMPOSE
 #
-# Thin wrapper that composes ft.microvms (host infrastructure) with
-# ft.ociStack (guest OCI runtime + Komodo) behind the existing
-# ft.dockervm option interface.
+# Thin wrapper that composes ft.microvms (host infrastructure) with the guest
+# running ft.containers (rootful Docker + real docker-compose) and ft.komodo
+# (Komodo compose stack), behind the existing ft.dockervm option interface.
 ################################################################################
 
 let
@@ -20,8 +20,8 @@ let
 
   # Guest-side Komodo [secrets] injection: when either tier is enabled, sops-nix
   # runs inside the guest (decrypting on the guest's own persistent SSH host key),
-  # var/secrets is shared in read-only, and the decrypted files are handed to
-  # ft.ociStack for mounting into Core/Periphery. See NOTES.md.
+  # var/secrets is shared in read-only, and the decrypted keys are consumed by
+  # ft.komodo.secrets.{core,periphery} in the guest. See NOTES.md.
   komodoSecretsEnabled = cfg.komodo.peripherySecrets.enable || cfg.komodo.coreSecrets.enable;
   secretsShareSource = "${config.ft.repoPath}/var/secrets";
 
@@ -93,12 +93,6 @@ in
       description = "Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).";
     };
 
-    composeVolumeSize = lib.mkOption {
-      type = lib.types.int;
-      default = 10240;
-      description = "Size of the /opt/compose volume in MiB (image stored at /var/lib/microvm/<vmName>/compose.img on the host).";
-    };
-
     vmMac = lib.mkOption {
       type = lib.types.str;
       default = "02:00:00:00:00:01";
@@ -121,32 +115,6 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
-    };
-
-    guacamole = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Deploy Apache Guacamole (guacd, web front-end, and PostgreSQL) inside the VM via OCI containers. The web interface is exposed on guacamole.port within the VM.";
-      };
-
-      imageTag = lib.mkOption {
-        type = lib.types.str;
-        default = "latest";
-        description = "Image tag for guacamole/guacd and guacamole/guacamole on Docker Hub.";
-      };
-
-      port = lib.mkOption {
-        type = lib.types.port;
-        default = 8084;
-        description = "Port inside the VM on which the Guacamole web interface listens.";
-      };
-
-      dbPassword = lib.mkOption {
-        type = lib.types.str;
-        default = "guacamole";
-        description = "PostgreSQL password for the Guacamole database. Stored in the Nix store — suitable only for local-only deployments.";
-      };
     };
 
     komodo = {
@@ -306,11 +274,6 @@ in
           mountPoint = "/var/lib/docker";
           size = cfg.dockerVolumeSize;
         }
-        {
-          image = "/var/lib/microvm/${cfg.vmName}/compose.img";
-          mountPoint = "/opt/compose";
-          size = cfg.composeVolumeSize;
-        }
       ]
       # Persist the guest's SSH host key so it is a stable sops age recipient
       # across guest restarts (mounted at /var/lib/ssh, not /etc/ssh, so the
@@ -340,7 +303,7 @@ in
           proto = "virtiofs";
         };
 
-      # ── Application: inject ft.ociStack and ft.guacamole into the guest ─────
+      # ── Application: inject ft.containers + ft.komodo into the guest ────────
       extraGuestConfig = {
         # sops-nix is imported unconditionally so the `sops` option is always
         # declared in the guest: a `sops = lib.mkIf komodoSecretsEnabled {...}`
@@ -349,64 +312,65 @@ in
         # "option microvm.vms.<name>.config.sops does not exist". With no secrets
         # defined, sops-nix is inert.
         imports = [
-          ./oci-stack.nix
-          ./guacamole.nix
+          ./containers.nix
+          ./komodo.nix
           inputs.sops-nix.nixosModules.sops
         ];
-        ft.guacamole = {
-          enable = lib.mkDefault cfg.guacamole.enable;
-          runtime = lib.mkDefault "docker";
-          imageTag = lib.mkDefault cfg.guacamole.imageTag;
-          port = lib.mkDefault cfg.guacamole.port;
-          dbPassword = lib.mkDefault cfg.guacamole.dbPassword;
-        };
-        ft.ociStack = {
+
+        # Rootful Docker + the real docker-compose binary; ft.komodo reaches it
+        # via ft.containers.socket.
+        ft.containers = {
           enable = lib.mkDefault true;
           runtime = lib.mkDefault "docker";
-          komodo = {
-            inherit (cfg.komodo)
-              enable
-              imageTag
-              dbUsername
-              dbPassword
-              adminUsername
-              adminPassword
-              webhookSecret
-              jwtSecret
-              serverName
-              timezone
-              ;
-            host = cfg.komodo.host;
-            backupsPath = "/opt/komodo/backups";
-            # Periphery's root directory lives on the /opt/komodo virtiofs share
-            # (guest /opt/komodo → host /opt/komodo), so every stack Periphery
-            # deploys and the source side of every bind mount it manages is
-            # browsable directly on the host under /opt/komodo/periphery.
-            peripheryRootDirectory = "/opt/komodo/periphery";
-            # Report disk usage for the guest's real data mounts in the Komodo
-            # UI: the guest root, the Docker data volume, and the virtiofs share.
-            includeDiskMounts = [
-              "/"
-              "/var/lib/docker"
-              "/opt/komodo"
-            ];
-            # Komodo Core's git working directories live on the /opt/komodo
-            # virtiofs share so repo/sync clones (e.g. a managed Resource Sync
-            # backing config up to a git repo) persist across guest restarts and
-            # are browsable on the host under /opt/komodo/{repo-cache,syncs}.
-            repoCachePath = "/opt/komodo/repo-cache";
-            syncPath = "/opt/komodo/syncs";
-            requireMountUnit = lib.mkIf cfg.komodo.enable "opt-komodo.mount";
-            # sops-nix (below) decrypts these to /run/secrets inside the guest;
-            # ft.ociStack mounts them into Core/Periphery and loads them via
-            # `--config-path`. Left null (the default) when the tier is disabled.
-            coreSecretsFile = lib.mkIf cfg.komodo.coreSecrets.enable (
-              lib.mkDefault "/run/secrets/komodo/core_secrets"
-            );
-            peripherySecretsFile = lib.mkIf cfg.komodo.peripherySecrets.enable (
-              lib.mkDefault "/run/secrets/komodo/periphery_secrets"
-            );
-          };
+          rootless = lib.mkDefault false;
+        };
+
+        ft.komodo = lib.mkIf cfg.komodo.enable {
+          enable = lib.mkDefault true;
+          # The guest configures sops-nix directly (below), not the framework
+          # ft.sops module, so bypass ft.komodo's ft.sops assertion for the
+          # [secrets] tiers.
+          assumeSopsConfigured = lib.mkDefault true;
+          inherit (cfg.komodo)
+            imageTag
+            dbUsername
+            dbPassword
+            adminUsername
+            adminPassword
+            webhookSecret
+            jwtSecret
+            serverName
+            timezone
+            ;
+          host = cfg.komodo.host;
+          backupsPath = "/opt/komodo/backups";
+          # Periphery's root directory lives on the /opt/komodo virtiofs share
+          # (guest /opt/komodo → host /opt/komodo), so the managed tree is
+          # browsable directly on the host under /opt/komodo/periphery.
+          peripheryRootDirectory = "/opt/komodo/periphery";
+          # Report disk usage for the guest's real data mounts in the Komodo UI.
+          includeDiskMounts = [
+            "/"
+            "/var/lib/docker"
+            "/opt/komodo"
+          ];
+          # Core's git working directories live on the /opt/komodo virtiofs share
+          # so repo/sync clones persist across guest restarts and are browsable
+          # on the host under /opt/komodo/{repo-cache,syncs}.
+          repoCachePath = "/opt/komodo/repo-cache";
+          syncPath = "/opt/komodo/syncs";
+          # Guest sops-nix (below) decrypts komodo/{core,periphery}_secrets;
+          # ft.komodo.secrets.* mounts them into Core/Periphery and loads them
+          # via `--config-path`. Off (default) when the tier is disabled.
+          secrets.core.enable = lib.mkDefault cfg.komodo.coreSecrets.enable;
+          secrets.periphery.enable = lib.mkDefault cfg.komodo.peripherySecrets.enable;
+        };
+
+        # ft.komodo's compose oneshot must wait for the /opt/komodo virtiofs
+        # share (its backups/periphery/repo-cache/syncs bind mounts live there).
+        systemd.services.komodo = lib.mkIf cfg.komodo.enable {
+          after = [ "opt-komodo.mount" ];
+          requires = [ "opt-komodo.mount" ];
         };
 
         # ── Guest-side sops-nix ────────────────────────────────────────────────

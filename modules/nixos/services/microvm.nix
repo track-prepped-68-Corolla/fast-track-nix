@@ -127,7 +127,7 @@
             extraGuestConfig = lib.mkOption {
               type = lib.types.deferredModule;
               default = { };
-              description = "Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.ociStack) without modifying this generic infrastructure module.";
+              description = "Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.containers + ft.komodo) without modifying this generic infrastructure module.";
             };
           };
         }

@@ -91,7 +91,7 @@ A configuration and management interface for consumers. The Nix module system's 
 - [ ] **`flake-parts/options-schema.nix`** — evaluate `nixosModules.default` headlessly, walk `options.ft`, serialize each option to a JSON-safe shape (`bool`, `str`, `int`, `attrsOf submodule`, `listOf`, `nullOr`); bake into the service package at build time so no runtime `nix eval` is needed for the schema; export as `flake.lib.ftOptionsSchema`
 - [ ] **`flake-parts/machine-codegen.nix`** — `lib.mkMachineConfig { machineName, selections }`: serialize selections to proper Nix syntax (not JSON), emit a complete `machines/<name>/default.nix` with stub `var/facter.json`, validate round-trip with `nix eval`; export as `flake.lib.mkMachineConfig`
 - [ ] **`flake-parts/microvm-factory.nix`** — `lib.mkEphemeralVm { selections, instanceParams }`: build inline `lib.nixosSystem`, inject per-instance params (IP, MAC, hostname, SSH keys, vsock CID) via cloud-init config drive at launch; export as `flake.lib.mkEphemeralVm`
-  - [ ] Pre-built named shapes in `flake.packages` (binary-cached to eliminate cold-start latency): `microvm-base`, `microvm-docker` (`ft.ociStack`), `microvm-komodo` (`ft.ociStack` + `ft.komodo`)
+  - [ ] Pre-built named shapes in `flake.packages` (binary-cached to eliminate cold-start latency): `microvm-base`, `microvm-docker` (`ft.containers`), `microvm-komodo` (`ft.containers` + `ft.komodo`)
 
 ### Features
 
@@ -250,8 +250,8 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 ## 🧹 Container Module Cleanup / Redundancy
 
 > From a container-module inventory (docker / podman / komodo) across
-> fast-track-nix, ft-home, ft-testing. The Komodo/runtime consolidation is done;
-> the microVM cleanup and `ft.hermesVm` remain.
+> fast-track-nix, ft-home, ft-testing. The Komodo/runtime consolidation and the
+> microVM Phase 1 cleanup are done; the Phase 2 factory refactor remains.
 
 - [x] **Consolidate the container/Komodo modules** — collapsed the three
   overlapping Komodo implementations into one runtime substrate plus one app,
@@ -262,17 +262,19 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
   `ft.podmanRootless` into `ft.containers` and deleted it. The `ft.komodo` pair
   is now the supported, cooperating docker-compose implementation — not to be
   removed.
-- [ ] **MicroVM cleanup (next step)** — retarget `ft.dockervm`'s guest onto
-  `ft.containers` + `ft.komodo`, then delete `ft.ociStack`
-  (`modules/nixos/services/oci-stack.nix`) and `ft.guacamole`
-  (`modules/nixos/services/guacamole.nix`), which are only reachable through the
-  microVM wrapper. This is where the net line count drops (the compose stack
-  currently lives in both `ft.komodo` and `oci-stack.nix` on purpose).
-- [ ] **`ft.hermesVm` — possibly abandoned VM wrapper** — `modules/nixos/services/microvm-hermes.nix`
-  is a full microVM wrapper whose only footprint anywhere is a *commented-out*
-  block in `ft-home/machines/strix/default.nix`. Not redundant with Komodo (a
-  distinct Hermes-agent feature), so tracked separately from the Komodo trim.
-  Confirm whether it's still wanted before removing.
+- [x] **MicroVM cleanup — Phase 1** — retargeted `ft.dockervm`'s guest onto
+  `ft.containers` + `ft.komodo`; deleted `ft.ociStack` (`oci-stack.nix`),
+  `ft.guacamole` (`guacamole.nix`), and `ft.hermesVm` (`microvm-hermes.nix`,
+  dropped as a failed experiment) along with the now-unused `hermes-agent`
+  flake input. Added `ft.komodo.assumeSopsConfigured` so the guest's
+  directly-configured sops-nix passes the [secrets]-tier assertion.
+- [ ] **MicroVM cleanup — Phase 2 (factory refactor)** — pull VM definitions out
+  of the host module system: standalone, cacheable VM `nixosConfigurations`
+  discovered from a `vms/` directory (analogous to `machines/`), with the host
+  slimmed to bridge/NAT/TAP + attach-by-reference. Removes the inline-guest
+  recursion fragility and unlocks the Trolley ephemeral-VM / named-shapes
+  roadmap. Open decision before starting: per-VM network injection — DHCP on the
+  bridge (preferred) vs cloud-init.
 
 ---
 
