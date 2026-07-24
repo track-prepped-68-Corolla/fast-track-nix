@@ -328,9 +328,8 @@ in
         ft.komodo = lib.mkIf cfg.komodo.enable {
           enable = lib.mkDefault true;
           # The guest configures sops-nix directly (below), not the framework
-          # ft.sops module, so bypass ft.komodo's ft.sops assertion for the
-          # [secrets] tiers.
-          assumeSopsConfigured = lib.mkDefault true;
+          # ft.sops module. ft.komodo no longer asserts against ft.sops, so
+          # nothing special is needed here — sops-nix validates the keys.
           inherit (cfg.komodo)
             imageTag
             dbUsername
