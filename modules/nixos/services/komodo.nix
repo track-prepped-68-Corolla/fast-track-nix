@@ -297,7 +297,7 @@ in
 
     sopsEnv = {
       enable = lib.mkEnableOption "sops-backed Komodo credentials env-file" // {
-        description = "Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store. Requires ft.sops.enable; populate the key as KEY=VALUE lines — see NOTES.md.";
+        description = "Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store. Requires a configured sops-nix (normally ft.sops.enable); populate the key as KEY=VALUE lines — see NOTES.md.";
       };
 
       secretName = lib.mkOption {
@@ -357,10 +357,10 @@ in
 
     secrets = {
       periphery.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets]" // {
-        description = "Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires ft.sops.enable.";
+        description = "Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).";
       };
       core.enable = lib.mkEnableOption "sops-decrypted Core [secrets]" // {
-        description = "Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires ft.sops.enable.";
+        description = "Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).";
       };
     };
 
@@ -376,12 +376,6 @@ in
       };
     };
 
-    assumeSopsConfigured = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      internal = true;
-      description = "Escape hatch for hosts that configure sops-nix directly instead of via the framework ft.sops module (e.g. the ft.dockervm microVM guest, which decrypts on its own SSH host key). When true, the [secrets]-tier assertion accepts that direct setup. Not for general use.";
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -390,16 +384,11 @@ in
         assertion = cCfg.enable && cCfg.compose.enable;
         message = "ft.komodo requires ft.containers.enable with ft.containers.compose.enable = true (it deploys via docker-compose).";
       }
-      {
-        assertion =
-          (cfg.sopsEnv.enable || cfg.secrets.core.enable || cfg.secrets.periphery.enable)
-          # assumeSopsConfigured must come first: in the microVM guest the
-          # framework ft.sops module isn't imported, so `config.ft.sops` doesn't
-          # exist — evaluating it would throw "attribute 'sops' missing" instead
-          # of short-circuiting. `||` evaluates left-to-right.
-          -> (cfg.assumeSopsConfigured || config.ft.sops.enable);
-        message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true (or ft.komodo.assumeSopsConfigured, for a host that configures sops-nix directly) to decrypt their sops keys.";
-      }
+      # No assertion couples the [secrets] tiers to ft.sops: enabling a tier
+      # declares its sops.secrets key, and sops-nix itself fails (clearly) if no
+      # sops file / age key is configured — whether that comes from ft.sops or a
+      # host that wires sops-nix directly (e.g. the ft.dockervm guest). One
+      # source of truth, no framework-module coupling.
       {
         assertion =
           cfg.autoApply.enable
