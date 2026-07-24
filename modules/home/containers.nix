@@ -23,8 +23,7 @@ let
 
   # Docker-API-compatible user socket, using the systemd %t (XDG_RUNTIME_DIR)
   # specifier so it resolves per-session inside unit Environment lines.
-  socketDefault =
-    if cfg.runtime == "podman" then "%t/podman/podman.sock" else "%t/docker.sock";
+  socketDefault = if cfg.runtime == "podman" then "%t/podman/podman.sock" else "%t/docker.sock";
 in
 {
   options.ft.containers = {

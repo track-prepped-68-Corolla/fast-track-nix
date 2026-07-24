@@ -85,7 +85,9 @@ let
     cfg.includeDiskMounts != [ ]
   ) "PERIPHERY_INCLUDE_DISK_MOUNTS=${lib.concatStringsSep "," cfg.includeDiskMounts}";
 
-  repoCacheVolume = lib.optionalString (cfg.repoCachePath != null) "\n      - ${cfg.repoCachePath}:/repo-cache";
+  repoCacheVolume = lib.optionalString (
+    cfg.repoCachePath != null
+  ) "\n      - ${cfg.repoCachePath}:/repo-cache";
   syncVolume = lib.optionalString (cfg.syncPath != null) "\n      - ${cfg.syncPath}:/syncs";
   coreGitVolumes = repoCacheVolume + syncVolume;
 
@@ -362,7 +364,9 @@ in
       {
         assertion =
           cfg.autoApply.enable
-          -> (config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default);
+          -> (
+            config.ft.cli.enable && config.ft.sops.enable && config.ft.repoPath != options.ft.repoPath.default
+          );
         message = "ft.komodo.autoApply requires ft.cli.enable, ft.sops.enable and ft.repoPath set to your consumer repo — it drives `ft komodo-apply` and reads the ${cfg.autoApply.apiEnvSecret} sops secret.";
       }
     ];
