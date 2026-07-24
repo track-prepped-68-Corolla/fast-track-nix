@@ -393,7 +393,11 @@ in
       {
         assertion =
           (cfg.sopsEnv.enable || cfg.secrets.core.enable || cfg.secrets.periphery.enable)
-          -> (config.ft.sops.enable || cfg.assumeSopsConfigured);
+          # assumeSopsConfigured must come first: in the microVM guest the
+          # framework ft.sops module isn't imported, so `config.ft.sops` doesn't
+          # exist — evaluating it would throw "attribute 'sops' missing" instead
+          # of short-circuiting. `||` evaluates left-to-right.
+          -> (cfg.assumeSopsConfigured || config.ft.sops.enable);
         message = "ft.komodo.sopsEnv and ft.komodo.secrets.{core,periphery} require ft.sops.enable = true (or ft.komodo.assumeSopsConfigured, for a host that configures sops-nix directly) to decrypt their sops keys.";
       }
       {
