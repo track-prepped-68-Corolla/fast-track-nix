@@ -8,7 +8,7 @@
 
 ### Framework (fast-track-nix)
 - [x] Wire up all flake inputs
-- [x] Machine and user auto-discovery via `lib/generator.nix`
+- [x] Machine and user auto-discovery via `flake-parts/generator.nix`
 - [x] NixOS module hub (`modules/nixos/default.nix` — `listFilesRecursive`)
 - [x] Home Manager module hub (`modules/home/default.nix` — `listFilesRecursive`)
 - [x] Replace lanzaboote with nixos-facter; migrate bootloader to Limine
@@ -20,13 +20,16 @@
 - [x] Graceful degradation for secrets via `ft.sops.enable` (`mkIf` guards entire sops config)
 - [x] No hardcoded U2F keys in framework — consumers supply their own via `ft.yubikey.u2fMapping`
 - [x] Create a user-level Komodo module — `modules/home/komodo.nix` (`ft.komodo.enable`)
+- [x] `ft.deploy` — Colmena fleet deployment (`flake-parts/colmena.nix` emits `flake.colmenaHive` from machines with `ft.deploy.enable`); adopted by `ft-template`'s example machine
+- [x] Kexec installer images — `flake-parts/kexec.nix` + `modules/installer/kexec-auto-install.nix`, driven by `ft bootstrap-kexec`; adopted by `ft-template`'s example machine
+- [x] `ft.vicinae` — Raycast-compatible launcher (`modules/nixos/services/vicinae.nix` + `modules/home/vicinae.nix`)
 
 ### Consumer (ft-home)
 - [x] Wire up all flake inputs
 - [x] Create magic folder functions for hosts and homes
 - [x] Create magic collator files for host and home modules
 - [x] Create a home module for magic `mkOutOfStoreSymlink` folder functions
-- [x] Externalize generator logic into `lib/generator.nix`
+- [x] Externalize generator logic into `flake-parts/generator.nix`
 - [x] Purge modules and bring back MVP; import and verify core NixOS and Home Manager modules
 - [x] Implement "The Mullet" (consumer side) — `mullet.nix` ingests a flat `mullet.txt` for imperative packages
 - [x] Set Atkinson Hyperlegible as the default system font via Stylix
@@ -117,6 +120,11 @@ A configuration and management interface for consumers. The Nix module system's 
 
 ## 🔁 Self-Hosted GitOps Stack
 
+> Naming collision note: `ft.gitops` (comin-based pull GitOps, NixOS + HM, live on
+> `mimir`/`lyra`, two VM tests) already exists and is unrelated to the items below
+> — those are about a non-Nix machine registry and self-hosted forge/monitoring
+> infra, not covered by `ft.gitops`. Don't confuse the two when reading this section.
+
 - [ ] **`ft.forgejo`** — Forgejo Git forge + optional Actions runner for consumer repo hosting and GitOps push-to-deploy
   - [ ] `services.forgejo` with sensible defaults (data dir, DB, domain)
   - [ ] Optional Forgejo Actions runner (`ft.forgejo.runner.enable`) for `nixos-rebuild switch` on push
@@ -176,7 +184,8 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 - [x] **Support other vendors:**
   - [x] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
   - [x] Scaffold a generic vendor module structure for toggling vendor-specific quirks
-  - [ ] Implement and test at least one alternative vendor configuration
+  - [x] Implement at least one alternative vendor configuration — `vendor-hw.nix` already covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, and handhelds, not just ASUS
+  - [ ] **Test coverage gap:** only ASUS has a VM smoke test (`ft-testing/tests/vm/vendor-hw.nix` → `vm-vendor-hw-asus`); the two non-ASUS ft-home machines (`mimir`, `lyra`, both GMKtec) don't match any vendor-hw detection predicate, so no non-ASUS branch has ever run for real or in CI
 
 ---
 
@@ -200,8 +209,8 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 ## 👥 User Provisioning & Environment
 
 - [ ] Create a script that creates generic home folders for new users
-- [ ] Create a script that runs the first home-manager switch on users without an existing profile
-- [ ] Create mackup dotfile sync script
+- [x] Create a script that runs the first home-manager switch on users without an existing profile — `sys.just`'s `home-switch` recipe runs `home-manager switch -b backup`, which handles the first-switch dotfile collision this item describes
+- [x] Create mackup dotfile sync script — `scripts/store.just` (`store`, `store-custom`, `_store_single`, `_store_all`, `_process_cfg`)
 
 ---
 
@@ -229,6 +238,7 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 ## 👾 Scripts & CLI
 
+- [ ] **`ft_py`** (`scripts/ft_py`) — in-development Python CLI; `flake.nix` explicitly keeps it framework-internal for now, not part of `lib.mkFlake`'s consumer-facing import list. Define scope and promote once stable.
 - [ ] Write a wrapper for the Lix fork of the Determinate Systems installer
 - [ ] **Graceful Degradation:** Wrap git integrations (`git diff`, `delta`, auto-commits) in `git rev-parse --is-inside-work-tree` checks
 - [ ] **`ft.jj` module** — optional, gated colocated Jujutsu setup for consumers who want jj ergonomics on top of the existing git-backed repo
@@ -284,4 +294,5 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 - [x] Consumer quickstart guide in `README.md` (machine + user + first switch)
 - [x] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
 - [x] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
+- [ ] **Regenerate `modules/nixos/README.md`** — the auto-generated `nixosOptionsDoc` output is stale: it still documents `ft.guacamole.*` and `ft.dockervm.guacamole.*`, both deleted in the Phase 1 microVM cleanup (see Container Module Cleanup section), with dead store-path links. Re-run the doc generation and consider wiring it into CI so it can't drift again.
 - [ ] **Module docs custom formatter** — replace `nixosOptionsDoc`'s flat CommonMark output with a custom renderer that groups `ft.*` options by feature (`##` per feature), emits a table of contents, and adds one-line feature summaries; source from `optionsJSON` rather than `optionsCommonMark`
