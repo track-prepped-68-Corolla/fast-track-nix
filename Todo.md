@@ -120,11 +120,7 @@ A configuration and management interface for consumers. The Nix module system's 
 
 ## 🔁 Self-Hosted GitOps Stack
 
-> Naming collision note: `ft.gitops` (comin-based pull GitOps, NixOS + HM, live on
-> `mimir`/`lyra`, two VM tests) already exists and is unrelated to the items below
-> — those are about a non-Nix machine registry and self-hosted forge/monitoring
-> infra, not covered by `ft.gitops`. Don't confuse the two when reading this section.
-
+- [x] **`ft.gitops`** — comin-based pull GitOps (NixOS + HM daemon counterpart), polling one or more git remotes as anti-SPOF failover, `switch`-deploying a signed `deployBranch` and `test`-deploying comin's ephemeral per-host `testing-<hostname>` branch, with an optional failure-retry watchdog and opt-in bootloader-default promotion (`modules/nixos/services/gitops.nix`, `modules/home/gitops.nix`). Live on `mimir`/`lyra`; two VM tests (`gitops.nix`, `gitops-home.nix`). This is the deploy-on-push mechanism the rest of this section builds infra around — it doesn't cover repo hosting, monitoring, non-Nix machines, or a dashboard, which is what the remaining items below add on top of it.
 - [ ] **`ft.forgejo`** — Forgejo Git forge + optional Actions runner for consumer repo hosting and GitOps push-to-deploy
   - [ ] `services.forgejo` with sensible defaults (data dir, DB, domain)
   - [ ] Optional Forgejo Actions runner (`ft.forgejo.runner.enable`) for `nixos-rebuild switch` on push
