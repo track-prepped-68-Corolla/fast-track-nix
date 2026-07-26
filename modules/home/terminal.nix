@@ -18,19 +18,19 @@ in
   options.ft.terminal = {
     enable = lib.mkEnableOption "terminal stack" // {
       default = true;
-      description = "Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
+      description = "Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with lazily-loaded plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
     };
 
     zshPlugins = {
       autosuggestions.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable zsh-autosuggestions, suggesting commands as you type based on history.";
+        description = "Enable zsh-autosuggestions, suggesting commands as you type based on history. Sourced via zsh-defer so it doesn't block shell startup.";
       };
       syntaxHighlighting.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable zsh-syntax-highlighting, highlighting commands as they are typed.";
+        description = "Enable zsh-syntax-highlighting, highlighting commands as they are typed. Sourced via zsh-defer so it doesn't block shell startup.";
       };
       completions.enable = lib.mkOption {
         type = lib.types.bool;
@@ -90,7 +90,16 @@ in
         enable = true;
         dotDir = lib.mkDefault "${config.xdg.configHome}/zsh";
         enableCompletion = lib.mkDefault true;
-        initContent = lib.mkDefault "source ${config.ft.dotfiles.path}/zsh/.zshrc";
+
+        # Skip compinit's security audit unless the dump is more than a day
+        # old, so completion setup doesn't rescan fpath on every shell start.
+        completionInit = lib.mkDefault ''
+          autoload -Uz compinit
+          for dump in ''${ZDOTDIR:-$HOME}/.zcompdump(N.mh+24); do
+            compinit
+          done
+          compinit -C
+        '';
 
         history = {
           size = lib.mkDefault 10000;
@@ -99,13 +108,26 @@ in
           extended = lib.mkDefault true;
         };
 
-        autosuggestion.enable = lib.mkDefault cfg.zshPlugins.autosuggestions.enable;
-        syntaxHighlighting.enable = lib.mkDefault cfg.zshPlugins.syntaxHighlighting.enable;
-
         plugins = lib.optional cfg.zshPlugins.completions.enable {
           name = "zsh-completions";
           src = pkgs.zsh-completions;
         };
+
+        # autosuggestions/syntax-highlighting are sourced through zsh-defer
+        # (below) rather than the native autosuggestion/syntaxHighlighting
+        # options, since those source eagerly and block shell startup.
+        initContent = lib.mkMerge [
+          (lib.mkDefault "source ${config.ft.dotfiles.path}/zsh/.zshrc")
+          (lib.mkAfter (
+            lib.optionalString
+              (cfg.zshPlugins.autosuggestions.enable || cfg.zshPlugins.syntaxHighlighting.enable)
+              "source ${pkgs.zsh-defer}/share/zsh-defer/zsh-defer.plugin.zsh\n"
+            + lib.optionalString cfg.zshPlugins.autosuggestions.enable
+              "zsh-defer source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n"
+            + lib.optionalString cfg.zshPlugins.syntaxHighlighting.enable
+              "zsh-defer source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n"
+          ))
+        ];
       };
 
       starship = {
