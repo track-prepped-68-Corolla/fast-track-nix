@@ -15,6 +15,10 @@ let
   cfg = config.ft.terminal;
 
   # Not in nixpkgs; pinned to a specific commit for reproducibility.
+  # TODO: hash is a placeholder (lib.fakeHash) pending a real one computed
+  # with `nix`; zshPlugins.commaAssistant.enable defaults to false until
+  # it's replaced, since fast-track-nix's own CI only evaluates and won't
+  # catch a wrong hash — it would otherwise break consumer builds silently.
   commaAssistantSrc = pkgs.fetchFromGitHub {
     owner = "thesola10";
     repo = "zsh-comma-assistant";
@@ -47,8 +51,12 @@ in
       };
       commaAssistant.enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Enable zsh-comma-assistant: friendlier command-not-found handling (offers to run unknown commands via comma) and, when zshPlugins.syntaxHighlighting is also enabled, highlights commands available via comma/nix-index. Requires ft.nixIndex.enable for the comma binary and database; no-ops if that's disabled. Sourced via zsh-defer so it doesn't block shell startup.";
+        # Defaults off: commaAssistantSrc's fetchFromGitHub hash below is
+        # still a lib.fakeHash placeholder (no local nix available to
+        # compute the real one) — enabling this will fail the build until
+        # it's replaced with the actual NAR hash.
+        default = false;
+        description = "Enable zsh-comma-assistant: friendlier command-not-found handling (offers to run unknown commands via comma) and, when zshPlugins.syntaxHighlighting is also enabled, highlights commands available via comma/nix-index. Requires ft.nixIndex.enable for the comma binary and database; no-ops if that's disabled. Sourced via zsh-defer so it doesn't block shell startup. NOTE: currently defaults off — the pinned fetchFromGitHub source uses a placeholder hash pending a real one.";
       };
     };
   };
