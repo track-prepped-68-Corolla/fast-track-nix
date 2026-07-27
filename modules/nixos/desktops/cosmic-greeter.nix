@@ -10,7 +10,7 @@ in
 {
   options.ft.cosmicGreeter = {
     enable = lib.mkEnableOption "cosmic-greeter display manager" // {
-      description = "Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.";
+      description = "Turns on cosmic-greeter as the login screen. Pair it with `ft.cosmic` to boot straight into a COSMIC session.";
     };
   };
 

@@ -36,7 +36,7 @@ in
 {
   options.ft.wine = {
     enable = lib.mkEnableOption "Wine/Bottles compatibility stack" // {
-      description = "Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.";
+      description = "Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam.";
     };
   };
 

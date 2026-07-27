@@ -16,19 +16,19 @@ in
   options.ft.core = {
     enable = lib.mkEnableOption "system core baseline" // {
       default = true;
-      description = "Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.";
+      description = "The baseline every machine starts from: network management, Bluetooth, network printing, zsh as the shell, and a set of everyday CLI tools. Every value here is just a default, so any host can override individual pieces.";
     };
 
     stateVersion = lib.mkOption {
       type = lib.types.str;
-      description = "The NixOS release version this machine was *first installed* on. Controls which state migration paths activate on boot — setting this wrong triggers unwanted migrations. Set it once at machine creation and never change it.";
+      description = "The NixOS release this machine was originally installed on. NixOS uses this to decide which one-time upgrade steps to run at boot, so getting it wrong can trigger changes you don't want. Set it once when the machine is created and leave it alone after that.";
     };
   };
 
   options.ft.repoPath = lib.mkOption {
     type = lib.types.str;
     default = "/nix/ft-home";
-    description = "Absolute path to the consumer's flake repo root. Set this in your host file.";
+    description = "Absolute path to your consumer repo on disk. Set this in your machine's config file.";
   };
 
   config = lib.mkIf cfg.enable {

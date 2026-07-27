@@ -40,7 +40,7 @@ in
 {
   options.ft.containers = {
     enable = lib.mkEnableOption "OCI container runtime substrate" // {
-      description = "Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.";
+      description = "Sets up a container runtime — Docker or Podman, running as root or rootless — along with the real Docker Compose v2 binary and, optionally, Distrobox. Other features, like ft.komodo, build on top of this and reach the daemon through the Docker-API-compatible socket this module provides.";
     };
 
     runtime = lib.mkOption {
@@ -49,50 +49,50 @@ in
         "podman"
       ];
       default = "podman";
-      description = "OCI runtime. Podman is recommended for rootless use; both expose a Docker-API-compatible socket so the genuine docker-compose binary drives either unchanged.";
+      description = "Which container runtime to use. Podman is the recommended choice for rootless setups; both runtimes expose a Docker-API-compatible socket, so the real docker-compose binary works unchanged against either one.";
     };
 
     rootless = lib.mkOption {
       type = lib.types.bool;
       default = cfg.runtime == "podman";
-      description = "Run the runtime rootless. When true, a dedicated unprivileged service account (ft.containers.user) gets subuid/subgid maps, systemd lingering, and a user-level daemon socket, with DOCKER_HOST pointed at it — running `podman system service` or rootless dockerd per ft.containers.runtime. When false the system daemon runs as root (podman gains dockerCompat + the docker socket).";
+      description = "Run the container runtime without root privileges. When enabled, a dedicated unprivileged account (ft.containers.user) is created with its own subuid/subgid ranges, kept logged in via systemd lingering, and given a user-level daemon socket that DOCKER_HOST points at — this runs `podman system service` or rootless dockerd depending on ft.containers.runtime. When disabled, the system daemon runs as root instead (and Podman gains its Docker-compatible socket via dockerCompat).";
     };
 
     user = lib.mkOption {
       type = lib.types.str;
       default = "podman";
-      description = "Name of the unprivileged service account created for rootless mode. Ignored when rootless = false.";
+      description = "Name of the unprivileged account created for rootless mode. Ignored when rootless = false.";
     };
 
     uid = lib.mkOption {
       type = lib.types.int;
       default = 2000;
-      description = "Fixed UID and GID for the rootless service account. The rootless daemon socket path derives from it (/run/user/<uid>/...). Ignored when rootless = false.";
+      description = "Fixed UID/GID for the rootless service account. The rootless daemon's socket path is derived from this (/run/user/<uid>/...). Ignored when rootless = false.";
     };
 
     compose.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Install the genuine Docker Compose v2 binary (pkgs.docker-compose). It drives either runtime through the Docker-API-compatible socket; podman-compose is never used.";
+      description = "Installs the real Docker Compose v2 binary (pkgs.docker-compose), which drives either runtime through its Docker-API-compatible socket. podman-compose is never used.";
     };
 
     distrobox.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Install Distrobox for running other-distribution containers as host-integrated environments on top of the selected runtime.";
+      description = "Installs Distrobox, for running containers from other Linux distributions as environments integrated with the host, on top of whichever runtime is selected.";
     };
 
     dataDir = lib.mkOption {
       type = lib.types.str;
       default = "/opt/containers";
-      description = "Base directory provisioned for docker-compose and bind-mount workloads. Owned by the service account when rootless, otherwise root.";
+      description = "Base directory set up for docker-compose workloads and bind mounts. Owned by the rootless service account when rootless is enabled, otherwise owned by root.";
     };
 
     socket = lib.mkOption {
       type = lib.types.str;
       readOnly = true;
       default = socketDefault;
-      description = "Read-only: the Docker-API-compatible socket path the active cell exposes. Consumed by apps built on this module (e.g. ft.komodo) as DOCKER_HOST.";
+      description = "Read-only: the Docker-API-compatible socket path exposed by whichever runtime and mode are active. Other features built on this module (e.g. ft.komodo) read this and use it as DOCKER_HOST.";
     };
   };
 

@@ -15,25 +15,25 @@ in
 {
   options.ft.virt = {
     enable = lib.mkEnableOption "Comprehensive virtualization setup (Libvirt, Incus, VMware)" // {
-      description = "Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.";
+      description = "Sets up virtual machine support with libvirt/KVM and virt-manager, and adds `ft.users.mainUser` to the libvirtd group so they can manage VMs. You can also turn on `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` to pass USB devices through to VMs.";
     };
 
     enableVmwareHost = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable VMware Workstation host support.";
+      description = "Turn on support for running VMware Workstation on this machine.";
     };
 
     enableIncus = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable Incus (LXD fork) container hypervisor.";
+      description = "Turn on Incus, the LXD-based container and VM hypervisor.";
     };
 
     enableSpiceUsbRedirection = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable SPICE USB redirection for VMs.";
+      description = "Turn on SPICE USB redirection, letting VMs use USB devices plugged into the host.";
     };
   };
 

@@ -15,7 +15,7 @@ in
 {
   options.ft.nfs = {
     enable = lib.mkEnableOption "NFS Client mount management" // {
-      description = "Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.";
+      description = "Sets up NFS client mounts declared under `ft.nfs.mounts`. Each entry gives a `remotePath` (e.g. server:/share) and a `mountPoint`, and is mounted on demand — with a 10-minute idle timeout — via systemd's automount.";
     };
 
     mounts = lib.mkOption {
@@ -24,17 +24,17 @@ in
           options = {
             remotePath = lib.mkOption {
               type = lib.types.str;
-              description = "Remote path of the NFS share (e.g., server:/path).";
+              description = "Remote path of the NFS share (e.g. server:/path).";
             };
             mountPoint = lib.mkOption {
               type = lib.types.str;
-              description = "Local mount point for the NFS share.";
+              description = "Local mount point where the NFS share appears.";
             };
           };
         }
       );
       default = { };
-      description = "Attribute set of NFS mounts to configure.";
+      description = "The set of NFS mounts to configure.";
     };
   };
 

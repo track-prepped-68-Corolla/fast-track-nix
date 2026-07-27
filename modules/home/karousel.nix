@@ -22,7 +22,7 @@ in
 {
   options.ft.karousel = {
     enable = lib.mkEnableOption "Karousel scrollable-tiling KWin script" // {
-      description = "Installs the Karousel KWin script and enables it via kwinrc. Requires `ft.plasmaManager.enable` so the kwinrc Plugins key is managed declaratively.";
+      description = "Installs the Karousel scrollable-tiling script for KWin and turns it on through `kwinrc`. Requires `ft.plasmaManager.enable`, since that's what manages the `kwinrc` Plugins settings declaratively.";
     };
   };
 

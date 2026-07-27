@@ -122,7 +122,7 @@ in
 
   options.ft.gitops = {
     enable = lib.mkEnableOption "comin pull-based GitOps deployment" // {
-      description = "Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).";
+      description = "Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.";
     };
 
     remotes = lib.mkOption {
@@ -131,66 +131,66 @@ in
           options = {
             name = lib.mkOption {
               type = lib.types.str;
-              description = "Short identifier for this remote (comin remotes[].name).";
+              description = "A short name for this remote (comin's remotes[].name).";
             };
             url = lib.mkOption {
               type = lib.types.str;
-              description = "Git URL comin polls (comin remotes[].url). List the primary first (e.g. self-hosted Forgejo) and backups after (e.g. Codeberg); comin polls all to avoid a single point of failure.";
+              description = "The git URL comin polls (comin's remotes[].url). List your primary remote first (e.g. a self-hosted Forgejo instance) and any backups after (e.g. Codeberg) — comin polls all of them so no single remote is a point of failure.";
             };
             tokenSecret = lib.mkOption {
               type = lib.types.nullOr lib.types.str;
               default = null;
-              description = "Name of a sops secret holding an access token for this remote. When set, the secret is declared and wired to comin's auth.access_token_path; null polls the remote anonymously (public repository). Requires ft.sops.enable.";
+              description = "Name of a sops secret holding an access token for this remote. When set, the secret is decrypted and wired into comin's auth.access_token_path; leave it null to poll the remote anonymously (for a public repository). Requires ft.sops.enable.";
             };
           };
         }
       );
       default = [ ];
-      description = "Ordered list of git remotes comin polls for this machine's configuration. Polled together as failover (anti-SPOF), primary first.";
+      description = "Ordered list of git remotes comin polls for this machine's configuration. All of them are polled together so no single remote is a point of failure — list the primary one first.";
     };
 
     deployBranch = lib.mkOption {
       type = lib.types.str;
       default = "main";
-      description = "Branch comin deploys permanently with `switch` (comin remotes[].branches.main.name). Tracks your production branch; commits must be signed by one of `signingKeys` when that list is non-empty.";
+      description = "The branch comin deploys permanently with `switch` (comin's remotes[].branches.main.name). This should track your production branch; when `signingKeys` is non-empty, commits on it must be signed by one of those keys.";
     };
 
     pollPeriod = lib.mkOption {
       type = lib.types.int;
       default = 60;
-      description = "How often, in seconds, comin polls each remote for new commits (comin remotes[].poller.period).";
+      description = "How often, in seconds, comin checks each remote for new commits (comin's remotes[].poller.period).";
     };
 
     signingKeys = lib.mkOption {
       type = lib.types.listOf lib.types.path;
       default = [ ];
-      description = "Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths). An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing.";
+      description = "Paths to armored GPG public key files; comin only deploys a commit if it's signed by one of these (comin's gpgPublicKeyPaths). Leaving this empty disables signature checking, meaning any commit pushed to a polled branch deploys automatically — strongly discouraged outside of testing.";
     };
 
     retry = {
       enable =
         lib.mkEnableOption "automatic retry of failed comin evaluations, builds, and deployments"
         // {
-          description = "Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.";
+          description = "Runs a watchdog timer that checks comin's Prometheus exporter for a failed evaluation, build, or deployment, and restarts comin.service to make it retry the current commit — up to retry.maxAttempts times before giving up until a new commit is pushed.";
         };
 
       maxAttempts = lib.mkOption {
         type = lib.types.int;
         default = 3;
-        description = "Maximum number of times the watchdog restarts comin.service to recover the current failing commit before giving up on it until a new commit is pushed.";
+        description = "How many times the watchdog restarts comin.service to try to recover from a failing commit, before giving up on it until a new commit arrives.";
       };
 
       checkInterval = lib.mkOption {
         type = lib.types.int;
         default = 300;
-        description = "How often, in seconds, the watchdog polls comin's exporter for a failure. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt.";
+        description = "How often, in seconds, the watchdog checks comin's exporter for a failure. Should comfortably exceed how long a typical evaluation, build, and switch takes, so it doesn't restart comin in the middle of an attempt.";
       };
     };
 
     autoPromote.enable =
       lib.mkEnableOption "promoting successful comin switch deployments to the bootloader default"
       // {
-        description = "comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default. Normally a human must explicitly boot the \"comin\" bootloader submenu entry, or run a manual `nixos-rebuild switch`, to make a comin deployment the reboot default. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin's ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience.";
+        description = "comin deliberately never touches /nix/var/nix/profiles/system - the profile the bootloader treats as the actual default - it always deploys into its own separate system-profiles/comin profile, so a bad automated deploy can never quietly become what boots by default. Normally you'd need to manually pick the \"comin\" entry in the bootloader menu, or run `nixos-rebuild switch` yourself, to make a comin deployment the default. Turning this on adds a hook that does that automatically after every successful deployment of deployBranch (never comin's temporary per-host test branch, which needs to stay revertible on reboot) - trading away that safety net for convenience.";
       };
   };
 

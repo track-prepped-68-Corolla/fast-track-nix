@@ -28,7 +28,7 @@ in
 {
   options.ft.containers = {
     enable = lib.mkEnableOption "user-level OCI container runtime" // {
-      description = "Sets up a per-user (rootless) Docker or Podman runtime with the real Docker Compose v2 binary and optional Distrobox. User-level apps like ft.komodo build on top and reach the daemon via ft.containers.socket.";
+      description = "Sets up a container runtime — Docker or Podman — that runs entirely under your own user account, no root needed. Comes with the real Docker Compose v2 and, optionally, Distrobox. Other user-level apps such as `ft.komodo` build on top of this and connect to it through `ft.containers.socket`.";
     };
 
     runtime = lib.mkOption {
@@ -37,32 +37,32 @@ in
         "podman"
       ];
       default = "podman";
-      description = "OCI runtime. Podman runs natively per-user via a systemd --user socket; with docker, the user's own rootless dockerd (set up outside Home Manager) is assumed. Both expose a Docker-API-compatible socket the genuine docker-compose binary drives.";
+      description = "Which container runtime to use. Podman runs natively as your own user through a systemd `--user` socket. Docker instead assumes you already have a rootless `dockerd` running for your user, set up outside Home Manager. Either way, the real `docker-compose` binary talks to it through a Docker-API-compatible socket.";
     };
 
     compose.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Install the genuine Docker Compose v2 binary (pkgs.docker-compose) into the user profile. podman-compose is never used.";
+      description = "Installs the real Docker Compose v2 binary (`pkgs.docker-compose`) into your user profile. `podman-compose` is never used here.";
     };
 
     distrobox.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Install Distrobox into the user profile for running other-distribution containers as host-integrated environments.";
+      description = "Installs Distrobox into your user profile, so you can run containers based on other Linux distributions that feel integrated with your host system.";
     };
 
     dataDir = lib.mkOption {
       type = lib.types.str;
       default = "${config.xdg.dataHome}/containers";
-      description = "Base directory for the user's docker-compose and bind-mount workloads.";
+      description = "The base directory where your docker-compose projects and bind-mounted data live.";
     };
 
     socket = lib.mkOption {
       type = lib.types.str;
       readOnly = true;
       default = socketDefault;
-      description = "Read-only: the Docker-API-compatible user socket (systemd %t form) the runtime exposes. Consumed by user-level apps built on this module (e.g. ft.komodo) as DOCKER_HOST.";
+      description = "Read-only. The Docker-API-compatible socket (in systemd's `%t` form) that the runtime exposes. Other user-level apps built on this module, such as `ft.komodo`, use this value as their `DOCKER_HOST`.";
     };
   };
 

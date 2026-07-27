@@ -15,7 +15,7 @@ in
 {
   options.ft.plasma = {
     enable = lib.mkEnableOption "KDE Plasma Desktop Environment" // {
-      description = "Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.";
+      description = "Turns on KDE Plasma 6 with SDDM as the login screen and the X server enabled, along with KDE Connect for pairing with phones and other devices, KWallet for storing credentials, and a curated set of KDE apps (Kate, KCalc, Spectacle, Partition Manager, and KRDC). The Elisa music player is left out by default.";
     };
   };
 

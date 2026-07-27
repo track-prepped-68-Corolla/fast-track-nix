@@ -14,7 +14,7 @@ in
 
   options.ft.sops = {
     enable = lib.mkEnableOption "user-level sops-nix secrets" // {
-      description = "Configures sops-nix for this user, pointing the age key at ~/.config/sops/age/keys.txt and the secrets file at the user's var/secrets.yaml in the consumer repo.";
+      description = "Sets up sops-nix for this user so secrets can be decrypted automatically — it points to the age key at `~/.config/sops/age/keys.txt` and to this user's secrets file at `var/secrets.yaml` in your consumer repo.";
     };
   };
 

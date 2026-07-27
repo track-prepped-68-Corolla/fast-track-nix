@@ -15,33 +15,33 @@ in
 {
   options.ft.gaming = {
     enable = lib.mkEnableOption "gaming stack" // {
-      description = "Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.";
+      description = "Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.";
     };
 
     openFirewall = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Open firewall ports for Steam Remote Play and local network game transfers.";
+      description = "Opens the firewall ports needed for Steam Remote Play and for sending games to other devices on the local network.";
     };
 
     gamescope = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable the gamescope micro-compositor.";
+        description = "Turns on gamescope, the lightweight compositor Steam uses to run games in their own window or display.";
       };
 
       hdr = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable HDR output in gamescope. Requires an HDR-capable display and a supporting GPU driver.";
+        description = "Turns on HDR output in gamescope. Your display and GPU driver both need to support HDR for this to do anything.";
       };
     };
 
     bigPicture = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Run Steam inside a gamescope session (Big Picture mode), replacing the desktop session on login.";
+      description = "Runs Steam in Big Picture mode inside a gamescope session, taking over the screen in place of the regular desktop session when you log in.";
     };
   };
 

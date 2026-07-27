@@ -21,7 +21,7 @@ in
 
   options.ft.steamConfig = {
     enable = lib.mkEnableOption "declarative Steam per-game config" // {
-      description = "Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled. Home Manager counterpart of the NixOS ft.steamConfig module — use on standalone Home Manager systems or non-NixOS distros.";
+      description = "Lets you manage Steam's per-game settings declaratively — launch options, compatibility tool overrides, and shortcuts for non-Steam games — instead of clicking through Steam's own settings. Once enabled, configure individual games under `programs.steam.config.apps` and `programs.steam.config.nonSteamApps`. This is the Home Manager counterpart of the NixOS `ft.steamConfig` module, meant for standalone Home Manager systems or non-NixOS distros.";
     };
   };
 

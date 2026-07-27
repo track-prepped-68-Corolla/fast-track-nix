@@ -46,14 +46,14 @@ in
 {
   options.ft.mullet = {
     enable = lib.mkEnableOption "imperative package management (the Mullet)" // {
-      description = "Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into home.packages. Lets a consumer add or remove user-scoped packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped. Home Manager counterpart of the NixOS ft.mullet module.";
+      description = "Lets you add or remove your own packages by editing a plain text file instead of touching Nix. Every package name listed in the file at `ft.mullet.sourcePath` gets installed for this user; names that don't resolve to a real package are just skipped. This is the Home Manager counterpart of the NixOS `ft.mullet` module.";
     };
 
     sourcePath = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = if ftUserPath == null then null else ftUserPath + "/var/mullet.txt";
       example = lib.literalExpression "./var/mullet-custom.txt";
-      description = "Flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names for this user. When this home configuration was generated via ft-home.lib.mkFlake, defaults to var/mullet.txt inside this user's own users/<username>/ directory. Set explicitly to override that location, or if this module is used via homeManagerModules.default outside the generator (where no default is available).";
+      description = "Path to the plain text file listing this user's package names, one per line. When this configuration comes from `ft-home.lib.mkFlake`, it defaults to `var/mullet.txt` inside this user's own `users/<username>/` directory. Set it yourself to use a different location, or if you're using this module outside the generator where no default is available.";
     };
   };
 

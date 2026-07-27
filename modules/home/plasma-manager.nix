@@ -15,7 +15,7 @@ in
 
   options.ft.plasmaManager = {
     enable = lib.mkEnableOption "declarative KDE Plasma settings via plasma-manager" // {
-      description = "Enables plasma-manager so KDE Plasma settings (panels, shortcuts, kwinrc keys, etc.) are declared in Home Manager via `programs.plasma.*` instead of mutated through the Plasma GUI.";
+      description = "Lets you set KDE Plasma preferences — panels, keyboard shortcuts, window-manager settings, and more — directly in your Home Manager config through `programs.plasma.*`, instead of clicking through Plasma's settings app.";
     };
   };
 

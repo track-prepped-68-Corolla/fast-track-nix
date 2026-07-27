@@ -250,129 +250,129 @@ in
 {
   options.ft.komodo = {
     enable = lib.mkEnableOption "Komodo Core + Periphery + FerretDB" // {
-      description = "Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.";
+      description = "Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.";
     };
 
     imageTag = lib.mkOption {
       type = lib.types.str;
       default = "latest";
-      description = "Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.";
+      description = "Docker image tag to use for ghcr.io/moghtech/komodo-core and komodo-periphery.";
     };
 
     dbUsername = lib.mkOption {
       type = lib.types.str;
       default = "komodo";
-      description = "Username for the FerretDB/Postgres database (not a secret — baked into the compose config).";
+      description = "Username for the FerretDB/Postgres database. Not sensitive — it's baked directly into the compose config.";
     };
 
     dbPassword = lib.mkOption {
       type = lib.types.str;
       default = "komodo";
-      description = "Default password for the FerretDB/Postgres database, used only when ft.komodo.sopsEnv.enable is false — in that case it is written to the Nix store (local-only). With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it and this value is unused.";
+      description = "Default password for the FerretDB/Postgres database. Only used when ft.komodo.sopsEnv.enable is false, in which case it's written to the Nix store (fine for local-only use). When sopsEnv is on, KOMODO_DATABASE_PASSWORD from the sops-decrypted env-file takes over instead and this value is ignored.";
     };
 
     adminUsername = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "Initial Komodo admin username created on first launch (not a secret).";
+      description = "Username for the initial Komodo admin account created on first launch. Not sensitive.";
     };
 
     adminPassword = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "Default initial Komodo admin password, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.";
+      description = "Default password for the initial Komodo admin account, only used when ft.komodo.sopsEnv.enable is false (in which case it's written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.";
     };
 
     webhookSecret = lib.mkOption {
       type = lib.types.str;
       default = "komodo-webhook-secret";
-      description = "Default secret for authenticating incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.";
+      description = "Default secret used to authenticate incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.";
     };
 
     jwtSecret = lib.mkOption {
       type = lib.types.str;
       default = "komodo-jwt-secret";
-      description = "Default secret for signing Komodo JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.";
+      description = "Default secret used to sign Komodo's JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.";
     };
 
     sopsEnv = {
       enable = lib.mkEnableOption "sops-backed Komodo credentials env-file" // {
-        description = "Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store. Requires a configured sops-nix (normally ft.sops.enable); populate the key as KEY=VALUE lines — see NOTES.md.";
+        description = "Pulls Komodo's sensitive credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-priority env-file, so these credentials never touch the store. Requires sops-nix to be configured (normally via ft.sops.enable); populate the secret as KEY=VALUE lines — see NOTES.md.";
       };
 
       secretName = lib.mkOption {
         type = lib.types.str;
         default = "komodo/env";
-        description = "sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines). Declared and decrypted when sopsEnv.enable is true.";
+        description = "sops secret key holding Komodo's credentials as an env-file (KEY=VALUE lines). Decrypted and used whenever sopsEnv.enable is true.";
       };
     };
 
     host = lib.mkOption {
       type = lib.types.str;
       default = "http://localhost:9120";
-      description = "Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.";
+      description = "The URL this Komodo Core instance is reachable at from outside — used for OAuth redirect URLs and suggested webhook addresses.";
     };
 
     serverName = lib.mkOption {
       type = lib.types.str;
       default = "Local";
-      description = "Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.";
+      description = "Name given to the first Komodo server entry, and the name Periphery uses to identify itself when connecting to Core.";
     };
 
     timezone = lib.mkOption {
       type = lib.types.str;
       default = "Etc/UTC";
-      description = "Timezone for Komodo schedules (tz database name, e.g. America/New_York).";
+      description = "Timezone Komodo uses for its schedules (a tz database name, e.g. America/New_York).";
     };
 
     backupsPath = lib.mkOption {
       type = lib.types.str;
       default = "${stateDir}/backups";
-      description = "Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups.";
+      description = "Path where Komodo Core writes its backup archives, bind-mounted into the Core container at /backups.";
     };
 
     peripheryRootDirectory = lib.mkOption {
       type = lib.types.str;
       default = "/etc/komodo";
-      description = "Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory.";
+      description = "Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys, and the host side of every bind mount it manages, lives under this directory.";
     };
 
     includeDiskMounts = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting so Periphery reports every detected mount.";
+      description = "Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). Leave empty to have Periphery report every mount it detects.";
     };
 
     repoCachePath = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs. null leaves the clones on the container's ephemeral layer.";
+      description = "Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repositories for repo-based Stacks and Resource Syncs. Leave as null to keep those clones on the container's throwaway filesystem layer.";
     };
 
     syncPath = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "Host path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. null leaves the files on the container's ephemeral layer.";
+      description = "Host path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. Leave as null to keep those files on the container's throwaway filesystem layer.";
     };
 
     secrets = {
       periphery.enable = lib.mkEnableOption "sops-decrypted Periphery [secrets]" // {
-        description = "Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).";
+        description = "Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it with `periphery --config-path`. Its keys can be interpolated as [[KEY]] into the Stacks this Periphery deploys, and are hidden from the Komodo UI and logs. This is for injecting secrets into deployed Stacks — separate from ft.komodo.sopsEnv, which covers Komodo's own login credentials. Requires sops-nix to be configured (normally via ft.sops.enable).";
       };
       core.enable = lib.mkEnableOption "sops-decrypted Core [secrets]" // {
-        description = "Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).";
+        description = "Like peripherySecrets, but for the komodo/core_secrets key, loaded into Core as a global [secrets] file that's [[KEY]]-interpolatable into every Stack and Deployment. This is for injecting secrets into deployed Stacks — separate from ft.komodo.sopsEnv, which covers Komodo's own login credentials. Requires sops-nix to be configured (normally via ft.sops.enable).";
       };
     };
 
     autoApply = {
       enable = lib.mkEnableOption "Komodo GitOps auto-apply" // {
-        description = "After Komodo Core answers, run the bundled `komodo-apply` recipe from ft.repoPath to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with the consumer repo's containers/ directory with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Exempt from VM smoke tests: reconciles against a live Komodo API. See NOTES.md.";
+        description = "Once Komodo Core is up, runs the bundled `komodo-apply` recipe from ft.repoPath to create and run the ResourceSync over Komodo's API, so every rebuild automatically reconciles Komodo with the consumer repo's containers/ directory — no clicking through the UI needed. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to get these). Exempt from VM smoke tests, since it reconciles against a live Komodo API. See NOTES.md.";
       };
 
       apiEnvSecret = lib.mkOption {
         type = lib.types.str;
         default = "komodo/api_env";
-        description = "sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply service to authenticate to Komodo's API.";
+        description = "sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to populate this). Read by the auto-apply service to authenticate against Komodo's API.";
       };
     };
 

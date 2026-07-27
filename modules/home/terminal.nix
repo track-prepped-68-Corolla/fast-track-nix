@@ -30,24 +30,24 @@ in
   options.ft.terminal = {
     enable = lib.mkEnableOption "terminal stack" // {
       default = true;
-      description = "Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with lazily-loaded plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.";
+      description = "Sets up a complete terminal environment: the `ghostty` terminal emulator, zsh configured from your dotfiles with plugins that load lazily, the starship prompt, `zoxide`, `fzf`, and a curated set of everyday CLI tools like `bat`, `eza`, `btop`, `fd`, `ripgrep`, `yazi`, `lazygit`, and `tealdeer`. The starship and ghostty config files are linked directly from your dotfiles, so edits take effect immediately.";
     };
 
     zshPlugins = {
       autosuggestions.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable zsh-autosuggestions, suggesting commands as you type based on history. Sourced via zsh-defer so it doesn't block shell startup.";
+        description = "Suggests commands as you type, based on your shell history. Loaded lazily via zsh-defer so it doesn't slow down shell startup.";
       };
       syntaxHighlighting.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable zsh-syntax-highlighting, highlighting commands as they are typed. Sourced via zsh-defer so it doesn't block shell startup.";
+        description = "Highlights commands in your shell as you type them. Loaded lazily via zsh-defer so it doesn't slow down shell startup.";
       };
       completions.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable zsh-completions, a collection of additional completion definitions.";
+        description = "Adds a larger collection of tab-completion definitions for zsh.";
       };
       commaAssistant.enable = lib.mkOption {
         type = lib.types.bool;
@@ -56,7 +56,7 @@ in
         # compute the real one) — enabling this will fail the build until
         # it's replaced with the actual NAR hash.
         default = false;
-        description = "Enable zsh-comma-assistant: friendlier command-not-found handling (offers to run unknown commands via comma) and, when zshPlugins.syntaxHighlighting is also enabled, highlights commands available via comma/nix-index. Requires ft.nixIndex.enable for the comma binary and database; no-ops if that's disabled. Sourced via zsh-defer so it doesn't block shell startup. NOTE: currently defaults off — the pinned fetchFromGitHub source uses a placeholder hash pending a real one.";
+        description = "Makes 'command not found' errors friendlier by offering to run the missing command via `comma`, and — when `zshPlugins.syntaxHighlighting` is also on — highlights commands that are available through comma/nix-index. Needs `ft.nixIndex.enable` for the `comma` binary and its database; does nothing if that's off. Loaded lazily via zsh-defer so it doesn't slow down shell startup. Note: this currently defaults to off because the pinned source still uses a placeholder hash instead of a real one.";
       };
     };
   };

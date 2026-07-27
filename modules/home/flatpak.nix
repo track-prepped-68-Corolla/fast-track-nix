@@ -17,7 +17,7 @@ in
 
   options.ft.flatpak = {
     enable = lib.mkEnableOption "per-user Flatpak app declarations" // {
-      description = "Registers the Flathub remote for this user's `--user` Flatpak installs and exposes `services.flatpak.packages` (nix-flatpak) as the per-user declarative app list — set it in this user's base config or any of their `profiles/<name>/` submodules; the lists from every definition are merged. Requires the host's `ft.flatpak.enable` (NixOS) so the Flatpak service and desktop portal are present.";
+      description = "Registers the Flathub remote for this user's own Flatpak installs and lets you declare which Flatpak apps you want via `services.flatpak.packages` (from nix-flatpak). You can set that list in this user's base config or in any of their `profiles/<name>/` submodules — all the lists get merged together. The host machine also needs `ft.flatpak.enable` (the NixOS side) so the Flatpak service and desktop portal actually exist.";
     };
   };
 

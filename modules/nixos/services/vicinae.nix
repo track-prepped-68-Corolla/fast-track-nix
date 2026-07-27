@@ -19,12 +19,12 @@ in
 {
   options.ft.vicinae = {
     enable = lib.mkEnableOption "Vicinae binary cache" // {
-      description = "Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.";
+      description = "Registers the upstream vicinae.cachix.org binary cache, so the Vicinae launcher (ft.vicinae.enable in Home Manager) doesn't have to compile its Qt6/C++ stack from source.";
     };
 
     inputServer = {
       enable = lib.mkEnableOption "Vicinae input-server capability wrapper" // {
-        description = "Wraps vicinae-input-server with cap_dac_override via security.wrappers, granting it raw input-device access for Vicinae's global-hotkey and keystroke-injection features. This bypasses normal file-permission checks for the wrapped binary — leave disabled if Vicinae is only invoked through a compositor-bound shortcut (e.g. a KWin global shortcut running `vicinae toggle`).";
+        description = "Wraps vicinae-input-server with cap_dac_override (via security.wrappers), giving it raw input-device access for Vicinae's global-hotkey and keystroke-injection features. This bypasses the wrapped binary's normal file-permission checks, so leave it disabled if Vicinae is only ever launched through a compositor-bound shortcut (e.g. a KWin global shortcut running `vicinae toggle`).";
       };
     };
   };

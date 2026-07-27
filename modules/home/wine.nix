@@ -39,7 +39,7 @@ in
 {
   options.ft.wine = {
     enable = lib.mkEnableOption "Wine/Bottles compatibility stack" // {
-      description = "Installs Bottles, Wine (WOW64 build), and Winetricks into the user profile for running Windows applications outside of Steam. Home Manager counterpart of the NixOS ft.wine module — use on standalone Home Manager systems or non-NixOS distros.";
+      description = "Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam. This is the Home Manager counterpart of the NixOS `ft.wine` module, meant for standalone Home Manager systems or non-NixOS distros.";
     };
   };
 

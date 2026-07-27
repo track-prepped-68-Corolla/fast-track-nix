@@ -27,7 +27,7 @@ in
 {
   options.ft.cli = {
     enable = lib.mkEnableOption "Fast Track CLI (ft command)" // {
-      description = "Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Home Manager counterpart of the NixOS ft.cli module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite). Requires `ft.repoPath` to point to your consumer repo root.";
+      description = "Installs `just` and a small `ft` wrapper so you can run the framework's `ft` commands from any directory. This is the Home Manager equivalent of the NixOS `ft.cli` module, useful on its own for standalone Home Manager setups or non-NixOS distros like SteamOS or Bazzite. You need `ft.repoPath` set to your consumer repo's location for it to work.";
     };
   };
 

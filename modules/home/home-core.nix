@@ -15,29 +15,29 @@ in
     core = {
       enable = lib.mkEnableOption "home manager core settings" // {
         default = true;
-        description = "Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.";
+        description = "Turns on the required Home Manager foundation that every other module depends on: it sets `stateVersion`, the home directory, XDG base directories, generic-Linux compatibility, and allows unfree packages. This needs to stay enabled for the other home modules to work.";
       };
 
       stateVersion = lib.mkOption {
         type = lib.types.str;
-        description = "The Home Manager release version this user profile was *first created* on. Controls which state migration paths activate — set it once at user creation and never change it.";
+        description = "The Home Manager release this user profile was originally created on. Home Manager uses this to decide which one-time state migrations to run, so getting it wrong can trigger changes you don't want. Set it once when the profile is created and leave it alone after that.";
       };
 
       genericLinux = lib.mkEnableOption "non-NixOS Linux compatibility" // {
-        description = "Enables Home Manager's targets.genericLinux, which sources HM session variables into shell profiles and installs the per-user Nix profile path (~/.local/state/nix/profiles/home-path). Required for standalone Home Manager on non-NixOS Linux (Ubuntu, Fedora, etc.). Must be false when HM is used as a NixOS module (home-manager.nixosModules.home-manager): the install_profile activation step will fail because ~/.local/state/nix/profiles does not exist on a freshly-booted NixOS system.";
+        description = "Turns on Home Manager's `targets.genericLinux`, which loads its session variables into your shell profiles and sets up the per-user Nix profile path (`~/.local/state/nix/profiles/home-path`). You need this when running standalone Home Manager on a non-NixOS Linux distro (Ubuntu, Fedora, etc.). Leave it off when Home Manager is used as a NixOS module (`home-manager.nixosModules.home-manager`) — turning it on there fails, because `~/.local/state/nix/profiles` doesn't exist on a freshly-booted NixOS system.";
       };
     };
 
     repoPath = lib.mkOption {
       type = lib.types.str;
       default = "/nix/ft-home";
-      description = "Absolute path to the consumer's flake repo root. Set in homes/<username>/default.nix.";
+      description = "The absolute path to your consumer flake repo's root directory. Set this in `homes/<username>/default.nix`.";
     };
 
     dotfiles.path = lib.mkOption {
       type = lib.types.str;
       default = "${config.ft.repoPath}/users/${config.home.username}/dotfiles";
-      description = "Absolute path to this user's dotfiles directory.";
+      description = "The absolute path to this user's dotfiles directory.";
     };
   };
 

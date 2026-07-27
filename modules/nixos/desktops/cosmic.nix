@@ -10,7 +10,7 @@ in
 {
   options.ft.cosmic = {
     enable = lib.mkEnableOption "COSMIC Desktop Environment" // {
-      description = "Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.";
+      description = "Turns on the COSMIC desktop environment along with system76-scheduler, which prioritizes process scheduling for better responsiveness, and makes sure graphics hardware acceleration is on. Pair it with `ft.cosmicGreeter` to use cosmic-greeter as the login screen, or set up a different display manager to launch the COSMIC session instead.";
     };
   };
 

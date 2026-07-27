@@ -16,19 +16,19 @@ in
 {
   options.ft.plasmaBigscreen = {
     enable = lib.mkEnableOption "Plasma Bigscreen TV shell" // {
-      description = "Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).";
+      description = "Installs Plasma Bigscreen, a TV-friendly interface, and registers its Wayland session so it can be selected as a login option. This module is exempt from the VM smoke test requirement, since it pulls in `qtwebengine` and the full KDE Frameworks stack (which depend on the binary cache) and its main input method, HDMI-CEC, can't be tested inside a VM (it depends on real hardware).";
     };
 
     cecSupport = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Loads the cec kernel module and installs libcec and v4l-utils so a TV remote can drive Plasma Bigscreen over HDMI-CEC.";
+      description = "Loads the `cec` kernel module and installs `libcec` and `v4l-utils`, so a TV remote can control Plasma Bigscreen over HDMI-CEC.";
     };
 
     defaultSession = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Makes plasma-bigscreen-wayland the default SDDM session, and therefore the session autologin starts, instead of merely adding it as a selectable option alongside any other configured session.";
+      description = "Makes the Plasma Bigscreen session the default one SDDM starts (including for autologin), instead of just offering it as one option alongside whatever other sessions are configured.";
     };
   };
 

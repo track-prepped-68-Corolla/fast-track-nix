@@ -28,21 +28,21 @@ in
 {
   options.ft.rclone = {
     enable = lib.mkEnableOption "per-user rclone mount service" // {
-      description = "Runs a systemd user service that mounts an rclone remote at a path under $HOME via FUSE. Home Manager counterpart of the NixOS ft.rclone module, which installs rclone/FUSE system-wide and enables fuse user_allow_other; this module owns the actual per-user mount unit.";
+      description = "Automatically mounts a cloud storage remote (via rclone) as a folder under your home directory, kept running by a systemd user service. This pairs with the NixOS `ft.rclone` module, which installs rclone and FUSE system-wide; this module handles the actual per-user mount.";
     };
 
     remoteName = lib.mkOption {
       type = lib.types.str;
       default = "gdrive";
       example = "gdrive";
-      description = "rclone remote name to mount, as configured in this user's rclone config (e.g. via `rclone config`). Must match an existing remote.";
+      description = "Name of the rclone remote to mount, as set up in your rclone config (e.g. with `rclone config`). This must match a remote that already exists.";
     };
 
     mountPoint = lib.mkOption {
       type = lib.types.str;
       default = "GoogleDrive";
       example = "GoogleDrive";
-      description = "Directory name under $HOME where the remote is mounted (e.g. ~/GoogleDrive).";
+      description = "Name of the folder under your home directory where the remote gets mounted, e.g. `~/GoogleDrive`.";
     };
 
     extraMountArgs = lib.mkOption {
@@ -51,7 +51,7 @@ in
         "--vfs-cache-mode"
         "writes"
       ];
-      description = "Extra arguments passed to `rclone mount`, appended after the remote and mount-point arguments (e.g. cache mode, buffer size).";
+      description = "Extra command-line arguments passed to `rclone mount`, added after the remote and mount-point arguments — useful for things like cache mode or buffer size.";
     };
   };
 

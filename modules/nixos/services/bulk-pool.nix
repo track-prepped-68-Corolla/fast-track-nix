@@ -155,32 +155,32 @@ in
 {
   options.ft.bulkPool = {
     enable = lib.mkEnableOption "mergerfs + snapraid-btrfs bulk storage pool" // {
-      description = "Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.";
+      description = "Sets up a pooled bulk storage array: reads machines/<host>/var/bulk-drives.nix for the drives you've registered (labelled bulk-*), mounts each one, combines the data and cache drives into a single pool with mergerfs, and protects the data drives with nightly SnapRAID parity syncs. Does nothing when drivesFile is unset or every drive list is empty.";
     };
 
     drivesFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
-      description = "Path to the bulk-drives.nix file listing registered drive labels by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When null or the file is absent, the module is a complete no-op.";
+      description = "Path to the bulk-drives.nix file that lists your registered drives by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When this is null or the file doesn't exist, the whole module is a no-op.";
     };
 
     driveBase = lib.mkOption {
       type = lib.types.str;
       default = "/mnt/bulk";
-      description = "Directory prefix for individual drive mount points (e.g. /mnt/bulk/bulk-data-1 mounts the btrfs root of that drive).";
+      description = "Directory prefix each drive is mounted under (e.g. a drive labelled bulk-data-1 mounts at /mnt/bulk/bulk-data-1).";
     };
 
     poolMount = lib.mkOption {
       type = lib.types.str;
       default = "/mnt/bulk-pool";
-      description = "Mount point for the mergerfs union pool of data and cache drives (@data subvolume of each).";
+      description = "Where the combined mergerfs pool of data and cache drives (the @data subvolume of each) is mounted.";
     };
 
     snapraid = {
       contentFile = lib.mkOption {
         type = lib.types.str;
         default = "/var/lib/snapraid/content";
-        description = "Primary snapraid content file path on the system drive (not on a data disk).";
+        description = "Path to SnapRAID's main content file, kept on the system drive rather than on any data disk.";
       };
     };
   };

@@ -15,13 +15,13 @@ in
 
   options.ft.sops = {
     enable = lib.mkEnableOption "sops-nix secret management" // {
-      description = "Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.";
+      description = "Sets up encrypted secrets management, pointing sops-nix at `ft.repoPath/var/secrets/secrets.yaml` and decrypting with the machine's SSH host key. Turn on `ft.sops.useTPM` or `ft.sops.useYubikey` instead if you'd rather decrypt with a hardware token.";
     };
     useTPM = lib.mkEnableOption "TPM2 for decryption via age-plugin-tpm" // {
-      description = "Adds age-plugin-tpm, enables the TPM2 subsystem, and configures sops to read the age identity from /var/lib/sops-nix/key.txt (populated by the TPM plugin).";
+      description = "Adds `age-plugin-tpm`, turns on the TPM2 subsystem, and points sops at the age identity in `/var/lib/sops-nix/key.txt`, which the TPM plugin fills in.";
     };
     useYubikey = lib.mkEnableOption "Yubikey for decryption via age-plugin-yubikey" // {
-      description = "Adds age-plugin-yubikey, starts pcscd for smart-card access, and configures sops to read the age identity stub from /var/lib/sops-nix/key.txt (populated by the YubiKey plugin).";
+      description = "Adds `age-plugin-yubikey`, starts the `pcscd` service for smart-card access, and points sops at the age identity stub in `/var/lib/sops-nix/key.txt`, which the YubiKey plugin fills in.";
     };
   };
 

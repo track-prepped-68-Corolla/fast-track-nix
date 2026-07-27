@@ -76,54 +76,54 @@ in
 
   options.ft.diskBtrfs = {
     enable = lib.mkEnableOption "btrfs system disk layout with optional LUKS" // {
-      description = "Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.";
+      description = "Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.";
     };
 
     device = lib.mkOption {
       type = lib.types.str;
       default = defaultDevice;
-      description = "Block device to partition (e.g. /dev/nvme0n1).";
+      description = "The block device to partition, for example `/dev/nvme0n1`.";
     };
 
     confirmDevice = lib.mkOption {
       type = lib.types.str;
       default = "";
-      description = "Must equal `device` whenever `device` is overridden away from the framework default (${defaultDevice}). A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage.";
+      description = "A safety check: if you change `device` away from the framework default (${defaultDevice}), you must also set this to the exact same value. It's a typed double-entry confirmation — if a deploy script or a person picks the wrong disk, the mismatch causes evaluation to fail before disko or nixos-anywhere ever touches the storage.";
     };
 
     excludeDevices = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Device paths that must never be used as the install target, e.g. a live installer's own boot media. Evaluation fails if `device` matches one of these.";
+      description = "A list of device paths that should never be used as the install target — for example, the live installer's own boot media. If `device` matches any of these, evaluation fails.";
     };
 
     luks = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Wrap the btrfs partition in a LUKS2 container.";
+        description = "Encrypts the btrfs partition inside a LUKS2 container.";
       };
 
       label = lib.mkOption {
         type = lib.types.str;
         default = "cryptroot";
-        description = "Name of the LUKS dm-crypt device (appears under /dev/mapper/).";
+        description = "The name given to the LUKS device, which shows up under `/dev/mapper/`.";
       };
 
       tpm.enable = lib.mkEnableOption "TPM2+PIN unlock for the LUKS volume" // {
-        description = "Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery. No PCR binding is configured (the PIN is the secret, not the boot-chain state). Declarative wiring only — you must run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared. Requires luks.enable.";
+        description = "Lets you unlock the LUKS volume at boot with a short PIN instead of typing the full passphrase, using a key sealed inside the TPM2 chip. Turning this on switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so boot prompts for the PIN (the TPM rate-limits guesses) while the original passphrase keyslot stays available as a fallback. It doesn't bind to any boot-chain measurements (PCRs) — the PIN itself is the secret. This option only wires up the configuration; you still need to run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after installing to actually add the TPM+PIN keyslot, since the PIN can't be declared in config. Requires `luks.enable` to also be on.";
       };
     };
 
     impermanence = {
       enable = lib.mkEnableOption "impermanence (tmpfs root at / with @persist for durable state)" // {
-        description = "Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default.";
+        description = "Makes the root filesystem ephemeral: replaces the btrfs root subvolume with a tmpfs ramdisk at `/`, so anything not explicitly kept is wiped on reboot, and adds a `@persist` subvolume at `/persist` for the state you do want to keep. This turns on the impermanence NixOS module, which persists `/etc/machine-id`, `/etc/ssh`, `/var/lib`, and `/var/log` by default.";
       };
 
       rootSize = lib.mkOption {
         type = lib.types.str;
         default = "2G";
-        description = "Size of the tmpfs ramdisk mounted at / when impermanence.enable is true.";
+        description = "How large the tmpfs ramdisk at `/` is, when `impermanence.enable` is turned on.";
       };
     };
   };
