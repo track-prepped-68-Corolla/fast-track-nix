@@ -1,3 +1,153 @@
+## ft\.admin\.enable
+
+
+
+Creates a wheel (sudo) management account — present on every machine by default, but toggleable\. Authenticates via ` authorizedKeys ` (key-based) and/or ` initialPassword `, so it is never a locked-out account\. Pulled out of ` ft.users ` so the administrator is owned by one dedicated, predictable place\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
+## ft\.admin\.authorizedKeys
+
+SSH public keys authorized for key-based login as the admin user\.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
+## ft\.admin\.extraGroups
+
+
+
+Additional groups for the admin user, on top of wheel and the common hardware/service groups\.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
+## ft\.admin\.hashedPasswordFile
+
+
+
+Path to a file containing the admin’s hashed password (e\.g\. a sops secret)\. Takes precedence over ` initialPassword ` when set\.
+
+
+
+*Type:*
+null or absolute path
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
+## ft\.admin\.initialPassword
+
+
+
+Plaintext password set at first boot so the account is never locked out\. Override per machine; set to null to rely solely on key-based auth; or supply a real credential via ` hashedPasswordFile ` for production\. Ignored when ` hashedPasswordFile ` is set\.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+"changeme"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
+## ft\.admin\.name
+
+
+
+Username of the admin/management account\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"admin"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+
+
+
 ## ft\.bulkPool\.enable
 
 
@@ -26,11 +176,13 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
 
 
 
 ## ft\.bulkPool\.driveBase
+
+
 
 Directory prefix for individual drive mount points (e\.g\. /mnt/bulk/bulk-data-1 mounts the btrfs root of that drive)\.
 
@@ -48,7 +200,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
 
 
 
@@ -72,7 +224,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
 
 
 
@@ -96,7 +248,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
 
 
 
@@ -120,7 +272,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/bulk-pool.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
 
 
 
@@ -152,7 +304,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/kernel\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/kernel.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel.nix)
 
 
 
@@ -176,7 +328,7 @@ one of “latest”, “latest-lto”, “latest-x86_64-v3”, “latest-lto-x86
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/kernel\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/kernel.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel.nix)
 
 
 
@@ -208,7 +360,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
 
 
 
@@ -232,7 +384,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
 
 
 
@@ -256,7 +408,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
 
 
 
@@ -280,7 +432,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/cardwire.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
 
 
 
@@ -288,7 +440,39 @@ false
 
 
 
-Installs just and a thin ` ft ` wrapper that invokes the repo’s ` scripts/ft.just ` justfile from any working directory\. Requires ` ft.repoPath ` to point to your consumer repo root\.
+Installs just and a thin ` ft ` wrapper that invokes the repo’s ` scripts/ft.just ` justfile from any working directory\. Defaults to on, since every consumer machine wants this in practice\. Requires ` ft.repoPath ` to point to your consumer repo root — set ` ft.cli.enable = false ` for machines with no real consumer checkout (a live ISO, an eval-only test fixture)\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/just\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/just.nix)
+
+
+
+## ft\.containers\.enable
+
+
+
+Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox\. Apps like ft\.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes\.
 
 
 
@@ -312,7 +496,199 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/just\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/just.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.compose\.enable
+
+
+
+Install the genuine Docker Compose v2 binary (pkgs\.docker-compose)\. It drives either runtime through the Docker-API-compatible socket; podman-compose is never used\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.dataDir
+
+
+
+Base directory provisioned for docker-compose and bind-mount workloads\. Owned by the service account when rootless, otherwise root\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"/opt/containers"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.distrobox\.enable
+
+
+
+Install Distrobox for running other-distribution containers as host-integrated environments on top of the selected runtime\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.rootless
+
+
+
+Run the runtime rootless\. When true, a dedicated unprivileged service account (ft\.containers\.user) gets subuid/subgid maps, systemd lingering, and a user-level daemon socket, with DOCKER_HOST pointed at it — running ` podman system service ` or rootless dockerd per ft\.containers\.runtime\. When false the system daemon runs as root (podman gains dockerCompat + the docker socket)\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.runtime
+
+
+
+OCI runtime\. Podman is recommended for rootless use; both expose a Docker-API-compatible socket so the genuine docker-compose binary drives either unchanged\.
+
+
+
+*Type:*
+one of “docker”, “podman”
+
+
+
+*Default:*
+
+```nix
+"podman"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.socket
+
+
+
+Read-only: the Docker-API-compatible socket path the active cell exposes\. Consumed by apps built on this module (e\.g\. ft\.komodo) as DOCKER_HOST\.
+
+
+
+*Type:*
+string *(read only)*
+
+
+
+*Default:*
+
+```nix
+"/run/user/2000/podman/podman.sock"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.uid
+
+
+
+Fixed UID and GID for the rootless service account\. The rootless daemon socket path derives from it (/run/user/\<uid>/…)\. Ignored when rootless = false\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+2000
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+
+
+
+## ft\.containers\.user
+
+
+
+Name of the unprivileged service account created for rootless mode\. Ignored when rootless = false\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"podman"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
 
 
 
@@ -344,7 +720,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
 
 
 
@@ -360,7 +736,7 @@ The NixOS release version this machine was *first installed* on\. Controls which
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
 
 
 
@@ -368,7 +744,7 @@ string
 
 
 
-Enables the COSMIC desktop environment with cosmic-greeter as the display manager and system76-scheduler for performance-aware process scheduling\. Also ensures graphics hardware acceleration is active\.
+Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling\. Also ensures graphics hardware acceleration is active\. Pair with ft\.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead\.
 
 
 
@@ -392,7 +768,167 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/desktops/cosmic\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/desktops/cosmic.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic.nix)
+
+
+
+## ft\.cosmicGreeter\.enable
+
+
+
+Enables cosmic-greeter as the display manager\. Pair with ft\.cosmic to boot directly into a COSMIC session\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic-greeter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic-greeter.nix)
+
+
+
+## ft\.deploy\.enable
+
+
+
+Includes this machine as a node in the ` colmenaHive ` flake output so it can be built and activated remotely with ` colmena apply `\. Off by default; opt machines in individually so local-only or image machines never become remote-push targets\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+
+
+
+## ft\.deploy\.buildOnTarget
+
+
+
+Build the system closure on the target host instead of the control machine\. Useful for cross-architecture targets or to avoid pushing large closures over the network\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+
+
+
+## ft\.deploy\.tags
+
+
+
+Colmena tags for this node, used to target subsets with ` colmena apply --on @<tag> `\.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+
+
+
+## ft\.deploy\.targetHost
+
+
+
+Hostname or IP colmena connects to over SSH\. Null uses the machine’s attribute name, resolved via DNS or Tailscale MagicDNS\.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+
+
+
+## ft\.deploy\.targetUser
+
+
+
+SSH user colmena connects as\. Must be able to activate system closures — root, or a user with passwordless sudo\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"root"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
 
 
 
@@ -400,7 +936,7 @@ true
 
 
 
-Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/\.snapshots) with zstd compression\. Optionally wraps the btrfs partition in a LUKS2 container\. When impermanence\.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state\.
+Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/\.snapshots) with zstd compression\. Optionally wraps the btrfs partition in a LUKS2 container\. When impermanence\.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state\. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process’s umask or when the file was created\. System-wide git safe\.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning\.
 
 
 
@@ -424,7 +960,31 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+
+
+
+## ft\.diskBtrfs\.confirmDevice
+
+
+
+Must equal ` device ` whenever ` device ` is overridden away from the framework default (/dev/nvme0n1)\. A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+""
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -448,7 +1008,31 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+
+
+
+## ft\.diskBtrfs\.excludeDevices
+
+
+
+Device paths that must never be used as the install target, e\.g\. a live installer’s own boot media\. Evaluation fails if ` device ` matches one of these\.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -480,7 +1064,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -504,7 +1088,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -528,7 +1112,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -552,7 +1136,39 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/disko-btrfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+
+
+
+## ft\.diskBtrfs\.luks\.tpm\.enable
+
+
+
+Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds ` tpm2-device=auto ` to the device’s crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery\. No PCR binding is configured (the PIN is the secret, not the boot-chain state)\. Declarative wiring only — you must run ` systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition> ` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared\. Requires luks\.enable\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
 
 
 
@@ -584,31 +1200,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.composeVolumeSize
-
-
-
-Size of the /opt/compose volume in MiB (image stored at /var/lib/microvm/\<vmName>/compose\.img on the host)\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-10240
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -632,127 +1224,7 @@ signed integer
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.guacamole\.enable
-
-
-
-Deploy Apache Guacamole (guacd, web front-end, and PostgreSQL) inside the VM via OCI containers\. The web interface is exposed on guacamole\.port within the VM\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.guacamole\.dbPassword
-
-
-
-PostgreSQL password for the Guacamole database\. Stored in the Nix store — suitable only for local-only deployments\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"guacamole"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.guacamole\.imageTag
-
-
-
-Image tag for guacamole/guacd and guacamole/guacamole on Docker Hub\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"latest"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.guacamole\.port
-
-
-
-Port inside the VM on which the Guacamole web interface listens\.
-
-
-
-*Type:*
-16 bit unsigned integer; between 0 and 65535 (both inclusive)
-
-
-
-*Default:*
-
-```nix
-8084
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.hostAddress
-
-
-
-IP address of the host-side bridge interface (microvm0); becomes the VM’s default gateway\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"10.0.100.1"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -776,7 +1248,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -800,7 +1272,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -824,7 +1296,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -848,7 +1320,71 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+
+
+
+## ft\.dockervm\.komodo\.autoApply\.enable
+
+
+
+After the guest’s Komodo Core answers, run the bundled ` komodo-apply ` recipe from the host (in ft\.repoPath) to create/execute the ResourceSync over Komodo’s API, so every rebuild reconciles Komodo with containers/ with no UI\. Requires ft\.cli, ft\.sops and ft\.repoPath, plus a ` komodo/api_env ` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. See NOTES\.md\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+
+
+
+## ft\.dockervm\.komodo\.coreSecrets\.enable
+
+
+
+Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global \[secrets] file, \[\[KEY]]-interpolatable into every Stack/Deployment\. Shares the same guest sops age identity and var/secrets share\. Requires ft\.repoPath and the guest recipient in \.sops\.yaml — see NOTES\.md\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -872,7 +1408,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -896,7 +1432,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -920,7 +1456,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -944,7 +1480,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -968,7 +1504,39 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+
+
+
+## ft\.dockervm\.komodo\.peripherySecrets\.enable
+
+
+
+Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo\.yaml (shared read-only into the guest) and loads it into Komodo Periphery via ` --config-path `\. Its keys become \[\[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs\. Adds a persistent volume for the guest’s ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan\. Requires ft\.repoPath and a one-time recipient bootstrap — see NOTES\.md\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -992,7 +1560,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1016,7 +1584,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1040,7 +1608,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1064,31 +1632,7 @@ signed integer
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.prefixLength
-
-
-
-Subnet prefix length shared by the host bridge and VM interface (e\.g\. 24 for /24)\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-24
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1112,7 +1656,7 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1136,31 +1680,31 @@ signed integer
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
-## ft\.dockervm\.vmAddress
+## ft\.dockervm\.vmAddressSuffix
 
 
 
-Static IP address assigned to the VM’s primary network interface\.
+Last octet of the VM’s IP address on the shared microvm0 subnet (ft\.microvms\.hostAddress)\. Must be unique among all microvm instances on this host\.
 
 
 
 *Type:*
-string
+8 bit unsigned integer; between 0 and 255 (both inclusive)
 
 
 
 *Default:*
 
 ```nix
-"10.0.100.2"
+2
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1184,7 +1728,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1208,7 +1752,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1232,7 +1776,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-docker.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
 
 
 
@@ -1264,7 +1808,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/facter\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/facter.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter.nix)
 
 
 
@@ -1288,7 +1832,95 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/facter\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/facter.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter.nix)
+
+
+
+## ft\.flatpak\.enable
+
+
+
+Enables the system Flatpak service and registers the Flathub remote\. Once enabled, ` services.flatpak.packages ` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically\. Pair with ` ft.flatpak.frontend.enable ` for a graphical Flathub browser\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
+
+
+
+## ft\.flatpak\.frontend\.enable
+
+
+
+Installs ` ft.flatpak.frontend.package `, a GUI application for browsing and installing Flatpaks from Flathub\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
+
+
+
+## ft\.flatpak\.frontend\.package
+
+
+
+Package providing the graphical Flathub frontend\.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+<derivation discover-6.7.3>
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
 
 
 
@@ -1320,7 +1952,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
 
 
 
@@ -1344,7 +1976,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
 
 
 
@@ -1368,7 +2000,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
 
 
 
@@ -1392,7 +2024,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
 
 
 
@@ -1416,7 +2048,303 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/gaming.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
+
+
+
+## ft\.gitops\.enable
+
+
+
+Runs the comin daemon, which polls the configured git remotes and deploys this machine’s own nixosConfiguration on new commits — ` switch ` (permanent) for ` deployBranch `, ` test ` (ephemeral, reverted on reboot) for comin’s per-host ` testing-<hostname> ` branch\. Multiple remotes are polled as failover (anti-SPOF)\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.autoPromote\.enable
+
+
+
+comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default\. Normally a human must explicitly boot the “comin” bootloader submenu entry, or run a manual ` nixos-rebuild switch `, to make a comin deployment the reboot default\. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin’s ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.deployBranch
+
+
+
+Branch comin deploys permanently with ` switch ` (comin remotes\[]\.branches\.main\.name)\. Tracks your production branch; commits must be signed by one of ` signingKeys ` when that list is non-empty\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"main"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.pollPeriod
+
+
+
+How often, in seconds, comin polls each remote for new commits (comin remotes\[]\.poller\.period)\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+60
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.remotes
+
+
+
+Ordered list of git remotes comin polls for this machine’s configuration\. Polled together as failover (anti-SPOF), primary first\.
+
+
+
+*Type:*
+list of (submodule)
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.remotes\.\*\.name
+
+
+
+Short identifier for this remote (comin remotes\[]\.name)\.
+
+
+
+*Type:*
+string
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.remotes\.\*\.tokenSecret
+
+
+
+Name of a sops secret holding an access token for this remote\. When set, the secret is declared and wired to comin’s auth\.access_token_path; null polls the remote anonymously (public repository)\. Requires ft\.sops\.enable\.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.remotes\.\*\.url
+
+
+
+Git URL comin polls (comin remotes\[]\.url)\. List the primary first (e\.g\. self-hosted Forgejo) and backups after (e\.g\. Codeberg); comin polls all to avoid a single point of failure\.
+
+
+
+*Type:*
+string
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.retry\.enable
+
+
+
+Runs a watchdog timer that polls comin’s Prometheus exporter for an eval, build, or deployment failure and restarts comin\.service to force it to reprocess the current commit, up to retry\.maxAttempts times before giving up until a new commit is pushed\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.retry\.checkInterval
+
+
+
+How often, in seconds, the watchdog polls comin’s exporter for a failure\. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+300
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.retry\.maxAttempts
+
+
+
+Maximum number of times the watchdog restarts comin\.service to recover the current failing commit before giving up on it until a new commit is pushed\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+3
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+
+
+
+## ft\.gitops\.signingKeys
+
+
+
+Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths)\. An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing\.
+
+
+
+*Type:*
+list of absolute path
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
 
 
 
@@ -1448,7 +2376,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1472,7 +2400,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1496,7 +2424,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1520,7 +2448,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1544,7 +2472,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1568,7 +2496,7 @@ one of “stable”, “beta”
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1592,7 +2520,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1616,7 +2544,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1648,13 +2576,11 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
 ## ft\.gpu\.prime\.primaryBusId
-
-
 
 Bus ID of the GPU connected to the display (e\.g\. iGPU)\. Derived automatically from facter\.json when autodetect = true and an Optimus setup is detected; set explicitly to override\.
 
@@ -1680,7 +2606,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1712,7 +2638,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
@@ -1736,15 +2662,15 @@ one of “nvidia”, “amd”, “intel”
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/gpu.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
 
 
 
-## ft\.guacamole\.enable
+## ft\.keepass\.enable
 
 
 
-Deploys Apache Guacamole (guacd, web front-end, and PostgreSQL) as OCI containers on a dedicated guacamole-net network\. Requires an OCI runtime (Docker or Podman) already enabled on the host\.
+Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend\. Useful on hybrid DE setups where GNOME Keyring’s auto-unlock would bypass hardware key authentication\.
 
 
 
@@ -1768,15 +2694,47 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/keepass\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/keepass.nix)
 
 
 
-## ft\.guacamole\.dataDir
+## ft\.komodo\.enable
 
 
 
-Base directory for Guacamole persistent data: PostgreSQL data, drive files, session recordings, and the generated initdb schema\.
+Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft\.containers\. Requires ft\.containers\.enable with compose\.enable\. Exempt from VM smoke tests: pulls images from ghcr\.io at runtime\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.adminPassword
+
+
+
+Default initial Komodo admin password, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store — local-only)\. With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it\.
 
 
 
@@ -1788,19 +2746,19 @@ string
 *Default:*
 
 ```nix
-"/opt/guacamole"
+"admin"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.guacamole\.dbName
+## ft\.komodo\.adminUsername
 
 
 
-PostgreSQL database name used by Guacamole\.
+Initial Komodo admin username created on first launch (not a secret)\.
 
 
 
@@ -1812,19 +2770,51 @@ string
 *Default:*
 
 ```nix
-"guacamole_db"
+"admin"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.guacamole\.dbPassword
+## ft\.komodo\.autoApply\.enable
 
 
 
-PostgreSQL password\. Stored in the Nix store — suitable only for local-only deployments\. Use sops-nix or a similar secrets manager for production\.
+After Komodo Core answers, run the bundled ` komodo-apply ` recipe from ft\.repoPath to create/execute the ResourceSync over Komodo’s API, so every rebuild reconciles Komodo with the consumer repo’s containers/ directory with no UI\. Requires ft\.cli, ft\.sops and ft\.repoPath, plus a sops secret (autoApply\.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. Exempt from VM smoke tests: reconciles against a live Komodo API\. See NOTES\.md\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.autoApply\.apiEnvSecret
+
+
+
+sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. Declared and read by the auto-apply service to authenticate to Komodo’s API\.
 
 
 
@@ -1836,19 +2826,19 @@ string
 *Default:*
 
 ```nix
-"guacamole"
+"komodo/api_env"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.guacamole\.dbUsername
+## ft\.komodo\.backupsPath
 
 
 
-PostgreSQL username\.
+Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups\.
 
 
 
@@ -1860,19 +2850,91 @@ string
 *Default:*
 
 ```nix
-"guacamole"
+"/opt/komodo/backups"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.guacamole\.imageTag
+## ft\.komodo\.dbPassword
 
 
 
-Image tag for guacamole/guacd and guacamole/guacamole on Docker Hub\.
+Default password for the FerretDB/Postgres database, used only when ft\.komodo\.sopsEnv\.enable is false — in that case it is written to the Nix store (local-only)\. With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it and this value is unused\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"komodo"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.dbUsername
+
+
+
+Username for the FerretDB/Postgres database (not a secret — baked into the compose config)\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"komodo"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.host
+
+
+
+Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"http://localhost:9120"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.imageTag
+
+
+
+Docker image tag for ghcr\.io/moghtech/komodo-core and komodo-periphery\.
 
 
 
@@ -1888,263 +2950,15 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.guacamole\.port
+## ft\.komodo\.includeDiskMounts
 
 
 
-Host port mapped to the Guacamole web interface (container port 8080)\.
-
-
-
-*Type:*
-16 bit unsigned integer; between 0 and 65535 (both inclusive)
-
-
-
-*Default:*
-
-```nix
-8084
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
-
-
-
-## ft\.guacamole\.runtime
-
-
-
-OCI container runtime backend\. Must match virtualisation\.oci-containers\.backend when other modules also use oci-containers on the same host\.
-
-
-
-*Type:*
-one of “docker”, “podman”
-
-
-
-*Default:*
-
-```nix
-"docker"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/guacamole.nix)
-
-
-
-## ft\.hermesVm\.enable
-
-
-
-Boots a Cloud Hypervisor microVM providing an isolated NixOS environment for the Nous Research Hermes agent\. The guest reaches the host’s existing Ollama instance via the bridge at ollamaUrl — no Ollama server runs inside the VM\. Requires KVM on the host and the microvm flake input (bundled with fast-track-nix)\. VM smoke test exempt: nested KVM is unavailable in CI\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.hermesApiPort
-
-
-
-Port on which the Hermes gateway API server listens inside the VM\. Reachable from the host at http://\<vmAddress>:\<hermesApiPort>\.
-
-
-
-*Type:*
-16 bit unsigned integer; between 0 and 65535 (both inclusive)
-
-
-
-*Default:*
-
-```nix
-8642
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.hostAddress
-
-
-
-IP address of the host-side bridge interface (hermes-br); becomes the VM’s default gateway\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"10.0.102.1"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.hostInterface
-
-
-
-Host external network interface (e\.g\. eth0, enp3s0) for NAT\. When set, the guest gets outbound internet access\. Leave empty if only host–guest communication is needed\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-""
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.mem
-
-
-
-Memory in MiB assigned to the VM\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-2048
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.ollamaUrl
-
-
-
-Base URL of the Ollama instance on the host\. Exposed to the guest as OPENAI_BASE_URL with /v1 appended so hermes-agent uses it as the LLM backend\. Requires Ollama to be bound to 0\.0\.0\.0 or the bridge address on the host\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"http://10.0.102.1:11434"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.openaiApiKey
-
-
-
-Value for OPENAI_API_KEY inside the guest\. Ollama ignores the key; set this when pointing at a provider that enforces authentication\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"ollama"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.prefixLength
-
-
-
-Subnet prefix length shared by the host bridge and VM interface (e\.g\. 24 for /24)\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-24
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.sshAuthorizedKeys
-
-
-
-SSH public keys authorized to log in as root inside the VM\. When non-empty, enables OpenSSH in the guest on port 22\. The VM is only reachable from the host bridge, so exposure is limited to the host\.
+Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS)\. An empty list omits the setting so Periphery reports every detected mount\.
 
 
 
@@ -2160,39 +2974,15 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.hermesVm\.vcpus
+## ft\.komodo\.jwtSecret
 
 
 
-Number of vCPUs assigned to the VM\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-2
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
-
-
-
-## ft\.hermesVm\.vmAddress
-
-
-
-Static IP address assigned to the VM’s primary network interface\.
+Default secret for signing Komodo JWT tokens, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store)\. With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it\.
 
 
 
@@ -2204,19 +2994,19 @@ string
 *Default:*
 
 ```nix
-"10.0.102.2"
+"komodo-jwt-secret"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.hermesVm\.vmMac
+## ft\.komodo\.peripheryRootDirectory
 
 
 
-MAC address assigned to the VM’s TAP-backed network interface\. Must be locally administered (first octet 02)\. Change this if running alongside ft\.dockervm to avoid collisions\.
+Periphery’s root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path\. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory\.
 
 
 
@@ -2228,43 +3018,43 @@ string
 *Default:*
 
 ```nix
-"02:00:00:00:01:01"
+"/etc/komodo"
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.hermesVm\.vmName
+## ft\.komodo\.repoCachePath
 
 
 
-Name for the microvm instance\. Used as the systemd service name, guest hostname, and TAP interface suffix (tap-\<vmName>)\.
+Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs\. null leaves the clones on the container’s ephemeral layer\.
 
 
 
 *Type:*
-string
+null or string
 
 
 
 *Default:*
 
 ```nix
-"hermes-vm"
+null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm-hermes.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.keepass\.enable
+## ft\.komodo\.secrets\.core\.enable
 
 
 
-Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend\. Useful on COSMIC or hybrid DE setups where GNOME Keyring’s auto-unlock would bypass hardware key authentication\.
+Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via ` core --config-path `\. Its keys become globally \[\[KEY]]-interpolatable into every Stack/Deployment\. This is for interpolation into deployed Stacks — distinct from ft\.komodo\.sopsEnv, which covers Komodo’s own credentials\. Requires a configured sops-nix (normally ft\.sops\.enable)\.
 
 
 
@@ -2288,15 +3078,15 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/keepass\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/keepass.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
-## ft\.komodo\.enable
+## ft\.komodo\.secrets\.periphery\.enable
 
 
 
-Deploys Komodo Core, Periphery, and PostgreSQL as rootless Podman containers under the podman service user\. Requires ft\.podmanRootless\.enable = true\. Populate the sops secret keys documented in NOTES\.md before the first deploy\.
+Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via ` periphery --config-path `\. Its keys become \[\[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs\. This is for interpolation into deployed Stacks — distinct from ft\.komodo\.sopsEnv, which covers Komodo’s own credentials\. Requires a configured sops-nix (normally ft\.sops\.enable)\.
 
 
 
@@ -2320,7 +3110,159 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/komodo\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/komodo.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.serverName
+
+
+
+Name for the first Komodo server entry, and the name Periphery uses when connecting to Core\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"Local"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.sopsEnv\.enable
+
+
+
+Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft\.komodo\.sopsEnv\.secretName) instead of the Nix store\. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store\. Requires a configured sops-nix (normally ft\.sops\.enable); populate the key as KEY=VALUE lines — see NOTES\.md\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.sopsEnv\.secretName
+
+
+
+sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines)\. Declared and decrypted when sopsEnv\.enable is true\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"komodo/env"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.syncPath
+
+
+
+Host path bind-mounted into Komodo Core at /syncs, used for ‘Files on Server’ Resource Syncs\. null leaves the files on the container’s ephemeral layer\.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.timezone
+
+
+
+Timezone for Komodo schedules (tz database name, e\.g\. America/New_York)\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"Etc/UTC"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+
+
+
+## ft\.komodo\.webhookSecret
+
+
+
+Default secret for authenticating incoming Komodo webhooks, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store)\. With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"komodo-webhook-secret"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
 
 
 
@@ -2352,7 +3294,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/limine\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/limine.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/limine\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/limine.nix)
 
 
 
@@ -2360,7 +3302,7 @@ true
 
 
 
-Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter\. Build the ISO with lib\.mkLiveIso; inject SSH keys and additional config via its extraModules argument\.
+Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter\. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines\.nix); the generator then emits it as packages\.\<system>\.\<name> instead of a nixosConfiguration\. Inject SSH keys via ft\.liveIso\.authorizedKeys in the machine’s default\.nix\.
 
 
 
@@ -2384,7 +3326,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/live-iso.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso.nix)
 
 
 
@@ -2392,7 +3334,7 @@ true
 
 
 
-SSH public keys authorised for the root account on boot\. Pass via extraModules in lib\.mkLiveIso\.
+SSH public keys authorised for the root account on boot\. Set this in the machine’s default\.nix\.
 
 
 
@@ -2408,11 +3350,35 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/live-iso.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso.nix)
 
 
 
-## ft\.microvms
+## ft\.microvms\.hostAddress
+
+
+
+IP address of the shared host-side bridge interface (microvm0); becomes the default gateway for every microVM instance on this host\. Every instance derives its guest address from this value’s /24 network portion plus its own vmAddressSuffix — change the subnet once here, not per instance\.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"10.0.100.1"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+
+
+
+## ft\.microvms\.instances
 
 
 
@@ -2432,15 +3398,15 @@ attribute set of (submodule)
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.enable
+## ft\.microvms\.instances\.\<name>\.enable
 
 
 
-Provisions a Cloud Hypervisor microVM on the host: creates a bridge interface (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@\<name> systemd service\. Requires KVM (/dev/kvm) and the microvm flake input\.
+Provisions a Cloud Hypervisor microVM on the host: attaches it to the shared bridge (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@\<name> systemd service\. Requires KVM (/dev/kvm) and the microvm flake input\.
 
 
 
@@ -2464,15 +3430,15 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.extraGuestConfig
+## ft\.microvms\.instances\.\<name>\.extraGuestConfig
 
 
 
-Additional NixOS module merged into the guest configuration\. Use this to inject application-level services (e\.g\. ft\.ociStack) without modifying this generic infrastructure module\.
+Additional NixOS module merged into the guest configuration\. Use this to inject application-level services (e\.g\. ft\.containers + ft\.komodo) without modifying this generic infrastructure module\.
 
 
 
@@ -2488,35 +3454,11 @@ module
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.hostAddress
-
-
-
-IP address of the host-side bridge interface (microvm0); becomes the VM’s default gateway\. All VMs on the same host share this bridge and must agree on this value\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"10.0.100.1"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
-
-
-
-## ft\.microvms\.\<name>\.hostInterface
+## ft\.microvms\.instances\.\<name>\.hostInterface
 
 
 
@@ -2528,11 +3470,11 @@ Name of the host’s external network interface (e\.g\. eth0, wlan0, enp3s0)\. U
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.mem
+## ft\.microvms\.instances\.\<name>\.mem
 
 
 
@@ -2552,33 +3494,11 @@ signed integer
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.prefixLength
-
-Subnet prefix length shared by the host bridge and VM interface (e\.g\. 24 for /24)\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-24
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
-
-
-
-## ft\.microvms\.\<name>\.shares
+## ft\.microvms\.instances\.\<name>\.shares
 
 
 
@@ -2598,11 +3518,11 @@ list of (submodule)
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.shares\.\*\.mountPoint
+## ft\.microvms\.instances\.\<name>\.shares\.\*\.mountPoint
 
 
 
@@ -2614,11 +3534,11 @@ Mount point inside the guest\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.shares\.\*\.proto
+## ft\.microvms\.instances\.\<name>\.shares\.\*\.proto
 
 
 
@@ -2638,11 +3558,11 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.shares\.\*\.source
+## ft\.microvms\.instances\.\<name>\.shares\.\*\.source
 
 
 
@@ -2654,11 +3574,11 @@ Absolute path on the host to share into the guest\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.shares\.\*\.tag
+## ft\.microvms\.instances\.\<name>\.shares\.\*\.tag
 
 
 
@@ -2670,11 +3590,11 @@ Unique virtiofs tag for this share\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.sshAuthorizedKeys
+## ft\.microvms\.instances\.\<name>\.sshAuthorizedKeys
 
 
 
@@ -2694,11 +3614,11 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.vcpus
+## ft\.microvms\.instances\.\<name>\.vcpus
 
 
 
@@ -2718,27 +3638,27 @@ signed integer
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.vmAddress
+## ft\.microvms\.instances\.\<name>\.vmAddressSuffix
 
 
 
-Static IP address assigned to the VM’s primary network interface\. Must be unique within the host bridge subnet\.
+Last octet of this VM’s IP address on the shared microvm0 subnet — combined with the network portion of ft\.microvms\.hostAddress to form the full guest address\. Must be unique among all instances on this host\.
 
 
 
 *Type:*
-string
+8 bit unsigned integer; between 0 and 255 (both inclusive)
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.vmMac
+## ft\.microvms\.instances\.\<name>\.vmMac
 
 
 
@@ -2750,11 +3670,11 @@ MAC address assigned to the VM’s TAP-backed network interface\. Must be locall
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.volumes
+## ft\.microvms\.instances\.\<name>\.volumes
 
 
 
@@ -2774,11 +3694,11 @@ list of (submodule)
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.volumes\.\*\.image
+## ft\.microvms\.instances\.\<name>\.volumes\.\*\.image
 
 
 
@@ -2790,11 +3710,11 @@ Absolute path to the host-side disk image file\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.volumes\.\*\.mountPoint
+## ft\.microvms\.instances\.\<name>\.volumes\.\*\.mountPoint
 
 
 
@@ -2806,11 +3726,11 @@ Mount point inside the guest\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.volumes\.\*\.size
+## ft\.microvms\.instances\.\<name>\.volumes\.\*\.size
 
 
 
@@ -2822,11 +3742,11 @@ Size of the disk image in MiB\.
 signed integer
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
 
 
 
-## ft\.microvms\.\<name>\.vsockCid
+## ft\.microvms\.instances\.\<name>\.vsockCid
 
 
 
@@ -2846,7 +3766,231 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/microvm.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+
+
+
+## ft\.microvms\.prefixLength
+
+
+
+Subnet prefix length shared by the host bridge and every guest interface (e\.g\. 24 for /24)\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+24
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+
+
+
+## ft\.moonlight\.enable
+
+
+
+Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default\. Clients connect with Moonlight/Artemis\. Streaming users must additionally be members of the ` input ` group for virtual-input emulation\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.applications
+
+
+
+Moonlight application list passed through to ` services.sunshine.applications ` (the ` { env; apps = [ ... ]; } ` structure defining the entries clients can launch)\. Merged with the module defaults\.
+
+
+
+*Type:*
+attribute set
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.autoStart
+
+
+
+Start the systemd *user* service automatically on login to a graphical session\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.backend
+
+
+
+Stream-host implementation\. Only ` sunshine ` (nixpkgs’ in-tree ` services.sunshine `) is implemented; ` apollo ` is reserved for a future ClassicOldSong/Apollo backend and currently fails an assertion because Apollo is not packaged in nixpkgs\.
+
+
+
+*Type:*
+one of “sunshine”, “apollo”
+
+
+
+*Default:*
+
+```nix
+"sunshine"
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.capSysAdmin
+
+
+
+Grant ` CAP_SYS_ADMIN ` on the host binary, required for KMS/Wayland screen capture on many setups\. Disabled by default because it is a privilege escalation; enable it if screen capture fails under a Wayland session\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.installClient
+
+
+
+Also install the Moonlight client (` moonlight-qt `) so this machine can view streams from other hosts, not just serve them\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.openFirewall
+
+
+
+Open the Moonlight port set in the firewall (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010)\. Enabled by default — a stream host is unreachable without it — but can be disabled to manage the ports manually or restrict them to a VPN interface\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+
+
+
+## ft\.moonlight\.settings
+
+
+
+Free-form settings passed through to ` services.sunshine.settings ` (e\.g\. ` sunshine_name `, ` min_log_level `, ` origin_web_ui_allowed `)\. Merged with the module defaults\.
+
+
+
+*Type:*
+attribute set
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
 
 
 
@@ -2878,7 +4022,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/apps/mullet\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/apps/mullet.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet.nix)
 
 
 
@@ -2902,7 +4046,7 @@ absolute path
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/apps/mullet\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/apps/mullet.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet.nix)
 
 
 
@@ -2934,7 +4078,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
 
 
 
@@ -2958,7 +4102,7 @@ attribute set of (submodule)
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
 
 
 
@@ -2974,7 +4118,7 @@ Local mount point for the NFS share\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
 
 
 
@@ -2990,7 +4134,7 @@ Remote path of the NFS share (e\.g\., server:/path)\.
 string
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/nfs.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
 
 
 
@@ -3022,7 +4166,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/nix-index\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/nix-index.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index.nix)
 
 
 
@@ -3046,375 +4190,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/nix-index\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/nix-index.nix)
-
-
-
-## ft\.ociStack\.enable
-
-
-
-Enables a rootful OCI container runtime (Docker or Podman) with docker-compose, and optionally deploys a Komodo core + periphery + FerretDB stack\. Designed for use inside a microVM guest; provision the Docker data volume separately via ft\.microvms\.volumes\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.enable
-
-
-
-Deploy a Komodo core + periphery + FerretDB stack via docker-compose\. Container data is stored on the Docker volume; backups are written to komodo\.backupsPath\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.adminPassword
-
-
-
-Initial Komodo admin password\. Stored in the Nix store — change after first login\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"admin"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.adminUsername
-
-
-
-Initial Komodo admin username created on first launch\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"admin"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.backupsPath
-
-
-
-Path inside the guest where Komodo writes backup archives\. When using the ft\.dockervm wrapper this is on a virtiofs share backed by the host\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"/opt/komodo/backups"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.dbPassword
-
-
-
-Password for the FerretDB/Postgres database\. Stored in the Nix store — suitable only for local-only deployments\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.dbUsername
-
-
-
-Username for the FerretDB/Postgres database\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.host
-
-
-
-Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions\. Override with the VM’s IP when deploying inside a microVM (e\.g\. http://10\.0\.100\.2:9120)\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"http://localhost:9120"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.imageTag
-
-
-
-Docker image tag for ghcr\.io/moghtech/komodo-core and komodo-periphery\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"latest"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.jwtSecret
-
-
-
-Secret used to sign Komodo JWT tokens\. Stored in the Nix store\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo-jwt-secret"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.requireMountUnit
-
-
-
-Systemd mount unit that must be active before the Komodo service starts (e\.g\. opt-komodo\.mount when backupsPath is on a virtiofs share)\. Set automatically by ft\.dockervm; null disables the dependency\.
-
-
-
-*Type:*
-null or string
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.serverName
-
-
-
-Name for the first Komodo server entry, and the name Periphery uses when connecting to Core\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"Local"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.timezone
-
-
-
-Timezone for Komodo schedules (tz database name, e\.g\. America/New_York)\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"Etc/UTC"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.komodo\.webhookSecret
-
-
-
-Secret used to authenticate incoming Komodo webhooks\. Stored in the Nix store\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo-webhook-secret"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
-
-
-
-## ft\.ociStack\.runtime
-
-
-
-OCI container runtime\. Both options run rootful\. With podman, Docker CLI compatibility and the Docker socket are enabled so that compose files using /var/run/docker\.sock work unchanged\.
-
-
-
-*Type:*
-one of “docker”, “podman”
-
-
-
-*Default:*
-
-```nix
-"docker"
-```
-
-*Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/oci-stack.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index.nix)
 
 
 
@@ -3422,7 +4198,7 @@ one of “docker”, “podman”
 
 
 
-Enables KDE Plasma 6 with X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc)\. Elisa music player is excluded by default\.
+Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc)\. Elisa music player is excluded by default\.
 
 
 
@@ -3446,15 +4222,15 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/desktops/plasma\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/desktops/plasma.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma.nix)
 
 
 
-## ft\.podmanRootless\.enable
+## ft\.plasmaBigscreen\.enable
 
 
 
-Creates a dedicated unprivileged ‘podman’ user with subuid/subgid mappings, enables cgroup v2, configures a persistent user-level Podman socket via systemd lingering, and provisions /opt/containers\. Installs docker-compose pointed at the rootless socket\.
+Installs kdePackages\.plasma\.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services\.displayManager\.sessionPackages\. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent)\.
 
 
 
@@ -3478,31 +4254,55 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/podman-rootless\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/podman-rootless.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
 
 
 
-## ft\.podmanRootless\.uid
+## ft\.plasmaBigscreen\.cecSupport
 
 
 
-Fixed UID and GID assigned to the podman service user\. Derives the Podman socket path at /run/user/\<uid>/podman/podman\.sock for DOCKER_HOST\.
+Loads the cec kernel module and installs libcec and v4l-utils so a TV remote can drive Plasma Bigscreen over HDMI-CEC\.
 
 
 
 *Type:*
-signed integer
+boolean
 
 
 
 *Default:*
 
 ```nix
-2000
+true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/podman-rootless\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/podman-rootless.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
+
+
+
+## ft\.plasmaBigscreen\.defaultSession
+
+
+
+Makes plasma-bigscreen-wayland the default SDDM session, and therefore the session autologin starts, instead of merely adding it as a selectable option alongside any other configured session\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
 
 
 
@@ -3534,7 +4334,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
 
 
 
@@ -3558,7 +4358,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
 
 
 
@@ -3582,7 +4382,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
 
 
 
@@ -3614,7 +4414,7 @@ list of package
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/printing.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
 
 
 
@@ -3646,7 +4446,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
 
 
 
@@ -3678,7 +4478,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
 
 
 
@@ -3710,7 +4510,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/rclone.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
 
 
 
@@ -3734,7 +4534,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/core.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
 
 
 
@@ -3766,7 +4566,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
 
 
 
@@ -3798,7 +4598,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
 
 
 
@@ -3830,7 +4630,39 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/sops.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
+
+
+
+## ft\.steamConfig\.enable
+
+
+
+Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts\. Configure individual games under programs\.steam\.config\.apps and programs\.steam\.config\.nonSteamApps once enabled\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/steam-config\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/steam-config.nix)
 
 
 
@@ -3862,7 +4694,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
 
 
 
@@ -3886,7 +4718,39 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
+
+
+
+## ft\.tailscale\.autoJoin
+
+
+
+Declares the ` tailscale/authkey ` sops secret and points
+` services.tailscale.authKeyFile ` at it, so tailscaled authenticates and
+joins the tailnet automatically on first boot instead of requiring a
+manual ` sudo tailscale up `\. Defaults to ` ft.sops.enable `, so any machine
+with sops already enabled auto-joins with no extra toggle\. Requires a
+` tailscale/authkey ` value populated in the encrypted secrets file\. The
+key must be a reusable auth key generated in the Tailscale admin
+console; if it expires, rotate it and re-encrypt the secrets file or
+auto-join silently stops working for any newly built machine\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
 
 
 
@@ -3910,7 +4774,39 @@ one of “client”, “server”
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/services/tailscale.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
+
+
+
+## ft\.tailscale\.useSSH
+
+
+
+Enables Tailscale’s built-in SSH server (` tailscale up --ssh `), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale’s browser-based SSH Console, with no client app or authorized_keys entry needed\. Access is governed entirely by your tailnet’s ACL policy (configured in the Tailscale admin console), not by this option\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
 
 
 
@@ -3918,7 +4814,7 @@ one of “client”, “server”
 
 
 
-Creates and manages all system users: always creates an ` admin ` wheel user; additional wheel users from ` superUsers `; unprivileged users from ` normalUsers `\. All users get zsh and common group membership\.
+Creates wheel (sudo) users from ` superUsers ` and unprivileged users from ` normalUsers `; all get zsh and common group membership\. The privileged admin account is owned separately by the ` ft.admin ` module\.
 
 
 
@@ -3942,7 +4838,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -3977,7 +4873,7 @@ attribute set of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -3985,7 +4881,7 @@ attribute set of string
 
 
 
-The primary username other modules (like Home Manager) will target\.
+The primary username other modules (like Home Manager) will target\. Defaults to the admin account created by ` ft.admin `\.
 
 
 
@@ -4001,7 +4897,7 @@ string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -4025,7 +4921,7 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -4049,7 +4945,7 @@ list of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -4081,7 +4977,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -4116,7 +5012,7 @@ attribute set of string
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/user.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
 
 
 
@@ -4148,7 +5044,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4172,7 +5068,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4196,7 +5092,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4220,7 +5116,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4244,7 +5140,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4268,13 +5164,11 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
 ## ft\.vendorHw\.logitech
-
-
 
 Override autodetect for Solaar (Unifying/Bolt receivers) and Piper/ratbagd (gaming mice/keyboards)\. Null uses autodetect via USB vendor ID 046d\.
 
@@ -4292,7 +5186,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4316,7 +5210,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4340,7 +5234,7 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
 
 
 
@@ -4364,7 +5258,71 @@ null
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/vendor-hw.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
+
+
+
+## ft\.vicinae\.enable
+
+
+
+Registers the upstream vicinae\.cachix\.org binary cache so the Vicinae launcher (ft\.vicinae\.enable, Home Manager) doesn’t need to compile its Qt6/C++ stack from source\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae.nix)
+
+
+
+## ft\.vicinae\.inputServer\.enable
+
+
+
+Wraps vicinae-input-server with cap_dac_override via security\.wrappers, granting it raw input-device access for Vicinae’s global-hotkey and keystroke-injection features\. This bypasses normal file-permission checks for the wrapped binary — leave disabled if Vicinae is only invoked through a compositor-bound shortcut (e\.g\. a KWin global shortcut running ` vicinae toggle `)\.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae.nix)
 
 
 
@@ -4396,7 +5354,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
 
 
 
@@ -4420,7 +5378,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
 
 
 
@@ -4444,7 +5402,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
 
 
 
@@ -4468,7 +5426,7 @@ false
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/system/virt.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
 
 
 
@@ -4500,7 +5458,7 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/wine\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/profiles/wine.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/wine\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/wine.nix)
 
 
 
@@ -4532,6 +5490,6 @@ true
 ```
 
 *Declared by:*
- - [/nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/yubikey\.nix](file:///nix/store/38bryrkrsn5w20ibk1siwglx95hajm22-source/modules/nixos/hardware/yubikey.nix)
+ - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/yubikey\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/yubikey.nix)
 
 

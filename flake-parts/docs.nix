@@ -82,6 +82,49 @@
       checks = {
         option-docs-nixos = (mkStrictDocs nixosEval.options).optionsJSON;
         option-docs-home = (mkStrictDocs homeEval.options).optionsJSON;
+
+        # Fails nix flake check if modules/{nixos,home}/README.md drifts from
+        # what nixosOptionsDoc actually generates for the current module tree
+        # (e.g. a module is renamed/removed but the committed README isn't
+        # regenerated). Mirrors the diff style of the `format` check.
+        #
+        # "Declared by" links embed the store-path hash of inputs.self itself
+        # (file:///nix/store/<hash>-source/modules/...). That hash changes
+        # whenever flake.lock is rewritten in-session — which CI's "Resolve
+        # flake inputs" step does unconditionally before running this check —
+        # even though nothing under modules/ actually changed. Both sides are
+        # normalized to strip store-path hashes before diffing so the check
+        # tracks real content drift instead of flake-lock churn.
+        docs-fresh =
+          pkgs.runCommand "docs-fresh-check"
+            {
+              nativeBuildInputs = [
+                pkgs.diffutils
+                pkgs.gnused
+              ];
+              nixosReadme = (mkDocs nixosEval.options).optionsCommonMark;
+              homeReadme = (mkDocs homeEval.options).optionsCommonMark;
+            }
+            ''
+              normalize() {
+                sed -E 's#/nix/store/[0-9a-z]{32}-[^/[:space:])]*#/nix/store/HASH-NAME#g' "$1"
+              }
+
+              fail=0
+              if ! diff -q <(normalize "$nixosReadme") <(normalize ${inputs.self}/modules/nixos/README.md); then
+                echo "modules/nixos/README.md is stale."
+                fail=1
+              fi
+              if ! diff -q <(normalize "$homeReadme") <(normalize ${inputs.self}/modules/home/README.md); then
+                echo "modules/home/README.md is stale."
+                fail=1
+              fi
+              if [ "$fail" -ne 0 ]; then
+                echo "Run the 'Generate Module READMEs' workflow (workflow_dispatch) to regenerate."
+                exit 1
+              fi
+              touch $out
+            '';
       };
     };
 }
