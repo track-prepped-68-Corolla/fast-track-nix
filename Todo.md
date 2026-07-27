@@ -165,14 +165,6 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 ---
 
-## 🔐 Security & Secrets
-
-- [ ] Diceware generator for high-entropy initial user passphrases
-- [ ] Script programmatic creation of a KeePassXC (`.kdbx`) vault using the Diceware password as master key
-- [ ] Configure `.gitignore` to explicitly allow the `.kdbx` vault file for local version-controlled redundancy
-- [ ] `systemd-userd` integration
-
----
 
 ## 💻 Hardware & Vendors
 
