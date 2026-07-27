@@ -7,7 +7,7 @@
 # with the microvm *guest* module, plus a packages.<system>.microvm-<name>
 # runner. A host runs one by reference — ft.microvms sets
 # microvm.vms.<name>.flake = self — so the guest closure is never evaluated
-# inside the host (the Phase 2 decoupling; see flake-parts/vm-guest-base.nix).
+# inside the host (the Phase 2 decoupling; see modules/vm-guest-base.nix).
 #
 # A VM is thin, exactly like a machine: vms/<name>/default.nix sets ft.* (a
 # docker VM enables ft.containers + ft.komodo), resources, and its tap
@@ -37,10 +37,11 @@ let
     in
     if builtins.pathExists f then lib.removeSuffix "\n" (builtins.readFile f) else "x86_64-linux";
 
-  # Generic microVM guest baseline (hypervisor, DHCP, stateVersion). Lives under
-  # lib/ so flake-parts/default.nix does not auto-import it as a flake module
-  # (it's a NixOS module); imported explicitly here.
-  guestBase = import ./lib/vm-guest-base.nix;
+  # Generic microVM guest baseline (hypervisor, DHCP, stateVersion). It is a
+  # NixOS module, so it lives under modules/ — but as a lone file, not inside the
+  # nixos/ hub, so listFilesRecursive never applies it to a real host. Imported
+  # explicitly here (guests only).
+  guestBase = import ../modules/vm-guest-base.nix;
 
   # Host-only / guest-incompatible modules pulled out of the hub for guests,
   # mirroring lib.vmTestBase. The two microvm modules reference the host-only
