@@ -4,9 +4,9 @@
 #
 # The generic "this is a microVM guest" scaffolding, analogous to how machines
 # get a baseline. It is a NixOS module, so it lives under modules/ (not
-# flake-parts/) — but as a lone file, deliberately NOT inside the modules/nixos
-# hub, so listFilesRecursive never applies it to a real host. It is imported
-# explicitly by flake-parts/vms.nix, which pulls it into guests only.
+# flake-parts/) — in its own modules/vm/ subtree, deliberately NOT inside the
+# modules/nixos hub, so listFilesRecursive never applies it to a real host. It
+# is imported explicitly by flake-parts/vms.nix, which pulls it into guests only.
 #
 # A consumer's vms/<name>/default.nix then only sets what makes that VM specific:
 # ft.* features (e.g. ft.containers + ft.komodo for a docker VM), resources, and
