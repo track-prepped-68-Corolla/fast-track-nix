@@ -82,6 +82,34 @@
       checks = {
         option-docs-nixos = (mkStrictDocs nixosEval.options).optionsJSON;
         option-docs-home = (mkStrictDocs homeEval.options).optionsJSON;
+
+        # Fails nix flake check if modules/{nixos,home}/README.md drifts from
+        # what nixosOptionsDoc actually generates for the current module tree
+        # (e.g. a module is renamed/removed but the committed README isn't
+        # regenerated). Mirrors the diff style of the `format` check.
+        docs-fresh =
+          pkgs.runCommand "docs-fresh-check"
+            {
+              nativeBuildInputs = [ pkgs.diffutils ];
+              nixosReadme = (mkDocs nixosEval.options).optionsCommonMark;
+              homeReadme = (mkDocs homeEval.options).optionsCommonMark;
+            }
+            ''
+              fail=0
+              if ! diff -q "$nixosReadme" ${inputs.self}/modules/nixos/README.md; then
+                echo "modules/nixos/README.md is stale."
+                fail=1
+              fi
+              if ! diff -q "$homeReadme" ${inputs.self}/modules/home/README.md; then
+                echo "modules/home/README.md is stale."
+                fail=1
+              fi
+              if [ "$fail" -ne 0 ]; then
+                echo "Run the 'Generate Module READMEs' workflow (workflow_dispatch) to regenerate."
+                exit 1
+              fi
+              touch $out
+            '';
       };
     };
 }
