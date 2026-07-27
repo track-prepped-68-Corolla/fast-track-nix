@@ -36,5 +36,14 @@
   # bridge, so nothing is trusted implicitly. A VM that needs inbound access
   # opens its own ports (or disables the firewall) in its vms/<name> config.
 
+  # ft.core is enabled by default and assigns system.stateVersion = cfg.stateVersion
+  # with a plain (non-mkDefault) assignment, and ft.core.stateVersion has no
+  # default — every consumer must set it. A guest is analogous to a machine, so
+  # the baseline provides it via ft.core.stateVersion (the framework's canonical
+  # knob), letting a specific vms/<name> override at normal priority.
+  ft.core.stateVersion = lib.mkDefault "25.05";
+
+  # Fallback for a guest that opts out of ft.core (ft.core.enable = false): its
+  # config block never runs, so nothing would set system.stateVersion otherwise.
   system.stateVersion = lib.mkDefault "25.05";
 }
