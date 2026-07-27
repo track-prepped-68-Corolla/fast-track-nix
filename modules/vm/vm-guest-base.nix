@@ -14,6 +14,13 @@
 # static lease keyed on the interface MAC), so nothing host-specific is baked in.
 # =============================================================================
 { config, lib, ... }:
+let
+  vmLib = import ./lib.nix { inherit lib; };
+  # The VM's name — the generator sets hostName to the vms/<name> dir name, and
+  # ft.microvms uses that same instance name, so deriving from it keeps the guest
+  # and host in agreement.
+  name = config.networking.hostName;
+in
 {
   microvm = {
     # Cloud Hypervisor is lightweight like Firecracker but supports virtiofs
@@ -21,6 +28,20 @@
     hypervisor = lib.mkDefault "cloud-hypervisor";
     vcpu = lib.mkDefault 2;
     mem = lib.mkDefault 2048;
+
+    # Auto tap interface — name and MAC derived from the VM name so they always
+    # agree with the host's ft.microvms tap + DHCP static lease, and the
+    # interface name never exceeds Linux's 15-char limit (vmLib.tapName
+    # truncates). Nothing for the consumer to wire up or keep in sync. mkDefault
+    # so a vms/<name> needing custom/multiple interfaces can replace it — but it
+    # must then keep the MAC consistent with the host lease, or forgo the lease.
+    interfaces = lib.mkDefault [
+      {
+        type = "tap";
+        id = vmLib.tapName name;
+        mac = vmLib.mac name;
+      }
+    ];
 
     # Auto host share — the companion to ft.microvms' per-instance share dir.
     # The host creates /var/lib/microvm/<name>/share and we mount it here over
@@ -32,7 +53,7 @@
     # wholesale, so a VM that wants extra shares must re-include this entry.
     shares = lib.mkDefault [
       {
-        source = "/var/lib/microvm/${config.networking.hostName}/share";
+        source = "/var/lib/microvm/${name}/share";
         mountPoint = "/srv/host-share";
         tag = "vm-share";
         proto = "virtiofs";

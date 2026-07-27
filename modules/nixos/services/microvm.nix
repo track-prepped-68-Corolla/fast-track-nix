@@ -21,9 +21,11 @@
 # host-side directories.
 #
 # Addressing: guests are DHCP clients (see vm-guest-base.nix); the host bridge
-# runs a DHCP server that hands each guest a stable address via a MAC-keyed
-# static lease (vmMac → vmAddressSuffix). The instance's vmMac MUST match the MAC
-# its guest declares on the matching tap interface in vms/<name>/.
+# runs a DHCP server that hands each guest a stable address via a static lease.
+# The lease's MAC and the tap interface name are BOTH derived from the instance
+# name (modules/vm/lib.nix), identically here and in the guest baseline, so the
+# two always agree with nothing hand-set, and the interface name is truncated to
+# stay within Linux's 15-char limit regardless of how long the VM name is.
 #
 # Auto host share: every enabled instance gets /var/lib/microvm/<name>/share
 # created here, which the guest baseline mounts over virtiofs at /srv/host-share
@@ -59,12 +61,7 @@
 
             vmAddressSuffix = lib.mkOption {
               type = lib.types.ints.u8;
-              description = "The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease keyed on vmMac. Must be unique among all instances on this host.";
-            };
-
-            vmMac = lib.mkOption {
-              type = lib.types.str;
-              description = "MAC address of this VM's TAP-backed network interface. Used as the key for its DHCP static lease, so it MUST match the MAC the guest declares on the matching tap interface in vms/<name>/. Must be a locally administered address (first octet 02) and unique per host.";
+              description = "The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease. Must be unique among all instances on this host. (The lease's MAC and the tap interface name are derived from the instance name automatically — see modules/vm/lib.nix — so they always match the guest and never exceed Linux's 15-char interface limit.)";
             };
 
             hostInterface = lib.mkOption {
@@ -106,6 +103,10 @@
       anyEnabled = lib.any (vmCfg: vmCfg.enable) (lib.attrValues vms);
       subnetPrefix = lib.concatStringsSep "." (lib.take 3 (lib.splitString "." netCfg.hostAddress));
       vmAddress = vmCfg: "${subnetPrefix}.${toString vmCfg.vmAddressSuffix}";
+      # Same derivations the guest baseline uses, so the host's tap match + DHCP
+      # lease always agree with the interface the guest declares — nothing is
+      # hand-set in two places.
+      vmLib = import ../../vm/lib.nix { inherit lib; };
     in
     {
       # mkIf (not lib.optional) so the definition disappears entirely when no
@@ -151,24 +152,25 @@
           }
         ) vms)
         # Per-VM DHCP static lease — concatenated into the bridge's lease list so
-        # each guest gets a stable address keyed on its MAC.
+        # each guest gets a stable address keyed on its (name-derived) MAC.
         ++ (lib.mapAttrsToList (
-          _vmName: vmCfg:
+          vmName: vmCfg:
           lib.mkIf vmCfg.enable {
             "10-microvm0".dhcpServerStaticLeases = [
               {
-                MACAddress = vmCfg.vmMac;
+                MACAddress = vmLib.mac vmName;
                 Address = vmAddress vmCfg;
               }
             ];
           }
         ) vms)
-        # Per-VM TAP — unique key per instance, enslaved to the bridge.
+        # Per-VM TAP — unique key per instance, enslaved to the bridge. The
+        # matched interface name is the derived (length-safe) tap name.
         ++ (lib.mapAttrsToList (
           vmName: vmCfg:
           lib.mkIf vmCfg.enable {
             "10-tap-${vmName}" = lib.mkDefault {
-              matchConfig.Name = "tap-${vmName}";
+              matchConfig.Name = vmLib.tapName vmName;
               networkConfig.Bridge = "microvm0";
               linkConfig.RequiredForOnline = "enslaved";
             };
