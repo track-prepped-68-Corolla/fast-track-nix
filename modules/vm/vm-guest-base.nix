@@ -32,9 +32,9 @@
     networkConfig.DHCP = lib.mkDefault "yes";
   };
 
-  # The VM is reachable only from the host bridge, so the guest firewall adds
-  # friction without a threat model to justify it.
-  networking.firewall.enable = lib.mkDefault false;
+  # Firewall stays at the NixOS default (enabled): guests can share a host
+  # bridge, so nothing is trusted implicitly. A VM that needs inbound access
+  # opens its own ports (or disables the firewall) in its vms/<name> config.
 
   system.stateVersion = lib.mkDefault "25.05";
 }

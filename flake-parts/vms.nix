@@ -28,6 +28,13 @@ let
   vmsDir = self + "/vms";
   vmNames = getDirs vmsDir;
 
+  # Both this generator and the machine generator publish
+  # nixosConfigurations.<name>. A name defined by both would silently collide in
+  # the merged flake output (or surface as an opaque flake-parts merge error), so
+  # enforce the documented no-collision contract up front with a clear message.
+  machineNames = getDirs (self + "/machines");
+  collidingNames = builtins.filter (n: builtins.elem n machineNames) vmNames;
+
   # Per-VM system: vms/<name>/var/system if present, else x86_64-linux (microVMs
   # are almost always x86_64-linux).
   systemOf =
@@ -76,7 +83,11 @@ let
       ];
     };
 
-  vmConfigs = builtins.listToAttrs (map (name: lib.nameValuePair name (mkVm name)) vmNames);
+  vmConfigs =
+    if collidingNames != [ ] then
+      throw "vms/ collides with machines/ on name(s): ${lib.concatStringsSep ", " collidingNames}. Rename the VM directory — a name cannot be both a machine and a VM."
+    else
+      builtins.listToAttrs (map (name: lib.nameValuePair name (mkVm name)) vmNames);
 
   # Runner packages keyed by each VM's system (build/boot the guest directly).
   runnerPackages = lib.foldl' (
