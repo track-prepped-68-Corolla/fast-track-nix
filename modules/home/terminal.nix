@@ -146,15 +146,14 @@ in
             let
               commaAssistantEnable = cfg.zshPlugins.commaAssistant.enable && config.ft.nixIndex.enable;
             in
-            lib.optionalString
-              (cfg.zshPlugins.autosuggestions.enable || cfg.zshPlugins.syntaxHighlighting.enable || commaAssistantEnable)
-              "source ${pkgs.zsh-defer}/share/zsh-defer/zsh-defer.plugin.zsh\n"
-            + lib.optionalString cfg.zshPlugins.autosuggestions.enable
-              "zsh-defer source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n"
-            + lib.optionalString cfg.zshPlugins.syntaxHighlighting.enable
-              "zsh-defer source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n"
-            + lib.optionalString commaAssistantEnable
-              "zsh-defer source ${commaAssistantSrc}/zsh-comma-assistant.plugin.zsh\n"
+            lib.optionalString (
+              cfg.zshPlugins.autosuggestions.enable
+              || cfg.zshPlugins.syntaxHighlighting.enable
+              || commaAssistantEnable
+            ) "source ${pkgs.zsh-defer}/share/zsh-defer/zsh-defer.plugin.zsh\n"
+            + lib.optionalString cfg.zshPlugins.autosuggestions.enable "zsh-defer source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh\n"
+            + lib.optionalString cfg.zshPlugins.syntaxHighlighting.enable "zsh-defer source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n"
+            + lib.optionalString commaAssistantEnable "zsh-defer source ${commaAssistantSrc}/zsh-comma-assistant.plugin.zsh\n"
           ))
         ];
       };
