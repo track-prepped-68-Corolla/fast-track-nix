@@ -181,7 +181,7 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
   - [x] Review `nixos-hardware` for common vendor profiles (Lenovo, Dell, etc.)
   - [x] Scaffold a generic vendor module structure for toggling vendor-specific quirks
   - [x] Implement at least one alternative vendor configuration — `vendor-hw.nix` already covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, and handhelds, not just ASUS
-  - [ ] **Test coverage gap:** only ASUS has a VM smoke test (`ft-testing/tests/vm/vendor-hw.nix` → `vm-vendor-hw-asus`); the two non-ASUS ft-home machines (`mimir`, `lyra`, both GMKtec) don't match any vendor-hw detection predicate, so no non-ASUS branch has ever run for real or in CI
+  - [x] **Test coverage gap closed:** `ft-testing/tests/vm/vendor-hw.nix` now has a VM smoke test for every branch (`vm-vendor-hw-asus`, `-lenovo`, `-msi`, `-razer`, `-logitech`, `-corsair`, `-openrgb`, `-handheld`), each with a purpose-built `fixtures/vendor-hw-*.json`. Real hardware coverage is still ASUS-only (the two non-ASUS ft-home machines, `mimir`/`lyra`, are both GMKtec and don't match any vendor-hw predicate), but every detection branch now runs in CI.
 
 ---
 
