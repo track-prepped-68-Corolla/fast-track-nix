@@ -119,49 +119,49 @@ in
 {
   options.ft.gitops = {
     enable = lib.mkEnableOption "pull-based GitOps for this standalone Home Manager profile" // {
-      description = "Runs a daemon that clones/pulls remote.url, and on a new commit on remote.branch runs `home-manager switch` against homeConfigurations.<flakeAttr>, retrying a failing commit up to retry.maxAttempts times before giving up on it until a new commit is pushed. A from-scratch equivalent of the NixOS side's comin-based ft.gitops, since comin has no concept of Home Manager.";
+      description = "Runs a background service that keeps a standalone Home Manager profile in sync with a git repo: it clones and pulls `remote.url`, and whenever there's a new commit on `remote.branch`, it runs `home-manager switch` against `homeConfigurations.<flakeAttr>`. If a switch fails, it retries the same commit up to `retry.maxAttempts` times before giving up until a newer commit arrives. This is a from-scratch equivalent of the NixOS side's comin-based `ft.gitops`, built because comin has no concept of Home Manager.";
     };
 
     remote = {
       url = lib.mkOption {
         type = lib.types.str;
-        description = "Git URL this daemon clones/pulls.";
+        description = "The git URL this service clones and pulls from.";
       };
 
       branch = lib.mkOption {
         type = lib.types.str;
         default = "main";
-        description = "Branch this daemon tracks and deploys.";
+        description = "The branch this service tracks and deploys.";
       };
     };
 
     repoPath = lib.mkOption {
       type = lib.types.str;
-      description = "Local path this daemon clones/pulls the repository into. Its own private checkout, independent of any NixOS ft.repoPath, since standalone Home Manager may run on a non-NixOS host.";
+      description = "The local path this service clones the repository into. It's a private checkout used only by this service, separate from any NixOS `ft.repoPath`, since standalone Home Manager may be running on a non-NixOS host.";
     };
 
     flakeAttr = lib.mkOption {
       type = lib.types.str;
-      description = ''The homeConfigurations.<flakeAttr> attribute to switch to, e.g. "alice@x86_64-linux".'';
+      description = ''Which `homeConfigurations.<flakeAttr>` entry to switch to, e.g. "alice@x86_64-linux".'';
     };
 
     pollPeriod = lib.mkOption {
       type = lib.types.int;
       default = 60;
-      description = "How often, in seconds, this daemon polls remote.url for new commits.";
+      description = "How often, in seconds, this service checks `remote.url` for new commits.";
     };
 
     signingKeys = lib.mkOption {
       type = lib.types.listOf lib.types.path;
       default = [ ];
-      description = "Armored GPG public key files; a commit is only switched to if it is signed by one of these. An empty list disables signature verification, letting any commit on remote.branch deploy unattended — strongly discouraged outside testing.";
+      description = "Armored GPG public key files. A commit only gets switched to if it's signed by one of these keys. Leaving this list empty turns off signature verification entirely, so any commit on `remote.branch` deploys unattended — only do that for testing.";
     };
 
     retry = {
       maxAttempts = lib.mkOption {
         type = lib.types.int;
         default = 3;
-        description = "Consecutive failed switch attempts on the same commit before giving up on it until a new commit is pushed. Uses pollPeriod as the retry cadence.";
+        description = "How many consecutive failed switch attempts on the same commit to allow before giving up on it until a new commit is pushed. Retries happen at the `pollPeriod` cadence.";
       };
     };
   };

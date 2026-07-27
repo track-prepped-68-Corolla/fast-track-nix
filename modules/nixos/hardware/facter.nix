@@ -22,13 +22,13 @@ in
 
   options.ft.facter = {
     enable = lib.mkEnableOption "nixos-facter hardware detection" // {
-      description = "Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.";
+      description = "Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.";
     };
 
     reportPath = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
-      description = "Flake-relative path to the facter.json report committed in the consumer repo, e.g. reportPath = ./var/facter.json; from the machine's default.nix. Null disables the report wiring.";
+      description = "The path to the committed `facter.json` report, relative to the flake, e.g. `reportPath = ./var/facter.json;` in the machine's `default.nix`. Leave it as `null` to skip this wiring entirely.";
     };
   };
 

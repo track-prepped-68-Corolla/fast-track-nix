@@ -15,13 +15,13 @@ in
 {
   options.ft.tailscale = {
     enable = lib.mkEnableOption "Tailscale VPN client" // {
-      description = "Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = \"server\"` to run as an exit node.";
+      description = "Joins the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale tray app. Set `ft.tailscale.useRoutingFeatures = \"server\"` to run this machine as an exit node.";
     };
 
     enableTrayApp = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable Trayscale GUI tray application.";
+      description = "Installs the Trayscale graphical tray application.";
     };
 
     useRoutingFeatures = lib.mkOption {
@@ -30,7 +30,7 @@ in
         "server"
       ];
       default = "client";
-      description = "Tailscale routing features (client or server/exit node).";
+      description = "Whether this machine acts as a regular Tailscale client or as a server/exit node.";
     };
 
     autoJoin = lib.mkOption {
@@ -38,19 +38,20 @@ in
       default = config.ft.sops.enable;
       description = ''
         Declares the `tailscale/authkey` sops secret and points
-        `services.tailscale.authKeyFile` at it, so tailscaled authenticates and
-        joins the tailnet automatically on first boot instead of requiring a
-        manual `sudo tailscale up`. Defaults to `ft.sops.enable`, so any machine
-        with sops already enabled auto-joins with no extra toggle. Requires a
-        `tailscale/authkey` value populated in the encrypted secrets file. The
-        key must be a reusable auth key generated in the Tailscale admin
-        console; if it expires, rotate it and re-encrypt the secrets file or
-        auto-join silently stops working for any newly built machine.
+        `services.tailscale.authKeyFile` at it, so tailscaled logs in and joins
+        the tailnet automatically on first boot instead of needing a manual
+        `sudo tailscale up`. Defaults to whatever `ft.sops.enable` is set to, so
+        any machine that already has sops enabled joins automatically with no
+        extra toggle. Requires a `tailscale/authkey` value in the encrypted
+        secrets file — it must be a reusable auth key generated in the
+        Tailscale admin console. If that key expires, rotate it and re-encrypt
+        the secrets file, or auto-join will silently stop working for any
+        newly built machine.
       '';
     };
 
     useSSH = lib.mkEnableOption "Tailscale SSH" // {
-      description = "Enables Tailscale's built-in SSH server (`tailscale up --ssh`), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale's browser-based SSH Console, with no client app or authorized_keys entry needed. Access is governed entirely by your tailnet's ACL policy (configured in the Tailscale admin console), not by this option.";
+      description = "Turns on Tailscale's built-in SSH server (`tailscale up --ssh`), so tailnet peers can connect over SSH using their Tailscale identity instead of a separate SSH keypair — including through Tailscale's browser-based SSH Console, with no client app or authorized_keys entry required. Who can actually connect is controlled entirely by your tailnet's ACL policy in the Tailscale admin console, not by this option.";
     };
   };
 

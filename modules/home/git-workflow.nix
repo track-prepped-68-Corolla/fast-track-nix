@@ -60,7 +60,7 @@ in
 {
   options.ft.gitWorkflow = {
     enable = lib.mkEnableOption "lefthook conventional commit workflow" // {
-      description = "Installs conform, convco, and lefthook; registers global git hooks via core.hooksPath that run treefmt format-checking and trufflehog secret scanning on pre-commit, and enforce conventional commit format on commit-msg. The prepare-commit-msg hook appends NixOS generation metadata written by the ft switch recipe. Enables the convco interactive commit builder.";
+      description = "Sets up a conventional-commit workflow for git: installs `conform`, `convco`, and `lefthook`, then wires up global git hooks (via `core.hooksPath`) that check formatting with treefmt and scan for secrets with trufflehog before each commit, and enforce conventional commit message format when you write the message. It also appends NixOS generation info (written by the `ft` switch recipe) to your commit messages automatically, and gives you `convco`'s interactive commit builder.";
     };
 
     types = lib.mkOption {
@@ -78,7 +78,7 @@ in
         "build"
         "revert"
       ];
-      description = "Allowed conventional commit types. The commit-msg hook rejects messages whose type is not in this list.";
+      description = "The commit types allowed in conventional commit messages. The commit-msg hook rejects any commit whose type isn't on this list.";
     };
   };
 

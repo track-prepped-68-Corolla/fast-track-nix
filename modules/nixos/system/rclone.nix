@@ -21,21 +21,21 @@ in
 {
   options.ft.rclone = {
     enable = lib.mkEnableOption "rclone cloud storage tooling" // {
-      description = "Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.";
+      description = "Installs rclone and FUSE for the whole system and allows FUSE mounts to be shared with other users, so a per-user rclone mount service can expose a cloud drive (like Google Drive) at the configured mount point.";
     };
 
     mountPoint = lib.mkOption {
       type = lib.types.str;
       default = "GoogleDrive";
       example = "GoogleDrive";
-      description = "Mount-point name a consumer's per-user rclone mount service references (e.g. a home-manager systemd user service mounting under ~/<mountPoint>). Convention only — this module does not create the mount itself.";
+      description = "The name of the folder your per-user rclone mount service should mount to, e.g. a Home Manager service mounting under `~/<mountPoint>`. This is just a naming convention — this module doesn't create the mount itself.";
     };
 
     remoteName = lib.mkOption {
       type = lib.types.str;
       default = "gdrive";
       example = "gdrive";
-      description = "rclone remote name a consumer's per-user mount service references (e.g. `rclone mount <remoteName>: ...`). Convention only — this module does not create the mount itself.";
+      description = "The rclone remote name your per-user mount service should use, e.g. `rclone mount <remoteName>: ...`. Again, just a naming convention — this module doesn't create the mount itself.";
     };
   };
 

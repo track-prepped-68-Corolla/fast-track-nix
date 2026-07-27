@@ -42,13 +42,13 @@ in
 {
   options.ft.webapps = {
     enable = lib.mkEnableOption "site-specific webapp launchers" // {
-      description = "Generates application-launcher entries that open arbitrary websites as standalone, app-style windows (no address bar or tabs) using a Chromium-family browser's --app= mode, each in its own isolated profile directory. A lightweight alternative to bundling a full Electron/nativefier wrapper per site.";
+      description = "Creates application-launcher shortcuts that open any website in its own app-like window — no address bar or tabs — using a Chromium-family browser's `--app=` mode, each with its own isolated browser profile. A lightweight alternative to packaging a full Electron wrapper for every site.";
     };
 
     browser = lib.mkOption {
       type = lib.types.enum browserEnum;
       default = "chromium";
-      description = "Default Chromium-family browser used to launch webapps in --app= mode. Only Chromium-family browsers support --app=; Firefox has no equivalent without the separate PWAsForFirefox stack, so it is not offered here.";
+      description = "Which Chromium-family browser to use for launching webapps in `--app=` mode. Only Chromium-family browsers support this; Firefox isn't offered here since it needs the separate PWAsForFirefox setup to do something similar.";
     };
 
     apps = lib.mkOption {
@@ -57,36 +57,36 @@ in
           options = {
             name = lib.mkOption {
               type = lib.types.str;
-              description = "Display name shown in the application launcher.";
+              description = "The name shown for this webapp in your application launcher.";
             };
 
             url = lib.mkOption {
               type = lib.types.str;
-              description = "URL the webapp window opens to.";
+              description = "The URL this webapp's window opens to.";
             };
 
             icon = lib.mkOption {
               type = lib.types.nullOr lib.types.path;
               default = null;
-              description = "Path to a local icon image. When null, the site's favicon is fetched automatically at Home Manager activation time (best-effort; silently keeps the browser's default icon if the fetch is unavailable, e.g. offline).";
+              description = "Path to a local icon image to use. If left unset, the site's favicon is fetched automatically when Home Manager activates; if that fetch fails (e.g. no internet), it just falls back to the browser's default icon.";
             };
 
             browser = lib.mkOption {
               type = lib.types.nullOr (lib.types.enum browserEnum);
               default = null;
-              description = "Per-app override of the Chromium-family browser used to launch this webapp. Falls back to ft.webapps.browser when null.";
+              description = "Overrides which browser launches this particular webapp. Leave unset to use `ft.webapps.browser`.";
             };
 
             categories = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [ "Network" ];
-              description = "Freedesktop desktop-entry categories used to place this webapp in application menus.";
+              description = "Desktop-entry categories that control where this webapp shows up in application menus.";
             };
           };
         }
       );
       default = { };
-      description = "Set of website-backed apps to expose as desktop launchers, keyed by a short app id used for the isolated profile directory and window class.";
+      description = "The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class.";
     };
   };
 

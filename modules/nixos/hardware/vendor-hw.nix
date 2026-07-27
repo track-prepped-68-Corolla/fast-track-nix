@@ -87,61 +87,61 @@ in
 {
   options.ft.vendorHw = {
     enable = lib.mkEnableOption "vendor-specific hardware software" // {
-      description = "Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.";
+      description = "Installs and configures the right drivers, background services, and tools for whichever hardware brand is detected in the hardware report. Covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.";
     };
 
     autodetect = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Read ft.facter.reportPath and enable matching vendor tooling automatically. Set to false to use only the per-brand override options below.";
+      description = "Reads the hardware report at `ft.facter.reportPath` and turns on matching vendor tooling automatically. Turn this off to rely only on the per-brand override options below.";
     };
 
     lenovo = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for Lenovo Legion Linux (out-of-tree kernel driver and legiond daemon). Null uses autodetect via DMI manufacturer/family strings.";
+      description = "Overrides autodetection for Lenovo Legion Linux support (an out-of-tree kernel driver plus the `legiond` daemon). Leave as `null` to detect this automatically from the machine's manufacturer and family information.";
     };
 
     razer = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for OpenRazer kernel driver/daemon and Polychromatic GUI. Null uses autodetect via USB vendor ID 1532.";
+      description = "Overrides autodetection for OpenRazer support (kernel driver, daemon, and the Polychromatic GUI). Leave as `null` to detect this automatically from USB vendor ID `1532`.";
     };
 
     msi = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for the msi-ec kernel module (mainlined since Linux 5.16) and MControlCenter GUI. Null uses autodetect via DMI manufacturer string.";
+      description = "Overrides autodetection for the `msi-ec` kernel module (part of the mainline kernel since Linux 5.16) and the MControlCenter GUI. Leave as `null` to detect this automatically from the machine's manufacturer information.";
     };
 
     logitech = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for Solaar (Unifying/Bolt receivers) and Piper/ratbagd (gaming mice/keyboards). Null uses autodetect via USB vendor ID 046d.";
+      description = "Overrides autodetection for Solaar (for Unifying/Bolt receivers) and Piper/ratbagd (for gaming mice and keyboards). Leave as `null` to detect this automatically from USB vendor ID `046d`.";
     };
 
     corsair = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for ckb-next Corsair keyboard/mouse driver and GUI. Null uses autodetect via USB vendor ID 1b1c.";
+      description = "Overrides autodetection for ckb-next, the driver and GUI for Corsair keyboards and mice. Leave as `null` to detect this automatically from USB vendor ID `1b1c`.";
     };
 
     openrgb = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Enable OpenRGB universal RGB lighting daemon and the i2c-dev kernel module it requires. No facter autodetect — set true to enable explicitly.";
+      description = "Turns on OpenRGB, a vendor-agnostic RGB lighting daemon, along with the `i2c-dev` kernel module it needs. There's no autodetection for this one — set it to `true` explicitly to enable it.";
     };
 
     asus = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) for ASUS ROG/TUF laptops. Null uses autodetect via DMI manufacturer string.";
+      description = "Overrides autodetection for asusctl (the `asusd` daemon, fan curve control, and AuraSync) on ASUS ROG/TUF laptops. Leave as `null` to detect this automatically from the machine's manufacturer information.";
     };
 
     handheld = lib.mkOption {
       type = lib.types.nullOr lib.types.bool;
       default = null;
-      description = "Override autodetect for InputPlumber (OGC input remapping framework) and PowerStation (TDP and power-profile control) for handheld gaming devices (Legion Go, GPD, Ayaneo, AYN). Null uses autodetect via SMBIOS chassis type 11 or known DMI manufacturer strings.";
+      description = "Overrides autodetection for InputPlumber (which remaps controls into standard gamepad input) and PowerStation (which controls TDP and power profiles), for handheld gaming devices like the Legion Go, GPD, Ayaneo, and AYN. Leave as `null` to detect this automatically from the chassis type or known manufacturer information reported by the hardware.";
     };
   };
 

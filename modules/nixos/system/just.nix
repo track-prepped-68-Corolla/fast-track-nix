@@ -26,7 +26,7 @@ in
   options.ft.cli = {
     enable = lib.mkEnableOption "Fast Track CLI (ft command)" // {
       default = true;
-      description = "Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).";
+      description = "Installs `just` along with a small `ft` command that runs the framework's built-in recipes from anywhere on the system. It's on by default since almost every machine wants it. It needs `ft.repoPath` set to your consumer repo's location — turn this off for machines that don't have a real checkout of your repo, like a live ISO or a test-only build.";
     };
   };
 

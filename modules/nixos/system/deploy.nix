@@ -16,31 +16,31 @@
 {
   options.ft.deploy = {
     enable = lib.mkEnableOption "colmena deployment target" // {
-      description = "Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.";
+      description = "Adds this machine to the fleet that can be deployed remotely with `colmena apply`. It's off by default, so you opt each machine in individually — that way local-only machines or disk images never accidentally become a remote deploy target.";
     };
 
     targetHost = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "Hostname or IP colmena connects to over SSH. Null uses the machine's attribute name, resolved via DNS or Tailscale MagicDNS.";
+      description = "The hostname or IP address colmena connects to over SSH. Leave it null to use the machine's own name instead, resolved through DNS or Tailscale MagicDNS.";
     };
 
     targetUser = lib.mkOption {
       type = lib.types.str;
       default = "root";
-      description = "SSH user colmena connects as. Must be able to activate system closures — root, or a user with passwordless sudo.";
+      description = "The SSH user colmena connects as. It needs to be able to activate system changes, so this must be root or a user with passwordless sudo.";
     };
 
     tags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Colmena tags for this node, used to target subsets with `colmena apply --on @<tag>`.";
+      description = "Tags for this machine, so you can target a subset of the fleet with `colmena apply --on @<tag>`.";
     };
 
     buildOnTarget = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Build the system closure on the target host instead of the control machine. Useful for cross-architecture targets or to avoid pushing large closures over the network.";
+      description = "Build the system on the target machine itself instead of on your control machine. Handy when targeting a different CPU architecture, or to avoid pushing a large build over the network.";
     };
   };
 }

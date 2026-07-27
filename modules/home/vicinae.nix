@@ -17,7 +17,7 @@ in
 
   options.ft.vicinae = {
     enable = lib.mkEnableOption "Vicinae launcher" // {
-      description = "Installs and runs the Vicinae launcher (app search, clipboard history, emoji picker, calculator, Raycast-compatible extensions) as a systemd user service. Exposes `programs.vicinae.{extensions,themes,settings}` (vicinae's own module) as the configuration surface — set those directly in this user's config. Pair with the host's `ft.vicinae.inputServer.enable` (NixOS) for global-hotkey and keystroke-injection support.";
+      description = "Installs and runs Vicinae, a Raycast-compatible app launcher with app search, clipboard history, an emoji picker, a calculator, and support for Raycast extensions, kept running as a systemd user service. Configure it directly through `programs.vicinae.{extensions,themes,settings}`, which Vicinae's own module provides. For global hotkeys and keystroke injection, also enable the host's `ft.vicinae.inputServer.enable` (NixOS).";
     };
   };
 

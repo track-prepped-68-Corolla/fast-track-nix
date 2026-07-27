@@ -14,13 +14,13 @@
     hostAddress = lib.mkOption {
       type = lib.types.str;
       default = "10.0.100.1";
-      description = "IP address of the shared host-side bridge interface (microvm0); becomes the default gateway for every microVM instance on this host. Every instance derives its guest address from this value's /24 network portion plus its own vmAddressSuffix — change the subnet once here, not per instance.";
+      description = "IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.";
     };
 
     prefixLength = lib.mkOption {
       type = lib.types.int;
       default = 24;
-      description = "Subnet prefix length shared by the host bridge and every guest interface (e.g. 24 for /24).";
+      description = "Subnet prefix length shared by the host bridge and every guest interface (e.g. 24 for a /24).";
     };
 
     # instances is an attrsOf submodule — each instance has its own
@@ -31,46 +31,46 @@
         lib.types.submodule {
           options = {
             enable = lib.mkEnableOption "microVM instance" // {
-              description = "Provisions a Cloud Hypervisor microVM on the host: attaches it to the shared bridge (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.";
+              description = "Provisions a Cloud Hypervisor microVM on the host: connects it to the shared bridge (microvm0), sets up NAT so it can reach the internet, attaches a TAP interface, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.";
             };
 
             vcpus = lib.mkOption {
               type = lib.types.int;
               default = 2;
-              description = "Number of vCPUs assigned to the VM.";
+              description = "Number of virtual CPUs given to the VM.";
             };
 
             mem = lib.mkOption {
               type = lib.types.int;
               default = 2048;
-              description = "Memory in MiB assigned to the VM.";
+              description = "Memory, in MiB, given to the VM.";
             };
 
             vmAddressSuffix = lib.mkOption {
               type = lib.types.ints.u8;
-              description = "Last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to form the full guest address. Must be unique among all instances on this host.";
+              description = "The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address. Must be unique among all instances on this host.";
             };
 
             vmMac = lib.mkOption {
               type = lib.types.str;
-              description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02) and unique per host.";
+              description = "MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02) and unique per host.";
             };
 
             vsockCid = lib.mkOption {
               type = lib.types.nullOr lib.types.int;
               default = null;
-              description = "vsock context ID (CID) for the VM. When set, enables systemd-notify support and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).";
+              description = "vsock context ID (CID) for the VM. Setting this enables systemd-notify support, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).";
             };
 
             hostInterface = lib.mkOption {
               type = lib.types.str;
-              description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Used by networking.nat to add the MASQUERADE rule that gives the VM internet access. All VMs on the same host must agree on this value.";
+              description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Every VM on the same host must agree on this value.";
             };
 
             sshAuthorizedKeys = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [ ];
-              description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge).";
+              description = "SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge).";
             };
 
             volumes = lib.mkOption {
@@ -79,21 +79,21 @@
                   options = {
                     image = lib.mkOption {
                       type = lib.types.str;
-                      description = "Absolute path to the host-side disk image file.";
+                      description = "Absolute path to the disk image file on the host.";
                     };
                     mountPoint = lib.mkOption {
                       type = lib.types.str;
-                      description = "Mount point inside the guest.";
+                      description = "Where this is mounted inside the guest.";
                     };
                     size = lib.mkOption {
                       type = lib.types.int;
-                      description = "Size of the disk image in MiB.";
+                      description = "Size of the disk image, in MiB.";
                     };
                   };
                 }
               );
               default = [ ];
-              description = "Persistent disk images attached to the guest. Each entry creates a host-side image file and mounts it at the given path inside the VM.";
+              description = "Persistent disk images attached to the guest. Each entry creates a disk image file on the host and mounts it at the given path inside the VM.";
             };
 
             shares = lib.mkOption {
@@ -106,34 +106,34 @@
                     };
                     mountPoint = lib.mkOption {
                       type = lib.types.str;
-                      description = "Mount point inside the guest.";
+                      description = "Where this is mounted inside the guest.";
                     };
                     tag = lib.mkOption {
                       type = lib.types.str;
-                      description = "Unique virtiofs tag for this share.";
+                      description = "A unique virtiofs tag identifying this share.";
                     };
                     proto = lib.mkOption {
                       type = lib.types.str;
                       default = "virtiofs";
-                      description = "Filesystem sharing protocol (virtiofs or 9p).";
+                      description = "Filesystem sharing protocol to use (virtiofs or 9p).";
                     };
                   };
                 }
               );
               default = [ ];
-              description = "Host directories shared into the guest via virtiofs. Requires cloud-hypervisor (Firecracker does not support virtiofs).";
+              description = "Host directories shared into the guest over virtiofs. Requires cloud-hypervisor — Firecracker doesn't support virtiofs.";
             };
 
             extraGuestConfig = lib.mkOption {
               type = lib.types.deferredModule;
               default = { };
-              description = "Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.containers + ft.komodo) without modifying this generic infrastructure module.";
+              description = "Extra NixOS module merged into the guest's configuration. Use this to add application-level services (e.g. ft.containers plus ft.komodo) without changing this general-purpose infrastructure module.";
             };
           };
         }
       );
       default = { };
-      description = "Set of microVM instances to provision on this host. Each attribute key becomes the VM name, systemd service suffix, guest hostname, and TAP interface suffix (tap-<name>).";
+      description = "The set of microVM instances to provision on this host. Each attribute name becomes that VM's name, its systemd service suffix, its guest hostname, and its TAP interface suffix (tap-<name>).";
     };
   };
 

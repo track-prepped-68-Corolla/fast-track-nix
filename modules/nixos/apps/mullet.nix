@@ -38,13 +38,13 @@ in
 {
   options.ft.mullet = {
     enable = lib.mkEnableOption "imperative package management (the Mullet)" // {
-      description = "Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.";
+      description = "Installs every package listed in the plain text file at `ft.mullet.sourcePath`, one package name per line. This lets you add or remove packages by editing a text file instead of touching Nix code. Any name that doesn't resolve to a real package is just skipped.";
     };
 
     sourcePath = lib.mkOption {
       type = lib.types.path;
       example = lib.literalExpression "./var/mullet.txt";
-      description = "Required: flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names. Set it in your machine config, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. No default is provided because a framework-relative default would resolve into the framework repo, not the consumer's.";
+      description = "Required: the path (relative to your flake) to the text file listing package names, one per line, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. There's no default here, because a default path would resolve inside the framework's own repo instead of yours.";
     };
   };
 

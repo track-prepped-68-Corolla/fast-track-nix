@@ -12,25 +12,25 @@ in
 
   options.ft.cardwire = {
     enable = lib.mkEnableOption "Cardwire GPU manager" // {
-      description = "Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.";
+      description = "Turns on the cardwired service, which can block or unblock GPU device nodes so you can switch between integrated, hybrid, or manual GPU power modes. It works by hooking into the kernel with eBPF, so it needs a kernel built with `CONFIG_BPF_LSM=y` and `lsm=...,bpf` added to the boot parameters.";
     };
 
     autoApplyGpuState = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Automatically restore the last saved GPU state when the cardwired service starts.";
+      description = "When the cardwired service starts, automatically restore whichever GPU state was last saved.";
     };
 
     experimentalNvidiaBlock = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable experimental blocking of NVIDIA-specific device files. Enabled automatically when ft.gpu is active with the NVIDIA driver.";
+      description = "Turns on experimental support for blocking NVIDIA-specific device files. This switches on automatically whenever `ft.gpu` is active with the NVIDIA driver.";
     };
 
     batteryAutoSwitch = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Automatically switch to integrated GPU mode when running on battery power.";
+      description = "Switch to the integrated GPU automatically whenever the machine is running on battery.";
     };
   };
 

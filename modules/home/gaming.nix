@@ -23,7 +23,7 @@ in
 {
   options.ft.gaming = {
     enable = lib.mkEnableOption "gaming companion tools" // {
-      description = "Installs MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run into the user profile. Home Manager counterpart of the NixOS ft.gaming module's package set, independently useful on gaming-focused distros that already provide Steam (SteamOS, Bazzite) — Steam, GameMode, and gamescope remain NixOS-only since they require system-level privileges.";
+      description = "Installs a set of gaming companion tools into your user profile: MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run. This mirrors the package set from the NixOS `ft.gaming` module and is handy on its own for gaming-focused distros that already ship Steam, like SteamOS or Bazzite. Steam itself, GameMode, and gamescope stay NixOS-only, since they need system-level privileges this module can't grant.";
     };
   };
 

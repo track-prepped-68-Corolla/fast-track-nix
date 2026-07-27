@@ -36,7 +36,7 @@ in
 {
   options.ft.moonlight = {
     enable = lib.mkEnableOption "Moonlight stream host" // {
-      description = "Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.";
+      description = "Runs a Moonlight-compatible stream host (Sunshine) for remote desktop use and low-latency game streaming, opening the necessary firewall ports by default. Clients connect using Moonlight or Artemis. Anyone streaming from this machine also needs to be a member of the `input` group for virtual-input emulation (gamepad/keyboard/mouse) to work.";
     };
 
     backend = lib.mkOption {
@@ -45,43 +45,43 @@ in
         "apollo"
       ];
       default = "sunshine";
-      description = "Stream-host implementation. Only `sunshine` (nixpkgs' in-tree `services.sunshine`) is implemented; `apollo` is reserved for a future ClassicOldSong/Apollo backend and currently fails an assertion because Apollo is not packaged in nixpkgs.";
+      description = "Which stream-host software to use. Only `sunshine` (nixpkgs' built-in `services.sunshine`) is currently implemented; `apollo` is reserved for a future ClassicOldSong/Apollo backend and currently fails, since Apollo isn't packaged in nixpkgs yet.";
     };
 
     openFirewall = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Open the Moonlight port set in the firewall (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010). Enabled by default — a stream host is unreachable without it — but can be disabled to manage the ports manually or restrict them to a VPN interface.";
+      description = "Opens the firewall ports Moonlight clients need to connect (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010). On by default, since a stream host is unreachable without them — turn this off if you'd rather manage the ports yourself or restrict them to a VPN interface.";
     };
 
     capSysAdmin = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Grant `CAP_SYS_ADMIN` on the host binary, required for KMS/Wayland screen capture on many setups. Disabled by default because it is a privilege escalation; enable it if screen capture fails under a Wayland session.";
+      description = "Grants `CAP_SYS_ADMIN` on the host binary, which is needed for KMS/Wayland screen capture on many setups. Off by default since it's a privilege escalation — turn it on if screen capture fails under a Wayland session.";
     };
 
     autoStart = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Start the systemd *user* service automatically on login to a graphical session.";
+      description = "Starts the systemd user service automatically whenever you log into a graphical session.";
     };
 
     installClient = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Also install the Moonlight client (`moonlight-qt`) so this machine can view streams from other hosts, not just serve them.";
+      description = "Also installs the Moonlight client (`moonlight-qt`), so this machine can view streams from other hosts, not just serve its own.";
     };
 
     settings = lib.mkOption {
       type = lib.types.attrs;
       default = { };
-      description = "Free-form settings passed through to `services.sunshine.settings` (e.g. `sunshine_name`, `min_log_level`, `origin_web_ui_allowed`). Merged with the module defaults.";
+      description = "Free-form settings passed straight through to `services.sunshine.settings` (e.g. `sunshine_name`, `min_log_level`, `origin_web_ui_allowed`). Merged with this module's own defaults.";
     };
 
     applications = lib.mkOption {
       type = lib.types.attrs;
       default = { };
-      description = "Moonlight application list passed through to `services.sunshine.applications` (the `{ env; apps = [ ... ]; }` structure defining the entries clients can launch). Merged with the module defaults.";
+      description = "The list of Moonlight applications passed through to `services.sunshine.applications` (the `{ env; apps = [ ... ]; }` structure defining what clients can launch). Merged with this module's own defaults.";
     };
   };
 

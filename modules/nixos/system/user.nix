@@ -21,25 +21,25 @@ in
   options.ft.users = {
     enable = lib.mkEnableOption "user management" // {
       default = true;
-      description = "Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.";
+      description = "Creates sudo users from `superUsers` and regular unprivileged users from `normalUsers`; everyone gets zsh as their shell and membership in the common hardware/service groups. The dedicated admin account is handled separately by the `ft.admin` module.";
     };
 
     mainUser = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "The primary username other modules (like Home Manager) will target. Defaults to the admin account created by `ft.admin`.";
+      description = "The main username that other modules, like Home Manager, will apply their configuration to. Defaults to the admin account created by `ft.admin`.";
     };
 
     superUsers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Extra users who get sudo (wheel) access.";
+      description = "Extra usernames that should get sudo access.";
     };
 
     normalUsers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Standard users with no administrative privileges.";
+      description = "Usernames for regular accounts with no admin privileges.";
     };
 
     initialPasswords = lib.mkOption {
@@ -49,12 +49,12 @@ in
         admin = "mypassword";
         guest = "guestpass";
       };
-      description = "Per-user initial plaintext passwords set at first boot. Key is username; value overrides the 'changeme' default. Use sops secrets for production credentials.";
+      description = "Plain-text passwords to set for individual users the first time the machine boots. Keyed by username, each value overrides the default `changeme` password. Use sops secrets instead for real production credentials.";
     };
 
     u2f = {
       enable = lib.mkEnableOption "PAM U2F authentication" // {
-        description = "Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.";
+        description = "Turns on U2F hardware-key authentication for login and sudo. Set up each user's FIDO2 credentials with `ft.users.u2f.mappings`. Users without a key on file always fall back to password login, so nobody gets locked out.";
       };
 
       mappings = lib.mkOption {
@@ -64,7 +64,7 @@ in
           admin = "publicKey,keyHandle";
           guest = "publicKey2,keyHandle2";
         };
-        description = "Per-user U2F key data. Attribute name is the username; value is the raw credential string (the part after 'username:' in the pam-u2f authfile format).";
+        description = "Each user's U2F key data. The attribute name is the username, and the value is the raw credential string — the part that comes after `username:` in the pam-u2f authfile format.";
       };
     };
   };

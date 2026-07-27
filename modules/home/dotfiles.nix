@@ -5,7 +5,7 @@ let
 in
 {
   options.ft.dotfiles.enable = lib.mkEnableOption "dotfiles symlinking" // {
-    description = "Recursively symlinks every file under `ft.dotfiles.path` into Home Manager's home.file set using out-of-store symlinks, so dotfiles stay live-editable without a rebuild.";
+    description = "Symlinks every file under `ft.dotfiles.path` into place, recursively. It uses out-of-store symlinks, so you can edit your dotfiles directly and see the changes immediately, without rebuilding.";
   };
 
   config = lib.mkIf config.ft.dotfiles.enable {

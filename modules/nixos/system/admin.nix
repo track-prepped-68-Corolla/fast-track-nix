@@ -23,37 +23,37 @@ in
   options.ft.admin = {
     enable = lib.mkEnableOption "the privileged admin user" // {
       default = true;
-      description = "Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.";
+      description = "Sets up a dedicated admin account with sudo access, present on every machine by default (you can turn it off). It can log in with an SSH key via `authorizedKeys`, a password via `initialPassword`, or both, so you're never locked out. This account is kept separate from `ft.users` so there's always one predictable place that owns the admin user.";
     };
 
     name = lib.mkOption {
       type = lib.types.str;
       default = "admin";
-      description = "Username of the admin/management account.";
+      description = "The username for the admin account.";
     };
 
     initialPassword = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = "changeme";
-      description = "Plaintext password set at first boot so the account is never locked out. Override per machine; set to null to rely solely on key-based auth; or supply a real credential via `hashedPasswordFile` for production. Ignored when `hashedPasswordFile` is set.";
+      description = "A plain-text password set the first time the machine boots, so the account is never locked out. Override it per machine, set it to null to rely only on SSH-key login, or use `hashedPasswordFile` for a real production credential. This option is ignored whenever `hashedPasswordFile` is set.";
     };
 
     hashedPasswordFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
-      description = "Path to a file containing the admin's hashed password (e.g. a sops secret). Takes precedence over `initialPassword` when set.";
+      description = "Path to a file holding the admin's already-hashed password, such as a sops secret. When set, it takes priority over `initialPassword`.";
     };
 
     authorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "SSH public keys authorized for key-based login as the admin user.";
+      description = "The SSH public keys allowed to log in as the admin user.";
     };
 
     extraGroups = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Additional groups for the admin user, on top of wheel and the common hardware/service groups.";
+      description = "Any extra groups to add the admin user to, beyond wheel and the standard hardware/service groups it already gets.";
     };
   };
 

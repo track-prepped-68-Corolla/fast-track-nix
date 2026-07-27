@@ -18,7 +18,7 @@ in
     comma = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable comma — run uninstalled commands via nix-index.";
+      description = "Turn on comma, which lets you run a command that isn't installed yet by looking it up via nix-index.";
     };
   };
 

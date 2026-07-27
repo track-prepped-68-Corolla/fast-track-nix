@@ -157,13 +157,13 @@ in
 {
   options.ft.gpu = {
     enable = lib.mkEnableOption "universal GPU configuration" // {
-      description = "Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.";
+      description = "Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.";
     };
 
     autodetect = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Detect GPU vendor and Optimus configuration from ft.facter.reportPath. When true, sets ft.gpu.vendor and configures PRIME offloading automatically for Optimus setups. Set to false to use the vendor and prime options directly.";
+      description = "Detects the GPU vendor and Optimus setup from the hardware report at `ft.facter.reportPath`. When on, it fills in `ft.gpu.vendor` and configures PRIME offloading automatically for Optimus laptops; turn it off to set `vendor` and the `prime` options yourself.";
     };
 
     vendor = lib.mkOption {
@@ -173,20 +173,20 @@ in
         "intel"
       ];
       default = "amd";
-      description = "Primary GPU vendor (nvidia, amd, or intel). Ignored when autodetect = true and a known GPU is found in facter.json.";
+      description = "Which GPU vendor to configure for — `nvidia`, `amd`, or `intel`. Ignored when `autodetect` is on and a known GPU is found in the hardware report.";
     };
 
     enable32Bit = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable 32-bit graphics support (for older games/applications).";
+      description = "Adds 32-bit graphics support, needed by some older games and applications.";
     };
 
     nvidia = {
       openKernelModules = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Use open-source NVIDIA kernel modules (Turing+). When autodetect = true this is set automatically based on the GPU device ID; set autodetect = false to override.";
+        description = "Uses NVIDIA's open-source kernel modules, which only work on Turing-generation GPUs and newer. When `autodetect` is on, this gets set automatically based on the detected GPU; turn `autodetect` off if you need to override it.";
       };
       driverPackage = lib.mkOption {
         type = lib.types.enum [
@@ -194,22 +194,22 @@ in
           "beta"
         ];
         default = "beta";
-        description = "NVIDIA driver package to use (stable or beta).";
+        description = "Which NVIDIA driver package to use — `stable` or `beta`.";
       };
       enableSettings = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable the nvidia-settings GUI.";
+        description = "Installs the `nvidia-settings` graphical configuration tool.";
       };
       enablePowerManagement = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable NVIDIA power management.";
+        description = "Turns on NVIDIA's power management features.";
       };
       finegrainedPowerManagement = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems. Only applied while PRIME offloading is active, since the upstream nvidia module asserts fine-grained power management requires offload.";
+        description = "Turns on fine-grained power management (D3cold), which lets a laptop's discrete NVIDIA GPU power down almost completely when it's idle. This only takes effect while PRIME offloading is active, since NVIDIA's own module requires offloading to be on before it will allow fine-grained power management.";
       };
     };
 
@@ -220,14 +220,14 @@ in
         type = lib.types.str;
         default = "";
         example = "PCI:35:0:0";
-        description = "Bus ID of the GPU connected to the display (e.g. iGPU). Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.";
+        description = "The bus ID of the GPU connected to the display — usually the integrated GPU. Filled in automatically from the hardware report when `autodetect` is on and an Optimus setup is detected; set it explicitly to override.";
       };
 
       secondaryBusId = lib.mkOption {
         type = lib.types.str;
         default = "";
         example = "PCI:45:0:0";
-        description = "Bus ID of the discrete GPU. Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.";
+        description = "The bus ID of the discrete GPU. Filled in automatically from the hardware report when `autodetect` is on and an Optimus setup is detected; set it explicitly to override.";
       };
     };
   };

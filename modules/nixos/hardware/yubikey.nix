@@ -11,7 +11,7 @@ in
 {
   options.ft.yubikey = {
     enable = lib.mkEnableOption "YubiKey support and PAM integration" // {
-      description = "Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.";
+      description = "Installs YubiKey management tools (`yubikey-manager`, `yubico-piv-tool`, `pam_u2f`), turns on the `pcscd` smart-card service, and activates `ft.users.u2f` so YubiKeys can be used for login. Set each user's FIDO2 credentials with `ft.users.u2f.mappings` in your machine config.";
     };
   };
 

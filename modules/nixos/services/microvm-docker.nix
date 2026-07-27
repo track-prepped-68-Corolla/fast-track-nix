@@ -60,110 +60,110 @@ in
   # but supports virtiofs shares, which Firecracker does not.
   options.ft.dockervm = {
     enable = lib.mkEnableOption "microVM with rootful Docker Compose" // {
-      description = "Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).";
+      description = "Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).";
     };
 
     vmName = lib.mkOption {
       type = lib.types.str;
       default = "docker-vm";
-      description = "Name for the microvm instance. Used as the systemd service name, guest hostname, and TAP interface suffix (tap-<vmName>).";
+      description = "Name for this microVM. Used as the systemd service name, the guest's hostname, and the suffix of its TAP interface (tap-<vmName>).";
     };
 
     vcpus = lib.mkOption {
       type = lib.types.int;
       default = 2;
-      description = "Number of vCPUs assigned to the VM.";
+      description = "Number of virtual CPUs given to the VM.";
     };
 
     mem = lib.mkOption {
       type = lib.types.int;
       default = 2048;
-      description = "Memory in MiB assigned to the VM.";
+      description = "Memory, in MiB, given to the VM.";
     };
 
     vmAddressSuffix = lib.mkOption {
       type = lib.types.ints.u8;
       default = 2;
-      description = "Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host.";
+      description = "The last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microVM instances on this host.";
     };
 
     dockerVolumeSize = lib.mkOption {
       type = lib.types.int;
       default = 20480;
-      description = "Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).";
+      description = "Size, in MiB, of the persistent volume that stores Docker's data (the image lives at /var/lib/microvm/<vmName>/docker.img on the host).";
     };
 
     vmMac = lib.mkOption {
       type = lib.types.str;
       default = "02:00:00:00:00:01";
-      description = "MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).";
+      description = "MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02).";
     };
 
     vsockCid = lib.mkOption {
       type = lib.types.nullOr lib.types.int;
       default = null;
-      description = "vsock context ID (CID) for the VM. When set, enables systemd-notify support for cloud-hypervisor and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).";
+      description = "vsock context ID (CID) for the VM. Setting this enables systemd-notify support in cloud-hypervisor, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).";
     };
 
     hostInterface = lib.mkOption {
       type = lib.types.str;
       default = "";
-      description = "Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.";
+      description = "Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Needed by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.";
     };
 
     sshAuthorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).";
+      description = "SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge, so exposure is limited).";
     };
 
     komodo = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Deploy a Komodo instance (core + periphery + FerretDB) inside the VM. Container data is stored on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.";
+        description = "Deploys a Komodo instance (Core + Periphery + FerretDB) inside the VM. Container data lives on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.";
       };
 
       imageTag = lib.mkOption {
         type = lib.types.str;
         default = "latest";
-        description = "Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.";
+        description = "Docker image tag to use for ghcr.io/moghtech/komodo-core and komodo-periphery.";
       };
 
       dbUsername = lib.mkOption {
         type = lib.types.str;
         default = "komodo";
-        description = "Username for the FerretDB/Postgres database.";
+        description = "Username for the FerretDB/Postgres database used by this Komodo instance.";
       };
 
       dbPassword = lib.mkOption {
         type = lib.types.str;
         default = "komodo";
-        description = "Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.";
+        description = "Password for the FerretDB/Postgres database. Stored in the Nix store — only suitable for local-only deployments.";
       };
 
       adminUsername = lib.mkOption {
         type = lib.types.str;
         default = "admin";
-        description = "Initial Komodo admin username created on first launch.";
+        description = "Username for the initial Komodo admin account created on first launch.";
       };
 
       adminPassword = lib.mkOption {
         type = lib.types.str;
         default = "admin";
-        description = "Initial Komodo admin password. Stored in the Nix store — change after first login.";
+        description = "Password for the initial Komodo admin account. Stored in the Nix store — change it after your first login.";
       };
 
       webhookSecret = lib.mkOption {
         type = lib.types.str;
         default = "komodo-webhook-secret";
-        description = "Secret used to authenticate incoming Komodo webhooks. Stored in the Nix store.";
+        description = "Secret used to authenticate incoming Komodo webhooks for this instance. Stored in the Nix store.";
       };
 
       jwtSecret = lib.mkOption {
         type = lib.types.str;
         default = "komodo-jwt-secret";
-        description = "Secret used to sign Komodo JWT tokens. Stored in the Nix store.";
+        description = "Secret used to sign this Komodo instance's JWT tokens. Stored in the Nix store.";
       };
 
       host = lib.mkOption {
@@ -175,33 +175,33 @@ in
             );
           in
           "http://${subnetPrefix}.${toString cfg.vmAddressSuffix}:9120";
-        description = "Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.";
+        description = "Public URL of the Komodo Core instance; used for OAuth redirect URLs and suggested webhook addresses.";
       };
 
       serverName = lib.mkOption {
         type = lib.types.str;
         default = "Local";
-        description = "Name for the first Komodo server entry, and the name Periphery uses to connect to Core.";
+        description = "Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.";
       };
 
       timezone = lib.mkOption {
         type = lib.types.str;
         default = "Etc/UTC";
-        description = "Timezone for Komodo schedules (tz database name, e.g. America/New_York).";
+        description = "Timezone Komodo uses for its schedules (a tz database name, e.g. America/New_York).";
       };
 
       peripherySecrets.enable =
         lib.mkEnableOption "sops-decrypted Periphery [secrets] for the guest Komodo"
         // {
-          description = "Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.";
+          description = "Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared into the guest read-only) and loads it into Komodo Periphery via `--config-path`. Its keys can be interpolated as [[KEY]] into the Stacks this Periphery deploys, stay entirely on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (which acts as the sops age recipient) and enables sshd so that key can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap step — see NOTES.md.";
         };
 
       coreSecrets.enable = lib.mkEnableOption "sops-decrypted Core [secrets] for the guest Komodo" // {
-        description = "Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.";
+        description = "Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, interpolatable as [[KEY]] into every Stack and Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient added to .sops.yaml — see NOTES.md.";
       };
 
       autoApply.enable = lib.mkEnableOption "host-side Komodo GitOps auto-apply" // {
-        description = "After the guest's Komodo Core answers, run the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). See NOTES.md.";
+        description = "Once the guest's Komodo Core is up, runs the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create and run the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ automatically — no UI needed. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to get these). See NOTES.md.";
       };
     };
   };
