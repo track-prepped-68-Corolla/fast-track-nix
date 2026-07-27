@@ -27,6 +27,7 @@ in
           ];
           imports = [
             ./generator.nix
+            ./vms.nix
             ./colmena.nix
             ./kexec.nix
             ./checks.nix
