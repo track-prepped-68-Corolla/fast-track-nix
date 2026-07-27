@@ -6,10 +6,10 @@
 # and the guest baseline (vm-guest-base.nix) so a VM's tap interface name and MAC
 # are derived identically on both sides from its name — the guest declares the
 # interface, the host declares the matching DHCP static lease + bridge port, and
-# neither can drift from a hand-written value. Plain function file (takes lib),
-# not a NixOS module, so it is never picked up by the module hub.
+# neither can drift from a hand-written value. Plain attrset of pure helpers
+# (needs no lib — only builtins), not a NixOS module, so it is never picked up
+# by the module hub.
 # =============================================================================
-{ lib }:
 rec {
   # Deterministic tap interface name for a VM, ALWAYS <= 15 chars (Linux
   # IFNAMSIZ caps interface names at 15). "tap-<name>" when it fits; otherwise a

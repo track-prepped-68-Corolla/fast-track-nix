@@ -15,7 +15,7 @@
 # =============================================================================
 { config, lib, ... }:
 let
-  vmLib = import ./lib.nix { inherit lib; };
+  vmLib = import ./lib.nix;
   # The VM's name — the generator sets hostName to the vms/<name> dir name, and
   # ft.microvms uses that same instance name, so deriving from it keeps the guest
   # and host in agreement.

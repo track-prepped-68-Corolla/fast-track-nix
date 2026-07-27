@@ -106,7 +106,7 @@
       # Same derivations the guest baseline uses, so the host's tap match + DHCP
       # lease always agree with the interface the guest declares — nothing is
       # hand-set in two places.
-      vmLib = import ../../vm/lib.nix { inherit lib; };
+      vmLib = import ../../vm/lib.nix;
     in
     {
       # mkIf (not lib.optional) so the definition disappears entirely when no
