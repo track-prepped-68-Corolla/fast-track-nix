@@ -3,8 +3,10 @@
 # =============================================================================
 #
 # The generic "this is a microVM guest" scaffolding, analogous to how machines
-# get a baseline. NOT a flake-parts module and NOT part of the modules/nixos hub
-# (so it is never applied to hosts) — imported explicitly by the vms generator.
+# get a baseline. NOT part of the modules/nixos hub (so it is never applied to
+# hosts). Lives under flake-parts/lib/ — like lib/machines.nix — so
+# flake-parts/default.nix (which scans only its own top-level dir) does not
+# auto-import it as a flake-parts module; imported explicitly by vms.nix.
 #
 # A consumer's vms/<name>/default.nix then only sets what makes that VM specific:
 # ft.* features (e.g. ft.containers + ft.komodo for a docker VM), resources, and

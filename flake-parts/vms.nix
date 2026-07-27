@@ -37,9 +37,10 @@ let
     in
     if builtins.pathExists f then lib.removeSuffix "\n" (builtins.readFile f) else "x86_64-linux";
 
-  # Generic microVM guest baseline (hypervisor, DHCP, stateVersion). Not a
-  # flake-parts module and not in the hub — imported only here.
-  guestBase = import ./vm-guest-base.nix;
+  # Generic microVM guest baseline (hypervisor, DHCP, stateVersion). Lives under
+  # lib/ so flake-parts/default.nix does not auto-import it as a flake module
+  # (it's a NixOS module); imported explicitly here.
+  guestBase = import ./lib/vm-guest-base.nix;
 
   # Host-only / guest-incompatible modules pulled out of the hub for guests,
   # mirroring lib.vmTestBase. The two microvm modules reference the host-only
