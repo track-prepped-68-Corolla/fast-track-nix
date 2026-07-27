@@ -387,7 +387,7 @@ in
       # No assertion couples the [secrets] tiers to ft.sops: enabling a tier
       # declares its sops.secrets key, and sops-nix itself fails (clearly) if no
       # sops file / age key is configured — whether that comes from ft.sops or a
-      # host that wires sops-nix directly (e.g. the ft.dockervm guest). One
+      # host that wires sops-nix directly (e.g. a docker microVM guest). One
       # source of truth, no framework-module coupling.
       {
         assertion =

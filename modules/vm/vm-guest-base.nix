@@ -13,7 +13,7 @@
 # its tap interface. Addressing is DHCP from the host bridge (the host assigns a
 # static lease keyed on the interface MAC), so nothing host-specific is baked in.
 # =============================================================================
-{ lib, ... }:
+{ config, lib, ... }:
 {
   microvm = {
     # Cloud Hypervisor is lightweight like Firecracker but supports virtiofs
@@ -21,6 +21,23 @@
     hypervisor = lib.mkDefault "cloud-hypervisor";
     vcpu = lib.mkDefault 2;
     mem = lib.mkDefault 2048;
+
+    # Auto host share — the companion to ft.microvms' per-instance share dir.
+    # The host creates /var/lib/microvm/<name>/share and we mount it here over
+    # virtiofs at /srv/host-share, keyed on the VM name (the host uses the same
+    # instance name, and the generator sets hostName to it), so every VM gets a
+    # host-backed, host-browsable data dir with nothing to wire up. mkDefault so
+    # a vms/<name> can opt out (microvm.shares = []) or repoint — but note that
+    # any normal-priority microvm.shares definition REPLACES this default
+    # wholesale, so a VM that wants extra shares must re-include this entry.
+    shares = lib.mkDefault [
+      {
+        source = "/var/lib/microvm/${config.networking.hostName}/share";
+        mountPoint = "/srv/host-share";
+        tag = "vm-share";
+        proto = "virtiofs";
+      }
+    ];
   };
 
   # DHCP client — the guest carries no static address; the host bridge's DHCP

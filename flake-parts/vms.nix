@@ -51,7 +51,7 @@ let
   guestBase = import ../modules/vm/vm-guest-base.nix;
 
   # Host-only / guest-incompatible modules pulled out of the hub for guests,
-  # mirroring lib.vmTestBase. The two microvm modules reference the host-only
+  # mirroring lib.vmTestBase. The microvm host module references the host-only
   # `microvm.vms` option, which a guest (guest module only) does not declare;
   # disko-btrfs / gaming / facter-system are guest-inappropriate or heavy, same
   # as in the VM test base.
@@ -64,7 +64,6 @@ let
   # same way, or they match nothing and disko-btrfs et al. leak into the guest.
   guestDisabledModules = [
     ../modules/nixos/services/microvm.nix
-    ../modules/nixos/services/microvm-docker.nix
     ../modules/nixos/hardware/disko-btrfs.nix
     ../modules/nixos/profiles/gaming.nix
     "${inputs.nixos-facter-modules}/modules/nixos/system.nix"
