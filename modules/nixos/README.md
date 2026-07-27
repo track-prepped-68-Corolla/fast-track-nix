@@ -1658,20 +1658,10 @@ string
 
 ### ft.microvms.instances.<name>.vmAddressSuffix
 
-The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease keyed on vmMac. Must be unique among all instances on this host.
+The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease. Must be unique among all instances on this host. (The lease's MAC and the tap interface name are derived from the instance name automatically — see modules/vm/lib.nix — so they always match the guest and never exceed Linux's 15-char interface limit.)
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.vmMac
-
-MAC address of this VM's TAP-backed network interface. Used as the key for its DHCP static lease, so it MUST match the MAC the guest declares on the matching tap interface in vms/<name>/. Must be a locally administered address (first octet 02) and unique per host.
-
-*Type:*
-string
 
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
