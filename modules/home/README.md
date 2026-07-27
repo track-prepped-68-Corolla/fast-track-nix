@@ -2,40 +2,40 @@
 
 ## Table of Contents
 
-- [ft.atuin](#ftatuin) — Replaces zsh's plain history search with atuin: a SQLite-backed, searchable shell history with a fuzzy TUI. Local-only by default — no sync account or daemon. Takes over Ctrl+R and the up-arrow key; if ft.terminal's fzf integration is also enabled, fzf's Ctrl+T/Alt+C bindings are unaffected since atuin's shell init runs after fzf's and only rebinds Ctrl+R and up-arrow.
-- [ft.cli](#ftcli) — Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Home Manager counterpart of the NixOS ft.cli module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite). Requires `ft.repoPath` to point to your consumer repo root.
-- [ft.containers](#ftcontainers) — Sets up a per-user (rootless) Docker or Podman runtime with the real Docker Compose v2 binary and optional Distrobox. User-level apps like ft.komodo build on top and reach the daemon via ft.containers.socket.
-- [ft.core](#ftcore) — Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.
-- [ft.dotfiles](#ftdotfiles) — Recursively symlinks every file under `ft.dotfiles.path` into Home Manager's home.file set using out-of-store symlinks, so dotfiles stay live-editable without a rebuild.
-- [ft.flatpak](#ftflatpak) — Registers the Flathub remote for this user's `--user` Flatpak installs and exposes `services.flatpak.packages` (nix-flatpak) as the per-user declarative app list — set it in this user's base config or any of their `profiles/<name>/` submodules; the lists from every definition are merged. Requires the host's `ft.flatpak.enable` (NixOS) so the Flatpak service and desktop portal are present.
-- [ft.gaming](#ftgaming) — Installs MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run into the user profile. Home Manager counterpart of the NixOS ft.gaming module's package set, independently useful on gaming-focused distros that already provide Steam (SteamOS, Bazzite) — Steam, GameMode, and gamescope remain NixOS-only since they require system-level privileges.
-- [ft.gitWorkflow](#ftgitworkflow) — Installs conform, convco, and lefthook; registers global git hooks via core.hooksPath that run treefmt format-checking and trufflehog secret scanning on pre-commit, and enforce conventional commit format on commit-msg. The prepare-commit-msg hook appends NixOS generation metadata written by the ft switch recipe. Enables the convco interactive commit builder.
-- [ft.gitops](#ftgitops) — Runs a daemon that clones/pulls remote.url, and on a new commit on remote.branch runs `home-manager switch` against homeConfigurations.<flakeAttr>, retrying a failing commit up to retry.maxAttempts times before giving up on it until a new commit is pushed. A from-scratch equivalent of the NixOS side's comin-based ft.gitops, since comin has no concept of Home Manager.
-- [ft.karousel](#ftkarousel) — Installs the Karousel KWin script and enables it via kwinrc. Requires `ft.plasmaManager.enable` so the kwinrc Plugins key is managed declaratively.
-- [ft.komodo](#ftkomodo) — Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) as a user-level docker-compose service on top of the Home Manager ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
-- [ft.lazyvim](#ftlazyvim) — Installs Neovim with a full suite of language servers and dev tools for Python, Go, Rust, Nix, and web development. Symlinks `ft.dotfiles.path/nvim` into XDG config as a live out-of-store link and sets EDITOR/VISUAL to nvim.
-- [ft.mullet](#ftmullet) — Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into home.packages. Lets a consumer add or remove user-scoped packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped. Home Manager counterpart of the NixOS ft.mullet module.
-- [ft.nixIndex](#ftnixindex) — Installs nix-index with a pre-built database and comma into the user profile. Home Manager counterpart of the NixOS ft.nixIndex module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite).
-- [ft.plasmaManager](#ftplasmamanager) — Enables plasma-manager so KDE Plasma settings (panels, shortcuts, kwinrc keys, etc.) are declared in Home Manager via `programs.plasma.*` instead of mutated through the Plasma GUI.
-- [ft.rclone](#ftrclone) — Runs a systemd user service that mounts an rclone remote at a path under $HOME via FUSE. Home Manager counterpart of the NixOS ft.rclone module, which installs rclone/FUSE system-wide and enables fuse user_allow_other; this module owns the actual per-user mount unit.
-- [ft.repoPath](#ftrepopath) — Absolute path to the consumer's flake repo root. Set in homes/<username>/default.nix.
-- [ft.sops](#ftsops) — Configures sops-nix for this user, pointing the age key at ~/.config/sops/age/keys.txt and the secrets file at the user's var/secrets.yaml in the consumer repo.
-- [ft.steamConfig](#ftsteamconfig) — Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled. Home Manager counterpart of the NixOS ft.steamConfig module — use on standalone Home Manager systems or non-NixOS distros.
-- [ft.terminal](#ftterminal) — Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with lazily-loaded plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.
-- [ft.theme](#fttheme) — Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
-- [ft.vicinae](#ftvicinae) — Installs and runs the Vicinae launcher (app search, clipboard history, emoji picker, calculator, Raycast-compatible extensions) as a systemd user service. Exposes `programs.vicinae.{extensions,themes,settings}` (vicinae's own module) as the configuration surface — set those directly in this user's config. Pair with the host's `ft.vicinae.inputServer.enable` (NixOS) for global-hotkey and keystroke-injection support.
-- [ft.webapps](#ftwebapps) — Generates application-launcher entries that open arbitrary websites as standalone, app-style windows (no address bar or tabs) using a Chromium-family browser's --app= mode, each in its own isolated profile directory. A lightweight alternative to bundling a full Electron/nativefier wrapper per site.
-- [ft.wine](#ftwine) — Installs Bottles, Wine (WOW64 build), and Winetricks into the user profile for running Windows applications outside of Steam. Home Manager counterpart of the NixOS ft.wine module — use on standalone Home Manager systems or non-NixOS distros.
+- [ft.atuin](#ftatuin) — Replaces zsh's plain history search with atuin, which stores your shell history in a searchable database and gives you a fuzzy-search popup for it. It works entirely offline, with no sync account or background service. It takes over Ctrl+R and the up-arrow key; if `ft.terminal`'s fzf integration is also on, fzf's own Ctrl+T/Alt+C shortcuts are unaffected because atuin loads after fzf and only touches those two bindings.
+- [ft.cli](#ftcli) — Installs `just` and a small `ft` wrapper so you can run the framework's `ft` commands from any directory. This is the Home Manager equivalent of the NixOS `ft.cli` module, useful on its own for standalone Home Manager setups or non-NixOS distros like SteamOS or Bazzite. You need `ft.repoPath` set to your consumer repo's location for it to work.
+- [ft.containers](#ftcontainers) — Sets up a container runtime — Docker or Podman — that runs entirely under your own user account, no root needed. Comes with the real Docker Compose v2 and, optionally, Distrobox. Other user-level apps such as `ft.komodo` build on top of this and connect to it through `ft.containers.socket`.
+- [ft.core](#ftcore) — Turns on the required Home Manager foundation that every other module depends on: it sets `stateVersion`, the home directory, XDG base directories, generic-Linux compatibility, and allows unfree packages. This needs to stay enabled for the other home modules to work.
+- [ft.dotfiles](#ftdotfiles) — Symlinks every file under `ft.dotfiles.path` into place, recursively. It uses out-of-store symlinks, so you can edit your dotfiles directly and see the changes immediately, without rebuilding.
+- [ft.flatpak](#ftflatpak) — Registers the Flathub remote for this user's own Flatpak installs and lets you declare which Flatpak apps you want via `services.flatpak.packages` (from nix-flatpak). You can set that list in this user's base config or in any of their `profiles/<name>/` submodules — all the lists get merged together. The host machine also needs `ft.flatpak.enable` (the NixOS side) so the Flatpak service and desktop portal actually exist.
+- [ft.gaming](#ftgaming) — Installs a set of gaming companion tools into your user profile: MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run. This mirrors the package set from the NixOS `ft.gaming` module and is handy on its own for gaming-focused distros that already ship Steam, like SteamOS or Bazzite. Steam itself, GameMode, and gamescope stay NixOS-only, since they need system-level privileges this module can't grant.
+- [ft.gitWorkflow](#ftgitworkflow) — Sets up a conventional-commit workflow for git: installs `conform`, `convco`, and `lefthook`, then wires up global git hooks (via `core.hooksPath`) that check formatting with treefmt and scan for secrets with trufflehog before each commit, and enforce conventional commit message format when you write the message. It also appends NixOS generation info (written by the `ft` switch recipe) to your commit messages automatically, and gives you `convco`'s interactive commit builder.
+- [ft.gitops](#ftgitops) — Runs a background service that keeps a standalone Home Manager profile in sync with a git repo: it clones and pulls `remote.url`, and whenever there's a new commit on `remote.branch`, it runs `home-manager switch` against `homeConfigurations.<flakeAttr>`. If a switch fails, it retries the same commit up to `retry.maxAttempts` times before giving up until a newer commit arrives. This is a from-scratch equivalent of the NixOS side's comin-based `ft.gitops`, built because comin has no concept of Home Manager.
+- [ft.karousel](#ftkarousel) — Installs the Karousel scrollable-tiling script for KWin and turns it on through `kwinrc`. Requires `ft.plasmaManager.enable`, since that's what manages the `kwinrc` Plugins settings declaratively.
+- [ft.komodo](#ftkomodo) — Deploys the upstream Komodo stack — Core, Periphery, and its FerretDB/Postgres database — as a docker-compose service running under your own user account, built on top of the Home Manager `ft.containers`. Requires `ft.containers.enable` with `compose.enable` turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
+- [ft.lazyvim](#ftlazyvim) — Installs Neovim along with a full set of language servers and development tools for Python, Go, Rust, Nix, and web development. It symlinks `ft.dotfiles.path/nvim` into your XDG config as a live, editable link, and sets `EDITOR`/`VISUAL` to `nvim`.
+- [ft.mullet](#ftmullet) — Lets you add or remove your own packages by editing a plain text file instead of touching Nix. Every package name listed in the file at `ft.mullet.sourcePath` gets installed for this user; names that don't resolve to a real package are just skipped. This is the Home Manager counterpart of the NixOS `ft.mullet` module.
+- [ft.nixIndex](#ftnixindex) — Installs nix-index along with a ready-made database and the `comma` helper into your user profile, so you can look up which package provides a command. This is the Home Manager counterpart of the NixOS `ft.nixIndex` module, and is especially handy on standalone Home Manager systems or non-NixOS distros like SteamOS or Bazzite.
+- [ft.plasmaManager](#ftplasmamanager) — Lets you set KDE Plasma preferences — panels, keyboard shortcuts, window-manager settings, and more — directly in your Home Manager config through `programs.plasma.*`, instead of clicking through Plasma's settings app.
+- [ft.rclone](#ftrclone) — Automatically mounts a cloud storage remote (via rclone) as a folder under your home directory, kept running by a systemd user service. This pairs with the NixOS `ft.rclone` module, which installs rclone and FUSE system-wide; this module handles the actual per-user mount.
+- [ft.repoPath](#ftrepopath) — The absolute path to your consumer flake repo's root directory. Set this in `homes/<username>/default.nix`.
+- [ft.sops](#ftsops) — Sets up sops-nix for this user so secrets can be decrypted automatically — it points to the age key at `~/.config/sops/age/keys.txt` and to this user's secrets file at `var/secrets.yaml` in your consumer repo.
+- [ft.steamConfig](#ftsteamconfig) — Lets you manage Steam's per-game settings declaratively — launch options, compatibility tool overrides, and shortcuts for non-Steam games — instead of clicking through Steam's own settings. Once enabled, configure individual games under `programs.steam.config.apps` and `programs.steam.config.nonSteamApps`. This is the Home Manager counterpart of the NixOS `ft.steamConfig` module, meant for standalone Home Manager systems or non-NixOS distros.
+- [ft.terminal](#ftterminal) — Sets up a complete terminal environment: the `ghostty` terminal emulator, zsh configured from your dotfiles with plugins that load lazily, the starship prompt, `zoxide`, `fzf`, and a curated set of everyday CLI tools like `bat`, `eza`, `btop`, `fd`, `ripgrep`, `yazi`, `lazygit`, and `tealdeer`. The starship and ghostty config files are linked directly from your dotfiles, so edits take effect immediately.
+- [ft.theme](#fttheme) — Applies one consistent look across your whole desktop using Stylix — a Catppuccin Mocha color scheme, matching fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, and IBM Plex Serif), a matching cursor theme, window/terminal transparency, and your wallpaper. You can override any of these with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
+- [ft.vicinae](#ftvicinae) — Installs and runs Vicinae, a Raycast-compatible app launcher with app search, clipboard history, an emoji picker, a calculator, and support for Raycast extensions, kept running as a systemd user service. Configure it directly through `programs.vicinae.{extensions,themes,settings}`, which Vicinae's own module provides. For global hotkeys and keystroke injection, also enable the host's `ft.vicinae.inputServer.enable` (NixOS).
+- [ft.webapps](#ftwebapps) — Creates application-launcher shortcuts that open any website in its own app-like window — no address bar or tabs — using a Chromium-family browser's `--app=` mode, each with its own isolated browser profile. A lightweight alternative to packaging a full Electron wrapper for every site.
+- [ft.wine](#ftwine) — Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam. This is the Home Manager counterpart of the NixOS `ft.wine` module, meant for standalone Home Manager systems or non-NixOS distros.
 
 ---
 
 ## ft.atuin
 
-Replaces zsh's plain history search with atuin: a SQLite-backed, searchable shell history with a fuzzy TUI. Local-only by default — no sync account or daemon. Takes over Ctrl+R and the up-arrow key; if ft.terminal's fzf integration is also enabled, fzf's Ctrl+T/Alt+C bindings are unaffected since atuin's shell init runs after fzf's and only rebinds Ctrl+R and up-arrow.
+Replaces zsh's plain history search with atuin, which stores your shell history in a searchable database and gives you a fuzzy-search popup for it. It works entirely offline, with no sync account or background service. It takes over Ctrl+R and the up-arrow key; if `ft.terminal`'s fzf integration is also on, fzf's own Ctrl+T/Alt+C shortcuts are unaffected because atuin loads after fzf and only touches those two bindings.
 
 ### ft.atuin.enable
 
-Replaces zsh's plain history search with atuin: a SQLite-backed, searchable shell history with a fuzzy TUI. Local-only by default — no sync account or daemon. Takes over Ctrl+R and the up-arrow key; if ft.terminal's fzf integration is also enabled, fzf's Ctrl+T/Alt+C bindings are unaffected since atuin's shell init runs after fzf's and only rebinds Ctrl+R and up-arrow.
+Replaces zsh's plain history search with atuin, which stores your shell history in a searchable database and gives you a fuzzy-search popup for it. It works entirely offline, with no sync account or background service. It takes over Ctrl+R and the up-arrow key; if `ft.terminal`'s fzf integration is also on, fzf's own Ctrl+T/Alt+C shortcuts are unaffected because atuin loads after fzf and only touches those two bindings.
 
 *Type:*
 boolean
@@ -51,11 +51,11 @@ boolean
 
 ## ft.cli
 
-Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Home Manager counterpart of the NixOS ft.cli module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite). Requires `ft.repoPath` to point to your consumer repo root.
+Installs `just` and a small `ft` wrapper so you can run the framework's `ft` commands from any directory. This is the Home Manager equivalent of the NixOS `ft.cli` module, useful on its own for standalone Home Manager setups or non-NixOS distros like SteamOS or Bazzite. You need `ft.repoPath` set to your consumer repo's location for it to work.
 
 ### ft.cli.enable
 
-Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Home Manager counterpart of the NixOS ft.cli module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite). Requires `ft.repoPath` to point to your consumer repo root.
+Installs `just` and a small `ft` wrapper so you can run the framework's `ft` commands from any directory. This is the Home Manager equivalent of the NixOS `ft.cli` module, useful on its own for standalone Home Manager setups or non-NixOS distros like SteamOS or Bazzite. You need `ft.repoPath` set to your consumer repo's location for it to work.
 
 *Type:*
 boolean
@@ -71,11 +71,11 @@ boolean
 
 ## ft.containers
 
-Sets up a per-user (rootless) Docker or Podman runtime with the real Docker Compose v2 binary and optional Distrobox. User-level apps like ft.komodo build on top and reach the daemon via ft.containers.socket.
+Sets up a container runtime — Docker or Podman — that runs entirely under your own user account, no root needed. Comes with the real Docker Compose v2 and, optionally, Distrobox. Other user-level apps such as `ft.komodo` build on top of this and connect to it through `ft.containers.socket`.
 
 ### ft.containers.compose.enable
 
-Install the genuine Docker Compose v2 binary (pkgs.docker-compose) into the user profile. podman-compose is never used.
+Installs the real Docker Compose v2 binary (`pkgs.docker-compose`) into your user profile. `podman-compose` is never used here.
 
 *Type:*
 boolean
@@ -88,7 +88,7 @@ boolean
 
 ### ft.containers.dataDir
 
-Base directory for the user's docker-compose and bind-mount workloads.
+The base directory where your docker-compose projects and bind-mounted data live.
 
 *Type:*
 string
@@ -101,7 +101,7 @@ string
 
 ### ft.containers.distrobox.enable
 
-Install Distrobox into the user profile for running other-distribution containers as host-integrated environments.
+Installs Distrobox into your user profile, so you can run containers based on other Linux distributions that feel integrated with your host system.
 
 *Type:*
 boolean
@@ -114,7 +114,7 @@ boolean
 
 ### ft.containers.enable
 
-Sets up a per-user (rootless) Docker or Podman runtime with the real Docker Compose v2 binary and optional Distrobox. User-level apps like ft.komodo build on top and reach the daemon via ft.containers.socket.
+Sets up a container runtime — Docker or Podman — that runs entirely under your own user account, no root needed. Comes with the real Docker Compose v2 and, optionally, Distrobox. Other user-level apps such as `ft.komodo` build on top of this and connect to it through `ft.containers.socket`.
 
 *Type:*
 boolean
@@ -130,7 +130,7 @@ boolean
 
 ### ft.containers.runtime
 
-OCI runtime. Podman runs natively per-user via a systemd --user socket; with docker, the user's own rootless dockerd (set up outside Home Manager) is assumed. Both expose a Docker-API-compatible socket the genuine docker-compose binary drives.
+Which container runtime to use. Podman runs natively as your own user through a systemd `--user` socket. Docker instead assumes you already have a rootless `dockerd` running for your user, set up outside Home Manager. Either way, the real `docker-compose` binary talks to it through a Docker-API-compatible socket.
 
 *Type:*
 one of "docker", "podman"
@@ -143,7 +143,7 @@ one of "docker", "podman"
 
 ### ft.containers.socket
 
-Read-only: the Docker-API-compatible user socket (systemd %t form) the runtime exposes. Consumed by user-level apps built on this module (e.g. ft.komodo) as DOCKER_HOST.
+Read-only. The Docker-API-compatible socket (in systemd's `%t` form) that the runtime exposes. Other user-level apps built on this module, such as `ft.komodo`, use this value as their `DOCKER_HOST`.
 
 *Type:*
 string
@@ -156,11 +156,11 @@ string
 
 ## ft.core
 
-Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.
+Turns on the required Home Manager foundation that every other module depends on: it sets `stateVersion`, the home directory, XDG base directories, generic-Linux compatibility, and allows unfree packages. This needs to stay enabled for the other home modules to work.
 
 ### ft.core.enable
 
-Activates the mandatory Home Manager foundation: sets stateVersion, homeDirectory, XDG base directories, genericLinux compatibility, and unfree packages. Must remain enabled for all other home modules to function.
+Turns on the required Home Manager foundation that every other module depends on: it sets `stateVersion`, the home directory, XDG base directories, generic-Linux compatibility, and allows unfree packages. This needs to stay enabled for the other home modules to work.
 
 *Type:*
 boolean
@@ -176,7 +176,7 @@ boolean
 
 ### ft.core.genericLinux
 
-Enables Home Manager's targets.genericLinux, which sources HM session variables into shell profiles and installs the per-user Nix profile path (~/.local/state/nix/profiles/home-path). Required for standalone Home Manager on non-NixOS Linux (Ubuntu, Fedora, etc.). Must be false when HM is used as a NixOS module (home-manager.nixosModules.home-manager): the install_profile activation step will fail because ~/.local/state/nix/profiles does not exist on a freshly-booted NixOS system.
+Turns on Home Manager's `targets.genericLinux`, which loads its session variables into your shell profiles and sets up the per-user Nix profile path (`~/.local/state/nix/profiles/home-path`). You need this when running standalone Home Manager on a non-NixOS Linux distro (Ubuntu, Fedora, etc.). Leave it off when Home Manager is used as a NixOS module (`home-manager.nixosModules.home-manager`) — turning it on there fails, because `~/.local/state/nix/profiles` doesn't exist on a freshly-booted NixOS system.
 
 *Type:*
 boolean
@@ -192,7 +192,7 @@ boolean
 
 ### ft.core.stateVersion
 
-The Home Manager release version this user profile was *first created* on. Controls which state migration paths activate — set it once at user creation and never change it.
+The Home Manager release this user profile was originally created on. Home Manager uses this to decide which one-time state migrations to run, so getting it wrong can trigger changes you don't want. Set it once when the profile is created and leave it alone after that.
 
 *Type:*
 string
@@ -202,11 +202,11 @@ string
 
 ## ft.dotfiles
 
-Recursively symlinks every file under `ft.dotfiles.path` into Home Manager's home.file set using out-of-store symlinks, so dotfiles stay live-editable without a rebuild.
+Symlinks every file under `ft.dotfiles.path` into place, recursively. It uses out-of-store symlinks, so you can edit your dotfiles directly and see the changes immediately, without rebuilding.
 
 ### ft.dotfiles.enable
 
-Recursively symlinks every file under `ft.dotfiles.path` into Home Manager's home.file set using out-of-store symlinks, so dotfiles stay live-editable without a rebuild.
+Symlinks every file under `ft.dotfiles.path` into place, recursively. It uses out-of-store symlinks, so you can edit your dotfiles directly and see the changes immediately, without rebuilding.
 
 *Type:*
 boolean
@@ -222,7 +222,7 @@ boolean
 
 ### ft.dotfiles.path
 
-Absolute path to this user's dotfiles directory.
+The absolute path to this user's dotfiles directory.
 
 *Type:*
 string
@@ -235,11 +235,11 @@ string
 
 ## ft.flatpak
 
-Registers the Flathub remote for this user's `--user` Flatpak installs and exposes `services.flatpak.packages` (nix-flatpak) as the per-user declarative app list — set it in this user's base config or any of their `profiles/<name>/` submodules; the lists from every definition are merged. Requires the host's `ft.flatpak.enable` (NixOS) so the Flatpak service and desktop portal are present.
+Registers the Flathub remote for this user's own Flatpak installs and lets you declare which Flatpak apps you want via `services.flatpak.packages` (from nix-flatpak). You can set that list in this user's base config or in any of their `profiles/<name>/` submodules — all the lists get merged together. The host machine also needs `ft.flatpak.enable` (the NixOS side) so the Flatpak service and desktop portal actually exist.
 
 ### ft.flatpak.enable
 
-Registers the Flathub remote for this user's `--user` Flatpak installs and exposes `services.flatpak.packages` (nix-flatpak) as the per-user declarative app list — set it in this user's base config or any of their `profiles/<name>/` submodules; the lists from every definition are merged. Requires the host's `ft.flatpak.enable` (NixOS) so the Flatpak service and desktop portal are present.
+Registers the Flathub remote for this user's own Flatpak installs and lets you declare which Flatpak apps you want via `services.flatpak.packages` (from nix-flatpak). You can set that list in this user's base config or in any of their `profiles/<name>/` submodules — all the lists get merged together. The host machine also needs `ft.flatpak.enable` (the NixOS side) so the Flatpak service and desktop portal actually exist.
 
 *Type:*
 boolean
@@ -255,11 +255,11 @@ boolean
 
 ## ft.gaming
 
-Installs MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run into the user profile. Home Manager counterpart of the NixOS ft.gaming module's package set, independently useful on gaming-focused distros that already provide Steam (SteamOS, Bazzite) — Steam, GameMode, and gamescope remain NixOS-only since they require system-level privileges.
+Installs a set of gaming companion tools into your user profile: MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run. This mirrors the package set from the NixOS `ft.gaming` module and is handy on its own for gaming-focused distros that already ship Steam, like SteamOS or Bazzite. Steam itself, GameMode, and gamescope stay NixOS-only, since they need system-level privileges this module can't grant.
 
 ### ft.gaming.enable
 
-Installs MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run into the user profile. Home Manager counterpart of the NixOS ft.gaming module's package set, independently useful on gaming-focused distros that already provide Steam (SteamOS, Bazzite) — Steam, GameMode, and gamescope remain NixOS-only since they require system-level privileges.
+Installs a set of gaming companion tools into your user profile: MangoHud, ProtonUp-Qt, SteamTinkerLaunch, Goverlay, Heroic, steam-tui, steamcmd, and steam-run. This mirrors the package set from the NixOS `ft.gaming` module and is handy on its own for gaming-focused distros that already ship Steam, like SteamOS or Bazzite. Steam itself, GameMode, and gamescope stay NixOS-only, since they need system-level privileges this module can't grant.
 
 *Type:*
 boolean
@@ -275,11 +275,11 @@ boolean
 
 ## ft.gitWorkflow
 
-Installs conform, convco, and lefthook; registers global git hooks via core.hooksPath that run treefmt format-checking and trufflehog secret scanning on pre-commit, and enforce conventional commit format on commit-msg. The prepare-commit-msg hook appends NixOS generation metadata written by the ft switch recipe. Enables the convco interactive commit builder.
+Sets up a conventional-commit workflow for git: installs `conform`, `convco`, and `lefthook`, then wires up global git hooks (via `core.hooksPath`) that check formatting with treefmt and scan for secrets with trufflehog before each commit, and enforce conventional commit message format when you write the message. It also appends NixOS generation info (written by the `ft` switch recipe) to your commit messages automatically, and gives you `convco`'s interactive commit builder.
 
 ### ft.gitWorkflow.enable
 
-Installs conform, convco, and lefthook; registers global git hooks via core.hooksPath that run treefmt format-checking and trufflehog secret scanning on pre-commit, and enforce conventional commit format on commit-msg. The prepare-commit-msg hook appends NixOS generation metadata written by the ft switch recipe. Enables the convco interactive commit builder.
+Sets up a conventional-commit workflow for git: installs `conform`, `convco`, and `lefthook`, then wires up global git hooks (via `core.hooksPath`) that check formatting with treefmt and scan for secrets with trufflehog before each commit, and enforce conventional commit message format when you write the message. It also appends NixOS generation info (written by the `ft` switch recipe) to your commit messages automatically, and gives you `convco`'s interactive commit builder.
 
 *Type:*
 boolean
@@ -295,7 +295,7 @@ boolean
 
 ### ft.gitWorkflow.types
 
-Allowed conventional commit types. The commit-msg hook rejects messages whose type is not in this list.
+The commit types allowed in conventional commit messages. The commit-msg hook rejects any commit whose type isn't on this list.
 
 *Type:*
 list of string
@@ -320,11 +320,11 @@ list of string
 
 ## ft.gitops
 
-Runs a daemon that clones/pulls remote.url, and on a new commit on remote.branch runs `home-manager switch` against homeConfigurations.<flakeAttr>, retrying a failing commit up to retry.maxAttempts times before giving up on it until a new commit is pushed. A from-scratch equivalent of the NixOS side's comin-based ft.gitops, since comin has no concept of Home Manager.
+Runs a background service that keeps a standalone Home Manager profile in sync with a git repo: it clones and pulls `remote.url`, and whenever there's a new commit on `remote.branch`, it runs `home-manager switch` against `homeConfigurations.<flakeAttr>`. If a switch fails, it retries the same commit up to `retry.maxAttempts` times before giving up until a newer commit arrives. This is a from-scratch equivalent of the NixOS side's comin-based `ft.gitops`, built because comin has no concept of Home Manager.
 
 ### ft.gitops.enable
 
-Runs a daemon that clones/pulls remote.url, and on a new commit on remote.branch runs `home-manager switch` against homeConfigurations.<flakeAttr>, retrying a failing commit up to retry.maxAttempts times before giving up on it until a new commit is pushed. A from-scratch equivalent of the NixOS side's comin-based ft.gitops, since comin has no concept of Home Manager.
+Runs a background service that keeps a standalone Home Manager profile in sync with a git repo: it clones and pulls `remote.url`, and whenever there's a new commit on `remote.branch`, it runs `home-manager switch` against `homeConfigurations.<flakeAttr>`. If a switch fails, it retries the same commit up to `retry.maxAttempts` times before giving up until a newer commit arrives. This is a from-scratch equivalent of the NixOS side's comin-based `ft.gitops`, built because comin has no concept of Home Manager.
 
 *Type:*
 boolean
@@ -340,7 +340,7 @@ boolean
 
 ### ft.gitops.flakeAttr
 
-The homeConfigurations.<flakeAttr> attribute to switch to, e.g. "alice@x86_64-linux".
+Which `homeConfigurations.<flakeAttr>` entry to switch to, e.g. "alice@x86_64-linux".
 
 *Type:*
 string
@@ -350,7 +350,7 @@ string
 
 ### ft.gitops.pollPeriod
 
-How often, in seconds, this daemon polls remote.url for new commits.
+How often, in seconds, this service checks `remote.url` for new commits.
 
 *Type:*
 signed integer
@@ -363,7 +363,7 @@ signed integer
 
 ### ft.gitops.remote.branch
 
-Branch this daemon tracks and deploys.
+The branch this service tracks and deploys.
 
 *Type:*
 string
@@ -376,7 +376,7 @@ string
 
 ### ft.gitops.remote.url
 
-Git URL this daemon clones/pulls.
+The git URL this service clones and pulls from.
 
 *Type:*
 string
@@ -386,7 +386,7 @@ string
 
 ### ft.gitops.repoPath
 
-Local path this daemon clones/pulls the repository into. Its own private checkout, independent of any NixOS ft.repoPath, since standalone Home Manager may run on a non-NixOS host.
+The local path this service clones the repository into. It's a private checkout used only by this service, separate from any NixOS `ft.repoPath`, since standalone Home Manager may be running on a non-NixOS host.
 
 *Type:*
 string
@@ -396,7 +396,7 @@ string
 
 ### ft.gitops.retry.maxAttempts
 
-Consecutive failed switch attempts on the same commit before giving up on it until a new commit is pushed. Uses pollPeriod as the retry cadence.
+How many consecutive failed switch attempts on the same commit to allow before giving up on it until a new commit is pushed. Retries happen at the `pollPeriod` cadence.
 
 *Type:*
 signed integer
@@ -409,7 +409,7 @@ signed integer
 
 ### ft.gitops.signingKeys
 
-Armored GPG public key files; a commit is only switched to if it is signed by one of these. An empty list disables signature verification, letting any commit on remote.branch deploy unattended — strongly discouraged outside testing.
+Armored GPG public key files. A commit only gets switched to if it's signed by one of these keys. Leaving this list empty turns off signature verification entirely, so any commit on `remote.branch` deploys unattended — only do that for testing.
 
 *Type:*
 list of absolute path
@@ -422,11 +422,11 @@ list of absolute path
 
 ## ft.karousel
 
-Installs the Karousel KWin script and enables it via kwinrc. Requires `ft.plasmaManager.enable` so the kwinrc Plugins key is managed declaratively.
+Installs the Karousel scrollable-tiling script for KWin and turns it on through `kwinrc`. Requires `ft.plasmaManager.enable`, since that's what manages the `kwinrc` Plugins settings declaratively.
 
 ### ft.karousel.enable
 
-Installs the Karousel KWin script and enables it via kwinrc. Requires `ft.plasmaManager.enable` so the kwinrc Plugins key is managed declaratively.
+Installs the Karousel scrollable-tiling script for KWin and turns it on through `kwinrc`. Requires `ft.plasmaManager.enable`, since that's what manages the `kwinrc` Plugins settings declaratively.
 
 *Type:*
 boolean
@@ -442,11 +442,11 @@ boolean
 
 ## ft.komodo
 
-Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) as a user-level docker-compose service on top of the Home Manager ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
+Deploys the upstream Komodo stack — Core, Periphery, and its FerretDB/Postgres database — as a docker-compose service running under your own user account, built on top of the Home Manager `ft.containers`. Requires `ft.containers.enable` with `compose.enable` turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 
 ### ft.komodo.adminPassword
 
-Default initial Komodo admin password, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.
+The default initial Komodo admin password. This is only used when `ft.komodo.sopsEnv.enable` is false, and gets written to the Nix store, so treat it as local-only. When `sopsEnv` is on, `KOMODO_INIT_ADMIN_PASSWORD` from the sops env-file takes over instead.
 
 *Type:*
 string
@@ -459,7 +459,7 @@ string
 
 ### ft.komodo.adminUsername
 
-Initial Komodo admin username created on first launch (not a secret).
+The initial Komodo admin username created the first time it launches. Not a secret.
 
 *Type:*
 string
@@ -472,7 +472,7 @@ string
 
 ### ft.komodo.autoApply.apiEnvSecret
 
-User sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply user service to authenticate to Komodo's API.
+The sops secret key holding an env-file with `KOMODO_API_KEY` and `KOMODO_API_SECRET` (create a Komodo API key once to get these). The auto-apply service declares and reads this secret to authenticate against Komodo's API.
 
 *Type:*
 string
@@ -485,7 +485,7 @@ string
 
 ### ft.komodo.autoApply.enable
 
-After Komodo Core answers, run the bundled `komodo-apply` recipe from ft.repoPath to reconcile Komodo with the consumer repo's containers/ directory over Komodo's API, with no UI. Runs as a user systemd oneshot. Requires ft.cli, ft.sops and ft.repoPath, plus a user sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET. Exempt from VM smoke tests: reconciles against a live Komodo API. See NOTES.md.
+Once Komodo Core is up and responding, automatically runs the bundled `komodo-apply` recipe from `ft.repoPath` to bring Komodo in line with the consumer repo's `containers/` directory, entirely through Komodo's API with no UI involved. This runs as a one-shot user systemd service. Requires `ft.cli`, `ft.sops`, and `ft.repoPath`, plus a sops secret (`autoApply.apiEnvSecret`) holding `KOMODO_API_KEY` and `KOMODO_API_SECRET`. Exempt from VM smoke tests, since it reconciles against a live Komodo API. See NOTES.md.
 
 *Type:*
 boolean
@@ -501,7 +501,7 @@ boolean
 
 ### ft.komodo.backupsPath
 
-Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups.
+The path where Komodo Core writes its backup archives. This is bind-mounted into the Core container at `/backups`.
 
 *Type:*
 string
@@ -514,7 +514,7 @@ string
 
 ### ft.komodo.dataDir
 
-Base directory for the Komodo compose project (compose files, credentials env-file, logs) and the default backups/periphery trees.
+The base directory for the Komodo compose project — its compose files, credentials env-file, logs — and the default location for backups and Periphery's data.
 
 *Type:*
 string
@@ -527,7 +527,7 @@ string
 
 ### ft.komodo.dbPassword
 
-Default password for the FerretDB/Postgres database, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it.
+The default password for the FerretDB/Postgres database. This is only used when `ft.komodo.sopsEnv.enable` is false, and gets written to the Nix store, so treat it as local-only. When `sopsEnv` is on, `KOMODO_DATABASE_PASSWORD` from the sops env-file takes over instead.
 
 *Type:*
 string
@@ -540,7 +540,7 @@ string
 
 ### ft.komodo.dbUsername
 
-Username for the FerretDB/Postgres database (not a secret — baked into the compose config).
+The username for the FerretDB/Postgres database. This isn't a secret — it's baked directly into the compose config.
 
 *Type:*
 string
@@ -553,7 +553,7 @@ string
 
 ### ft.komodo.enable
 
-Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) as a user-level docker-compose service on top of the Home Manager ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
+Deploys the upstream Komodo stack — Core, Periphery, and its FerretDB/Postgres database — as a docker-compose service running under your own user account, built on top of the Home Manager `ft.containers`. Requires `ft.containers.enable` with `compose.enable` turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 
 *Type:*
 boolean
@@ -569,7 +569,7 @@ boolean
 
 ### ft.komodo.host
 
-Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.
+The externally reachable URL for this Komodo Core instance, used for OAuth redirect URLs and suggested webhook addresses.
 
 *Type:*
 string
@@ -582,7 +582,7 @@ string
 
 ### ft.komodo.imageTag
 
-Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.
+The image tag to use for the `ghcr.io/moghtech/komodo-core` and `komodo-periphery` images.
 
 *Type:*
 string
@@ -595,7 +595,7 @@ string
 
 ### ft.komodo.includeDiskMounts
 
-Mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting so Periphery reports every detected mount.
+Which mount points Periphery should report disk usage for in the Komodo UI (`PERIPHERY_INCLUDE_DISK_MOUNTS`). Leave this empty to have Periphery report on every mount it detects.
 
 *Type:*
 list of string
@@ -608,7 +608,7 @@ list of string
 
 ### ft.komodo.jwtSecret
 
-Default secret for signing Komodo JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.
+The default secret used to sign Komodo JWT tokens. This is only used when `ft.komodo.sopsEnv.enable` is false, and gets written to the Nix store. When `sopsEnv` is on, `KOMODO_JWT_SECRET` from the sops env-file takes over instead.
 
 *Type:*
 string
@@ -621,7 +621,7 @@ string
 
 ### ft.komodo.peripheryRootDirectory
 
-Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory.
+Periphery's root directory (`PERIPHERY_ROOT_DIRECTORY`), bind-mounted into the periphery container at the same path. Every stack Periphery deploys, and the host side of every bind mount it manages, lives under this directory.
 
 *Type:*
 string
@@ -634,7 +634,7 @@ string
 
 ### ft.komodo.repoCachePath
 
-Path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs. null leaves the clones on the container's ephemeral layer.
+A path bind-mounted into Komodo Core at `/repo-cache`, where it clones git repos for repo-based Stacks and Resource Syncs. Leave this `null` to keep those clones on the container's ephemeral layer instead.
 
 *Type:*
 null or string
@@ -647,7 +647,7 @@ null or string
 
 ### ft.komodo.secrets.core.enable
 
-Declares the komodo/core_secrets user sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
+Declares the `komodo/core_secrets` sops key, mounts it read-only into the Core container, and loads it with `core --config-path`. The values inside become usable as `[[KEY]]` placeholders in every Stack and Deployment. This is for values you want interpolated into deployed Stacks — it's separate from `ft.komodo.sopsEnv`, which covers Komodo's own login credentials instead. Needs sops-nix configured (usually via `ft.sops.enable`).
 
 *Type:*
 boolean
@@ -663,7 +663,7 @@ boolean
 
 ### ft.komodo.secrets.periphery.enable
 
-Declares the komodo/periphery_secrets user sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
+Declares the `komodo/periphery_secrets` sops key, mounts it read-only into the Periphery container, and loads it with `periphery --config-path`. The values inside become usable as `[[KEY]]` placeholders in the Stacks this Periphery deploys, and are kept out of the Komodo UI and logs. This is for values you want interpolated into deployed Stacks — it's separate from `ft.komodo.sopsEnv`, which covers Komodo's own login credentials instead. Needs sops-nix configured (usually via `ft.sops.enable`).
 
 *Type:*
 boolean
@@ -679,7 +679,7 @@ boolean
 
 ### ft.komodo.serverName
 
-Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.
+The name for the first Komodo server entry, which Periphery also uses to identify itself when connecting to Core.
 
 *Type:*
 string
@@ -692,7 +692,7 @@ string
 
 ### ft.komodo.sopsEnv.enable
 
-Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a user-level sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. Requires a configured sops-nix (normally ft.sops.enable); populate the key as KEY=VALUE lines — see NOTES.md.
+Pulls the sensitive Komodo credentials (`KOMODO_DATABASE_PASSWORD`, `KOMODO_INIT_ADMIN_PASSWORD`, `KOMODO_JWT_SECRET`, `KOMODO_WEBHOOK_SECRET`) from a sops-decrypted env-file (`ft.komodo.sopsEnv.secretName`) instead of leaving the defaults in the Nix store. Needs sops-nix configured (usually via `ft.sops.enable`); populate the secret as `KEY=VALUE` lines — see NOTES.md.
 
 *Type:*
 boolean
@@ -708,7 +708,7 @@ boolean
 
 ### ft.komodo.sopsEnv.secretName
 
-User sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines). Declared and decrypted when sopsEnv.enable is true.
+The sops secret key that holds the Komodo credentials as an env-file (`KEY=VALUE` lines). This gets declared and decrypted whenever `sopsEnv.enable` is true.
 
 *Type:*
 string
@@ -721,7 +721,7 @@ string
 
 ### ft.komodo.syncPath
 
-Path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. null leaves the files on the container's ephemeral layer.
+A path bind-mounted into Komodo Core at `/syncs`, used for 'Files on Server' Resource Syncs. Leave this `null` to keep those files on the container's ephemeral layer instead.
 
 *Type:*
 null or string
@@ -734,7 +734,7 @@ null or string
 
 ### ft.komodo.timezone
 
-Timezone for Komodo schedules (tz database name, e.g. America/New_York).
+The timezone Komodo uses for its schedules, as a tz database name (e.g. `America/New_York`).
 
 *Type:*
 string
@@ -747,7 +747,7 @@ string
 
 ### ft.komodo.webhookSecret
 
-Default secret for authenticating incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.
+The default secret used to authenticate incoming Komodo webhooks. This is only used when `ft.komodo.sopsEnv.enable` is false, and gets written to the Nix store. When `sopsEnv` is on, `KOMODO_WEBHOOK_SECRET` from the sops env-file takes over instead.
 
 *Type:*
 string
@@ -760,11 +760,11 @@ string
 
 ## ft.lazyvim
 
-Installs Neovim with a full suite of language servers and dev tools for Python, Go, Rust, Nix, and web development. Symlinks `ft.dotfiles.path/nvim` into XDG config as a live out-of-store link and sets EDITOR/VISUAL to nvim.
+Installs Neovim along with a full set of language servers and development tools for Python, Go, Rust, Nix, and web development. It symlinks `ft.dotfiles.path/nvim` into your XDG config as a live, editable link, and sets `EDITOR`/`VISUAL` to `nvim`.
 
 ### ft.lazyvim.enable
 
-Installs Neovim with a full suite of language servers and dev tools for Python, Go, Rust, Nix, and web development. Symlinks `ft.dotfiles.path/nvim` into XDG config as a live out-of-store link and sets EDITOR/VISUAL to nvim.
+Installs Neovim along with a full set of language servers and development tools for Python, Go, Rust, Nix, and web development. It symlinks `ft.dotfiles.path/nvim` into your XDG config as a live, editable link, and sets `EDITOR`/`VISUAL` to `nvim`.
 
 *Type:*
 boolean
@@ -780,11 +780,11 @@ boolean
 
 ## ft.mullet
 
-Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into home.packages. Lets a consumer add or remove user-scoped packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped. Home Manager counterpart of the NixOS ft.mullet module.
+Lets you add or remove your own packages by editing a plain text file instead of touching Nix. Every package name listed in the file at `ft.mullet.sourcePath` gets installed for this user; names that don't resolve to a real package are just skipped. This is the Home Manager counterpart of the NixOS `ft.mullet` module.
 
 ### ft.mullet.enable
 
-Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into home.packages. Lets a consumer add or remove user-scoped packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped. Home Manager counterpart of the NixOS ft.mullet module.
+Lets you add or remove your own packages by editing a plain text file instead of touching Nix. Every package name listed in the file at `ft.mullet.sourcePath` gets installed for this user; names that don't resolve to a real package are just skipped. This is the Home Manager counterpart of the NixOS `ft.mullet` module.
 
 *Type:*
 boolean
@@ -800,7 +800,7 @@ boolean
 
 ### ft.mullet.sourcePath
 
-Flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names for this user. When this home configuration was generated via ft-home.lib.mkFlake, defaults to var/mullet.txt inside this user's own users/<username>/ directory. Set explicitly to override that location, or if this module is used via homeManagerModules.default outside the generator (where no default is available).
+Path to the plain text file listing this user's package names, one per line. When this configuration comes from `ft-home.lib.mkFlake`, it defaults to `var/mullet.txt` inside this user's own `users/<username>/` directory. Set it yourself to use a different location, or if you're using this module outside the generator where no default is available.
 
 *Type:*
 null or absolute path
@@ -816,11 +816,11 @@ null or absolute path
 
 ## ft.nixIndex
 
-Installs nix-index with a pre-built database and comma into the user profile. Home Manager counterpart of the NixOS ft.nixIndex module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite).
+Installs nix-index along with a ready-made database and the `comma` helper into your user profile, so you can look up which package provides a command. This is the Home Manager counterpart of the NixOS `ft.nixIndex` module, and is especially handy on standalone Home Manager systems or non-NixOS distros like SteamOS or Bazzite.
 
 ### ft.nixIndex.comma
 
-Enable comma — run uninstalled commands via nix-index.
+Lets you run a command you haven't installed yet — `comma` looks it up via nix-index and runs it for you.
 
 *Type:*
 boolean
@@ -833,7 +833,7 @@ boolean
 
 ### ft.nixIndex.enable
 
-Installs nix-index with a pre-built database and comma into the user profile. Home Manager counterpart of the NixOS ft.nixIndex module, independently useful on standalone Home Manager systems or non-NixOS distros (SteamOS, Bazzite).
+Installs nix-index along with a ready-made database and the `comma` helper into your user profile, so you can look up which package provides a command. This is the Home Manager counterpart of the NixOS `ft.nixIndex` module, and is especially handy on standalone Home Manager systems or non-NixOS distros like SteamOS or Bazzite.
 
 *Type:*
 boolean
@@ -849,11 +849,11 @@ boolean
 
 ## ft.plasmaManager
 
-Enables plasma-manager so KDE Plasma settings (panels, shortcuts, kwinrc keys, etc.) are declared in Home Manager via `programs.plasma.*` instead of mutated through the Plasma GUI.
+Lets you set KDE Plasma preferences — panels, keyboard shortcuts, window-manager settings, and more — directly in your Home Manager config through `programs.plasma.*`, instead of clicking through Plasma's settings app.
 
 ### ft.plasmaManager.enable
 
-Enables plasma-manager so KDE Plasma settings (panels, shortcuts, kwinrc keys, etc.) are declared in Home Manager via `programs.plasma.*` instead of mutated through the Plasma GUI.
+Lets you set KDE Plasma preferences — panels, keyboard shortcuts, window-manager settings, and more — directly in your Home Manager config through `programs.plasma.*`, instead of clicking through Plasma's settings app.
 
 *Type:*
 boolean
@@ -869,11 +869,11 @@ boolean
 
 ## ft.rclone
 
-Runs a systemd user service that mounts an rclone remote at a path under $HOME via FUSE. Home Manager counterpart of the NixOS ft.rclone module, which installs rclone/FUSE system-wide and enables fuse user_allow_other; this module owns the actual per-user mount unit.
+Automatically mounts a cloud storage remote (via rclone) as a folder under your home directory, kept running by a systemd user service. This pairs with the NixOS `ft.rclone` module, which installs rclone and FUSE system-wide; this module handles the actual per-user mount.
 
 ### ft.rclone.enable
 
-Runs a systemd user service that mounts an rclone remote at a path under $HOME via FUSE. Home Manager counterpart of the NixOS ft.rclone module, which installs rclone/FUSE system-wide and enables fuse user_allow_other; this module owns the actual per-user mount unit.
+Automatically mounts a cloud storage remote (via rclone) as a folder under your home directory, kept running by a systemd user service. This pairs with the NixOS `ft.rclone` module, which installs rclone and FUSE system-wide; this module handles the actual per-user mount.
 
 *Type:*
 boolean
@@ -889,7 +889,7 @@ boolean
 
 ### ft.rclone.extraMountArgs
 
-Extra arguments passed to `rclone mount`, appended after the remote and mount-point arguments (e.g. cache mode, buffer size).
+Extra command-line arguments passed to `rclone mount`, added after the remote and mount-point arguments — useful for things like cache mode or buffer size.
 
 *Type:*
 list of string
@@ -905,7 +905,7 @@ list of string
 
 ### ft.rclone.mountPoint
 
-Directory name under $HOME where the remote is mounted (e.g. ~/GoogleDrive).
+Name of the folder under your home directory where the remote gets mounted, e.g. `~/GoogleDrive`.
 
 *Type:*
 string
@@ -921,7 +921,7 @@ string
 
 ### ft.rclone.remoteName
 
-rclone remote name to mount, as configured in this user's rclone config (e.g. via `rclone config`). Must match an existing remote.
+Name of the rclone remote to mount, as set up in your rclone config (e.g. with `rclone config`). This must match a remote that already exists.
 
 *Type:*
 string
@@ -937,7 +937,7 @@ string
 
 ## ft.repoPath
 
-Absolute path to the consumer's flake repo root. Set in homes/<username>/default.nix.
+The absolute path to your consumer flake repo's root directory. Set this in `homes/<username>/default.nix`.
 
 *Type:*
 string
@@ -950,11 +950,11 @@ string
 
 ## ft.sops
 
-Configures sops-nix for this user, pointing the age key at ~/.config/sops/age/keys.txt and the secrets file at the user's var/secrets.yaml in the consumer repo.
+Sets up sops-nix for this user so secrets can be decrypted automatically — it points to the age key at `~/.config/sops/age/keys.txt` and to this user's secrets file at `var/secrets.yaml` in your consumer repo.
 
 ### ft.sops.enable
 
-Configures sops-nix for this user, pointing the age key at ~/.config/sops/age/keys.txt and the secrets file at the user's var/secrets.yaml in the consumer repo.
+Sets up sops-nix for this user so secrets can be decrypted automatically — it points to the age key at `~/.config/sops/age/keys.txt` and to this user's secrets file at `var/secrets.yaml` in your consumer repo.
 
 *Type:*
 boolean
@@ -970,11 +970,11 @@ boolean
 
 ## ft.steamConfig
 
-Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled. Home Manager counterpart of the NixOS ft.steamConfig module — use on standalone Home Manager systems or non-NixOS distros.
+Lets you manage Steam's per-game settings declaratively — launch options, compatibility tool overrides, and shortcuts for non-Steam games — instead of clicking through Steam's own settings. Once enabled, configure individual games under `programs.steam.config.apps` and `programs.steam.config.nonSteamApps`. This is the Home Manager counterpart of the NixOS `ft.steamConfig` module, meant for standalone Home Manager systems or non-NixOS distros.
 
 ### ft.steamConfig.enable
 
-Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled. Home Manager counterpart of the NixOS ft.steamConfig module — use on standalone Home Manager systems or non-NixOS distros.
+Lets you manage Steam's per-game settings declaratively — launch options, compatibility tool overrides, and shortcuts for non-Steam games — instead of clicking through Steam's own settings. Once enabled, configure individual games under `programs.steam.config.apps` and `programs.steam.config.nonSteamApps`. This is the Home Manager counterpart of the NixOS `ft.steamConfig` module, meant for standalone Home Manager systems or non-NixOS distros.
 
 *Type:*
 boolean
@@ -990,11 +990,11 @@ boolean
 
 ## ft.terminal
 
-Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with lazily-loaded plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.
+Sets up a complete terminal environment: the `ghostty` terminal emulator, zsh configured from your dotfiles with plugins that load lazily, the starship prompt, `zoxide`, `fzf`, and a curated set of everyday CLI tools like `bat`, `eza`, `btop`, `fd`, `ripgrep`, `yazi`, `lazygit`, and `tealdeer`. The starship and ghostty config files are linked directly from your dotfiles, so edits take effect immediately.
 
 ### ft.terminal.enable
 
-Deploys the full terminal stack: ghostty (terminal), zsh sourced from dotfiles with lazily-loaded plugin support, starship prompt, zoxide, fzf, and a curated set of CLI tools (bat, eza, btop, fd, ripgrep, yazi, lazygit, tealdeer, and more). Configs for starship and ghostty are wired as live out-of-store symlinks.
+Sets up a complete terminal environment: the `ghostty` terminal emulator, zsh configured from your dotfiles with plugins that load lazily, the starship prompt, `zoxide`, `fzf`, and a curated set of everyday CLI tools like `bat`, `eza`, `btop`, `fd`, `ripgrep`, `yazi`, `lazygit`, and `tealdeer`. The starship and ghostty config files are linked directly from your dotfiles, so edits take effect immediately.
 
 *Type:*
 boolean
@@ -1010,7 +1010,7 @@ boolean
 
 ### ft.terminal.zshPlugins.autosuggestions.enable
 
-Enable zsh-autosuggestions, suggesting commands as you type based on history. Sourced via zsh-defer so it doesn't block shell startup.
+Suggests commands as you type, based on your shell history. Loaded lazily via zsh-defer so it doesn't slow down shell startup.
 
 *Type:*
 boolean
@@ -1023,7 +1023,7 @@ boolean
 
 ### ft.terminal.zshPlugins.commaAssistant.enable
 
-Enable zsh-comma-assistant: friendlier command-not-found handling (offers to run unknown commands via comma) and, when zshPlugins.syntaxHighlighting is also enabled, highlights commands available via comma/nix-index. Requires ft.nixIndex.enable for the comma binary and database; no-ops if that's disabled. Sourced via zsh-defer so it doesn't block shell startup. NOTE: currently defaults off — the pinned fetchFromGitHub source uses a placeholder hash pending a real one.
+Makes 'command not found' errors friendlier by offering to run the missing command via `comma`, and — when `zshPlugins.syntaxHighlighting` is also on — highlights commands that are available through comma/nix-index. Needs `ft.nixIndex.enable` for the `comma` binary and its database; does nothing if that's off. Loaded lazily via zsh-defer so it doesn't slow down shell startup. Note: this currently defaults to off because the pinned source still uses a placeholder hash instead of a real one.
 
 *Type:*
 boolean
@@ -1036,7 +1036,7 @@ boolean
 
 ### ft.terminal.zshPlugins.completions.enable
 
-Enable zsh-completions, a collection of additional completion definitions.
+Adds a larger collection of tab-completion definitions for zsh.
 
 *Type:*
 boolean
@@ -1049,7 +1049,7 @@ boolean
 
 ### ft.terminal.zshPlugins.syntaxHighlighting.enable
 
-Enable zsh-syntax-highlighting, highlighting commands as they are typed. Sourced via zsh-defer so it doesn't block shell startup.
+Highlights commands in your shell as you type them. Loaded lazily via zsh-defer so it doesn't slow down shell startup.
 
 *Type:*
 boolean
@@ -1062,11 +1062,11 @@ boolean
 
 ## ft.theme
 
-Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
+Applies one consistent look across your whole desktop using Stylix — a Catppuccin Mocha color scheme, matching fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, and IBM Plex Serif), a matching cursor theme, window/terminal transparency, and your wallpaper. You can override any of these with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
 
 ### ft.theme.enable
 
-Applies a Catppuccin Mocha theme system-wide via Stylix: configures fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, IBM Plex Serif), catppuccin-mocha-dark cursor, window and terminal opacity, and wallpaper. Override defaults with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
+Applies one consistent look across your whole desktop using Stylix — a Catppuccin Mocha color scheme, matching fonts (Atkinson Hyperlegible, AtkynsonMono Nerd Font, and IBM Plex Serif), a matching cursor theme, window/terminal transparency, and your wallpaper. You can override any of these with `ft.theme.wallpaper`, `ft.theme.schemePath`, and `ft.theme.fonts.*`.
 
 *Type:*
 boolean
@@ -1082,7 +1082,7 @@ boolean
 
 ### ft.theme.fonts.emoji.name
 
-Font family name for the emoji role.
+Name of the font family used to render emoji.
 
 *Type:*
 string
@@ -1095,7 +1095,7 @@ string
 
 ### ft.theme.fonts.emoji.package
 
-Package providing the emoji font.
+The package that provides the emoji font.
 
 *Type:*
 package
@@ -1108,7 +1108,7 @@ package
 
 ### ft.theme.fonts.mono.name
 
-Font family name for the monospace role.
+Name of the font family used for monospace text, such as in the terminal.
 
 *Type:*
 string
@@ -1121,7 +1121,7 @@ string
 
 ### ft.theme.fonts.mono.package
 
-Package providing the monospace font.
+The package that provides the monospace font.
 
 *Type:*
 package
@@ -1134,7 +1134,7 @@ package
 
 ### ft.theme.fonts.sans.name
 
-Font family name for the sans-serif role.
+Name of the font family used for sans-serif text.
 
 *Type:*
 string
@@ -1147,7 +1147,7 @@ string
 
 ### ft.theme.fonts.sans.package
 
-Package providing the sans-serif font.
+The package that provides the sans-serif font.
 
 *Type:*
 package
@@ -1160,7 +1160,7 @@ package
 
 ### ft.theme.fonts.serif.name
 
-Font family name for the serif role.
+Name of the font family used for serif text.
 
 *Type:*
 string
@@ -1173,7 +1173,7 @@ string
 
 ### ft.theme.fonts.serif.package
 
-Package providing the serif font.
+The package that provides the serif font.
 
 *Type:*
 package
@@ -1186,7 +1186,7 @@ package
 
 ### ft.theme.schemeName
 
-Human-readable name of the scheme.
+The scheme's display name, shown wherever the theme's name is referenced.
 
 *Type:*
 string
@@ -1199,7 +1199,7 @@ string
 
 ### ft.theme.schemePath
 
-Path to the Base16 YAML scheme.
+Path to the color scheme file (in Base16 YAML format) used to theme everything.
 
 *Type:*
 absolute path or string
@@ -1212,7 +1212,7 @@ absolute path or string
 
 ### ft.theme.wallpaper
 
-Required: path to the primary desktop wallpaper. Set this in your user config, e.g. ft.theme.wallpaper = ./wallpapers/default.png;. No framework default is provided because a framework-relative path would resolve into the framework repo, not the consumer's.
+Path to your desktop wallpaper — required, since there's no sensible default. Set it in your own config, e.g. `ft.theme.wallpaper = ./wallpapers/default.png;`. The framework can't supply a default itself because a path there would point into the framework's own repo rather than yours.
 
 *Type:*
 absolute path or string
@@ -1225,11 +1225,11 @@ absolute path or string
 
 ## ft.vicinae
 
-Installs and runs the Vicinae launcher (app search, clipboard history, emoji picker, calculator, Raycast-compatible extensions) as a systemd user service. Exposes `programs.vicinae.{extensions,themes,settings}` (vicinae's own module) as the configuration surface — set those directly in this user's config. Pair with the host's `ft.vicinae.inputServer.enable` (NixOS) for global-hotkey and keystroke-injection support.
+Installs and runs Vicinae, a Raycast-compatible app launcher with app search, clipboard history, an emoji picker, a calculator, and support for Raycast extensions, kept running as a systemd user service. Configure it directly through `programs.vicinae.{extensions,themes,settings}`, which Vicinae's own module provides. For global hotkeys and keystroke injection, also enable the host's `ft.vicinae.inputServer.enable` (NixOS).
 
 ### ft.vicinae.enable
 
-Installs and runs the Vicinae launcher (app search, clipboard history, emoji picker, calculator, Raycast-compatible extensions) as a systemd user service. Exposes `programs.vicinae.{extensions,themes,settings}` (vicinae's own module) as the configuration surface — set those directly in this user's config. Pair with the host's `ft.vicinae.inputServer.enable` (NixOS) for global-hotkey and keystroke-injection support.
+Installs and runs Vicinae, a Raycast-compatible app launcher with app search, clipboard history, an emoji picker, a calculator, and support for Raycast extensions, kept running as a systemd user service. Configure it directly through `programs.vicinae.{extensions,themes,settings}`, which Vicinae's own module provides. For global hotkeys and keystroke injection, also enable the host's `ft.vicinae.inputServer.enable` (NixOS).
 
 *Type:*
 boolean
@@ -1245,11 +1245,11 @@ boolean
 
 ## ft.webapps
 
-Generates application-launcher entries that open arbitrary websites as standalone, app-style windows (no address bar or tabs) using a Chromium-family browser's --app= mode, each in its own isolated profile directory. A lightweight alternative to bundling a full Electron/nativefier wrapper per site.
+Creates application-launcher shortcuts that open any website in its own app-like window — no address bar or tabs — using a Chromium-family browser's `--app=` mode, each with its own isolated browser profile. A lightweight alternative to packaging a full Electron wrapper for every site.
 
 ### ft.webapps.apps
 
-Set of website-backed apps to expose as desktop launchers, keyed by a short app id used for the isolated profile directory and window class.
+The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class.
 
 *Type:*
 attribute set of (submodule)
@@ -1262,7 +1262,7 @@ attribute set of (submodule)
 
 ### ft.webapps.apps.<name>.browser
 
-Per-app override of the Chromium-family browser used to launch this webapp. Falls back to ft.webapps.browser when null.
+Overrides which browser launches this particular webapp. Leave unset to use `ft.webapps.browser`.
 
 *Type:*
 null or one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium"
@@ -1275,7 +1275,7 @@ null or one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chrom
 
 ### ft.webapps.apps.<name>.categories
 
-Freedesktop desktop-entry categories used to place this webapp in application menus.
+Desktop-entry categories that control where this webapp shows up in application menus.
 
 *Type:*
 list of string
@@ -1290,7 +1290,7 @@ list of string
 
 ### ft.webapps.apps.<name>.icon
 
-Path to a local icon image. When null, the site's favicon is fetched automatically at Home Manager activation time (best-effort; silently keeps the browser's default icon if the fetch is unavailable, e.g. offline).
+Path to a local icon image to use. If left unset, the site's favicon is fetched automatically when Home Manager activates; if that fetch fails (e.g. no internet), it just falls back to the browser's default icon.
 
 *Type:*
 null or absolute path
@@ -1303,7 +1303,7 @@ null or absolute path
 
 ### ft.webapps.apps.<name>.name
 
-Display name shown in the application launcher.
+The name shown for this webapp in your application launcher.
 
 *Type:*
 string
@@ -1313,7 +1313,7 @@ string
 
 ### ft.webapps.apps.<name>.url
 
-URL the webapp window opens to.
+The URL this webapp's window opens to.
 
 *Type:*
 string
@@ -1323,7 +1323,7 @@ string
 
 ### ft.webapps.browser
 
-Default Chromium-family browser used to launch webapps in --app= mode. Only Chromium-family browsers support --app=; Firefox has no equivalent without the separate PWAsForFirefox stack, so it is not offered here.
+Which Chromium-family browser to use for launching webapps in `--app=` mode. Only Chromium-family browsers support this; Firefox isn't offered here since it needs the separate PWAsForFirefox setup to do something similar.
 
 *Type:*
 one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium"
@@ -1336,7 +1336,7 @@ one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium"
 
 ### ft.webapps.enable
 
-Generates application-launcher entries that open arbitrary websites as standalone, app-style windows (no address bar or tabs) using a Chromium-family browser's --app= mode, each in its own isolated profile directory. A lightweight alternative to bundling a full Electron/nativefier wrapper per site.
+Creates application-launcher shortcuts that open any website in its own app-like window — no address bar or tabs — using a Chromium-family browser's `--app=` mode, each with its own isolated browser profile. A lightweight alternative to packaging a full Electron wrapper for every site.
 
 *Type:*
 boolean
@@ -1352,11 +1352,11 @@ boolean
 
 ## ft.wine
 
-Installs Bottles, Wine (WOW64 build), and Winetricks into the user profile for running Windows applications outside of Steam. Home Manager counterpart of the NixOS ft.wine module — use on standalone Home Manager systems or non-NixOS distros.
+Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam. This is the Home Manager counterpart of the NixOS `ft.wine` module, meant for standalone Home Manager systems or non-NixOS distros.
 
 ### ft.wine.enable
 
-Installs Bottles, Wine (WOW64 build), and Winetricks into the user profile for running Windows applications outside of Steam. Home Manager counterpart of the NixOS ft.wine module — use on standalone Home Manager systems or non-NixOS distros.
+Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam. This is the Home Manager counterpart of the NixOS `ft.wine` module, meant for standalone Home Manager systems or non-NixOS distros.
 
 *Type:*
 boolean

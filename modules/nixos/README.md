@@ -2,56 +2,56 @@
 
 ## Table of Contents
 
-- [ft.admin](#ftadmin) — Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
-- [ft.bulkPool](#ftbulkpool) — Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
-- [ft.cachyos](#ftcachyos) — Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
-- [ft.cardwire](#ftcardwire) — Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
-- [ft.cli](#ftcli) — Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
-- [ft.containers](#ftcontainers) — Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
-- [ft.core](#ftcore) — Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
-- [ft.cosmic](#ftcosmic) — Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
-- [ft.cosmicGreeter](#ftcosmicgreeter) — Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
-- [ft.deploy](#ftdeploy) — Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
-- [ft.diskBtrfs](#ftdiskbtrfs) — Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
-- [ft.dockervm](#ftdockervm) — Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
-- [ft.facter](#ftfacter) — Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
-- [ft.flatpak](#ftflatpak) — Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
-- [ft.gaming](#ftgaming) — Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
-- [ft.gitops](#ftgitops) — Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
-- [ft.gpu](#ftgpu) — Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
-- [ft.keepass](#ftkeepass) — Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
-- [ft.komodo](#ftkomodo) — Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
-- [ft.limine](#ftlimine) — Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
-- [ft.liveIso](#ftliveiso) — Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
+- [ft.admin](#ftadmin) — Sets up a dedicated admin account with sudo access, present on every machine by default (you can turn it off). It can log in with an SSH key via `authorizedKeys`, a password via `initialPassword`, or both, so you're never locked out. This account is kept separate from `ft.users` so there's always one predictable place that owns the admin user.
+- [ft.bulkPool](#ftbulkpool) — Sets up a pooled bulk storage array: reads machines/<host>/var/bulk-drives.nix for the drives you've registered (labelled bulk-*), mounts each one, combines the data and cache drives into a single pool with mergerfs, and protects the data drives with nightly SnapRAID parity syncs. Does nothing when drivesFile is unset or every drive list is empty.
+- [ft.cachyos](#ftcachyos) — Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
+- [ft.cardwire](#ftcardwire) — Turns on the cardwired service, which can block or unblock GPU device nodes so you can switch between integrated, hybrid, or manual GPU power modes. It works by hooking into the kernel with eBPF, so it needs a kernel built with `CONFIG_BPF_LSM=y` and `lsm=...,bpf` added to the boot parameters.
+- [ft.cli](#ftcli) — Installs `just` along with a small `ft` command that runs the framework's built-in recipes from anywhere on the system. It's on by default since almost every machine wants it. It needs `ft.repoPath` set to your consumer repo's location — turn this off for machines that don't have a real checkout of your repo, like a live ISO or a test-only build.
+- [ft.containers](#ftcontainers) — Sets up a container runtime — Docker or Podman, running as root or rootless — along with the real Docker Compose v2 binary and, optionally, Distrobox. Other features, like ft.komodo, build on top of this and reach the daemon through the Docker-API-compatible socket this module provides.
+- [ft.core](#ftcore) — The baseline every machine starts from: network management, Bluetooth, network printing, zsh as the shell, and a set of everyday CLI tools. Every value here is just a default, so any host can override individual pieces.
+- [ft.cosmic](#ftcosmic) — Turns on the COSMIC desktop environment along with system76-scheduler, which prioritizes process scheduling for better responsiveness, and makes sure graphics hardware acceleration is on. Pair it with `ft.cosmicGreeter` to use cosmic-greeter as the login screen, or set up a different display manager to launch the COSMIC session instead.
+- [ft.cosmicGreeter](#ftcosmicgreeter) — Turns on cosmic-greeter as the login screen. Pair it with `ft.cosmic` to boot straight into a COSMIC session.
+- [ft.deploy](#ftdeploy) — Adds this machine to the fleet that can be deployed remotely with `colmena apply`. It's off by default, so you opt each machine in individually — that way local-only machines or disk images never accidentally become a remote deploy target.
+- [ft.diskBtrfs](#ftdiskbtrfs) — Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.
+- [ft.dockervm](#ftdockervm) — Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
+- [ft.facter](#ftfacter) — Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.
+- [ft.flatpak](#ftflatpak) — Turns on the system Flatpak service and adds the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the place to declare system-wide Flatpak apps — set it in any machine file, profile, or other module, and every definition merges together automatically. Pair this with `ft.flatpak.frontend.enable` to also get a graphical Flathub browser.
+- [ft.gaming](#ftgaming) — Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
+- [ft.gitops](#ftgitops) — Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.
+- [ft.gpu](#ftgpu) — Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
+- [ft.keepass](#ftkeepass) — Installs KeePassXC and turns off the GNOME Keyring so KeePassXC is the only place secrets are stored. This matters on desktops that mix components from different environments, where GNOME Keyring's auto-unlock could otherwise bypass your hardware key authentication.
+- [ft.komodo](#ftkomodo) — Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
+- [ft.limine](#ftlimine) — Switches the boot loader to Limine and turns off systemd-boot, since having both active at once can leave the boot loader state in a confused mess.
+- [ft.liveIso](#ftliveiso) — Builds a NixOS live environment with everything needed to set up a new machine, using nixos-anywhere, disko, and nixos-facter. To produce an ISO, add a var/format marker file to the machine's directory (see flake-parts/lib/machines.nix) — the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Add SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 - [ft.microvms](#ftmicrovms)
-- [ft.moonlight](#ftmoonlight) — Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
-- [ft.mullet](#ftmullet) — Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
-- [ft.nfs](#ftnfs) — Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
+- [ft.moonlight](#ftmoonlight) — Runs a Moonlight-compatible stream host (Sunshine) for remote desktop use and low-latency game streaming, opening the necessary firewall ports by default. Clients connect using Moonlight or Artemis. Anyone streaming from this machine also needs to be a member of the `input` group for virtual-input emulation (gamepad/keyboard/mouse) to work.
+- [ft.mullet](#ftmullet) — Installs every package listed in the plain text file at `ft.mullet.sourcePath`, one package name per line. This lets you add or remove packages by editing a text file instead of touching Nix code. Any name that doesn't resolve to a real package is just skipped.
+- [ft.nfs](#ftnfs) — Sets up NFS client mounts declared under `ft.nfs.mounts`. Each entry gives a `remotePath` (e.g. server:/share) and a `mountPoint`, and is mounted on demand — with a 10-minute idle timeout — via systemd's automount.
 - [ft.nixIndex](#ftnixindex) — Whether to enable nix-index with pre-built database and comma integration.
-- [ft.plasma](#ftplasma) — Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
-- [ft.plasmaBigscreen](#ftplasmabigscreen) — Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
-- [ft.printing](#ftprinting) — Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
-- [ft.rclone](#ftrclone) — Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
-- [ft.repoPath](#ftrepopath) — Absolute path to the consumer's flake repo root. Set this in your host file.
-- [ft.sops](#ftsops) — Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
-- [ft.steamConfig](#ftsteamconfig) — Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
-- [ft.tailscale](#fttailscale) — Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
-- [ft.users](#ftusers) — Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
-- [ft.vendorHw](#ftvendorhw) — Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
-- [ft.vicinae](#ftvicinae) — Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
-- [ft.virt](#ftvirt) — Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
-- [ft.wine](#ftwine) — Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
-- [ft.yubikey](#ftyubikey) — Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
+- [ft.plasma](#ftplasma) — Turns on KDE Plasma 6 with SDDM as the login screen and the X server enabled, along with KDE Connect for pairing with phones and other devices, KWallet for storing credentials, and a curated set of KDE apps (Kate, KCalc, Spectacle, Partition Manager, and KRDC). The Elisa music player is left out by default.
+- [ft.plasmaBigscreen](#ftplasmabigscreen) — Installs Plasma Bigscreen, a TV-friendly interface, and registers its Wayland session so it can be selected as a login option. This module is exempt from the VM smoke test requirement, since it pulls in `qtwebengine` and the full KDE Frameworks stack (which depend on the binary cache) and its main input method, HDMI-CEC, can't be tested inside a VM (it depends on real hardware).
+- [ft.printing](#ftprinting) — Starts CUPS along with a virtual PDF printer (CUPS-PDF) and Avahi for finding network printers via mDNS/Bonjour. Turn either piece off with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`, and add hardware drivers via `extraDrivers`.
+- [ft.rclone](#ftrclone) — Installs rclone and FUSE for the whole system and allows FUSE mounts to be shared with other users, so a per-user rclone mount service can expose a cloud drive (like Google Drive) at the configured mount point.
+- [ft.repoPath](#ftrepopath) — Absolute path to your consumer repo on disk. Set this in your machine's config file.
+- [ft.sops](#ftsops) — Sets up encrypted secrets management, pointing sops-nix at `ft.repoPath/var/secrets/secrets.yaml` and decrypting with the machine's SSH host key. Turn on `ft.sops.useTPM` or `ft.sops.useYubikey` instead if you'd rather decrypt with a hardware token.
+- [ft.steamConfig](#ftsteamconfig) — Turns on steam-config-nix, which lets you declare Steam launch options, per-game compatibility-tool choices, and shortcuts for non-Steam games in your configuration instead of clicking through Steam's UI. Once enabled, configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps.
+- [ft.tailscale](#fttailscale) — Joins the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run this machine as an exit node.
+- [ft.users](#ftusers) — Creates sudo users from `superUsers` and regular unprivileged users from `normalUsers`; everyone gets zsh as their shell and membership in the common hardware/service groups. The dedicated admin account is handled separately by the `ft.admin` module.
+- [ft.vendorHw](#ftvendorhw) — Installs and configures the right drivers, background services, and tools for whichever hardware brand is detected in the hardware report. Covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
+- [ft.vicinae](#ftvicinae) — Registers the upstream vicinae.cachix.org binary cache, so the Vicinae launcher (ft.vicinae.enable in Home Manager) doesn't have to compile its Qt6/C++ stack from source.
+- [ft.virt](#ftvirt) — Sets up virtual machine support with libvirt/KVM and virt-manager, and adds `ft.users.mainUser` to the libvirtd group so they can manage VMs. You can also turn on `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` to pass USB devices through to VMs.
+- [ft.wine](#ftwine) — Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam.
+- [ft.yubikey](#ftyubikey) — Installs YubiKey management tools (`yubikey-manager`, `yubico-piv-tool`, `pam_u2f`), turns on the `pcscd` smart-card service, and activates `ft.users.u2f` so YubiKeys can be used for login. Set each user's FIDO2 credentials with `ft.users.u2f.mappings` in your machine config.
 
 ---
 
 ## ft.admin
 
-Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
+Sets up a dedicated admin account with sudo access, present on every machine by default (you can turn it off). It can log in with an SSH key via `authorizedKeys`, a password via `initialPassword`, or both, so you're never locked out. This account is kept separate from `ft.users` so there's always one predictable place that owns the admin user.
 
 ### ft.admin.authorizedKeys
 
-SSH public keys authorized for key-based login as the admin user.
+The SSH public keys allowed to log in as the admin user.
 
 *Type:*
 list of string
@@ -64,7 +64,7 @@ list of string
 
 ### ft.admin.enable
 
-Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
+Sets up a dedicated admin account with sudo access, present on every machine by default (you can turn it off). It can log in with an SSH key via `authorizedKeys`, a password via `initialPassword`, or both, so you're never locked out. This account is kept separate from `ft.users` so there's always one predictable place that owns the admin user.
 
 *Type:*
 boolean
@@ -80,7 +80,7 @@ boolean
 
 ### ft.admin.extraGroups
 
-Additional groups for the admin user, on top of wheel and the common hardware/service groups.
+Any extra groups to add the admin user to, beyond wheel and the standard hardware/service groups it already gets.
 
 *Type:*
 list of string
@@ -93,7 +93,7 @@ list of string
 
 ### ft.admin.hashedPasswordFile
 
-Path to a file containing the admin's hashed password (e.g. a sops secret). Takes precedence over `initialPassword` when set.
+Path to a file holding the admin's already-hashed password, such as a sops secret. When set, it takes priority over `initialPassword`.
 
 *Type:*
 null or absolute path
@@ -106,7 +106,7 @@ null or absolute path
 
 ### ft.admin.initialPassword
 
-Plaintext password set at first boot so the account is never locked out. Override per machine; set to null to rely solely on key-based auth; or supply a real credential via `hashedPasswordFile` for production. Ignored when `hashedPasswordFile` is set.
+A plain-text password set the first time the machine boots, so the account is never locked out. Override it per machine, set it to null to rely only on SSH-key login, or use `hashedPasswordFile` for a real production credential. This option is ignored whenever `hashedPasswordFile` is set.
 
 *Type:*
 null or string
@@ -119,7 +119,7 @@ null or string
 
 ### ft.admin.name
 
-Username of the admin/management account.
+The username for the admin account.
 
 *Type:*
 string
@@ -132,11 +132,11 @@ string
 
 ## ft.bulkPool
 
-Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
+Sets up a pooled bulk storage array: reads machines/<host>/var/bulk-drives.nix for the drives you've registered (labelled bulk-*), mounts each one, combines the data and cache drives into a single pool with mergerfs, and protects the data drives with nightly SnapRAID parity syncs. Does nothing when drivesFile is unset or every drive list is empty.
 
 ### ft.bulkPool.driveBase
 
-Directory prefix for individual drive mount points (e.g. /mnt/bulk/bulk-data-1 mounts the btrfs root of that drive).
+Directory prefix each drive is mounted under (e.g. a drive labelled bulk-data-1 mounts at /mnt/bulk/bulk-data-1).
 
 *Type:*
 string
@@ -149,7 +149,7 @@ string
 
 ### ft.bulkPool.drivesFile
 
-Path to the bulk-drives.nix file listing registered drive labels by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When null or the file is absent, the module is a complete no-op.
+Path to the bulk-drives.nix file that lists your registered drives by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When this is null or the file doesn't exist, the whole module is a no-op.
 
 *Type:*
 null or absolute path
@@ -162,7 +162,7 @@ null or absolute path
 
 ### ft.bulkPool.enable
 
-Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
+Sets up a pooled bulk storage array: reads machines/<host>/var/bulk-drives.nix for the drives you've registered (labelled bulk-*), mounts each one, combines the data and cache drives into a single pool with mergerfs, and protects the data drives with nightly SnapRAID parity syncs. Does nothing when drivesFile is unset or every drive list is empty.
 
 *Type:*
 boolean
@@ -178,7 +178,7 @@ boolean
 
 ### ft.bulkPool.poolMount
 
-Mount point for the mergerfs union pool of data and cache drives (@data subvolume of each).
+Where the combined mergerfs pool of data and cache drives (the @data subvolume of each) is mounted.
 
 *Type:*
 string
@@ -191,7 +191,7 @@ string
 
 ### ft.bulkPool.snapraid.contentFile
 
-Primary snapraid content file path on the system drive (not on a data disk).
+Path to SnapRAID's main content file, kept on the system drive rather than on any data disk.
 
 *Type:*
 string
@@ -204,11 +204,11 @@ string
 
 ## ft.cachyos
 
-Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
+Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
 
 ### ft.cachyos.enable
 
-Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
+Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
 
 *Type:*
 boolean
@@ -224,7 +224,7 @@ boolean
 
 ### ft.cachyos.variant
 
-CachyOS kernel variant. Maps to linux-cachyos-<variant> from nix-cachyos.
+Which CachyOS kernel build to use, corresponding to `linux-cachyos-<variant>` from nix-cachyos.
 
 *Type:*
 one of "latest", "latest-lto", "latest-x86_64-v3", "latest-lto-x86_64-v3", "latest-x86_64-v4", "latest-lto-x86_64-v4", "latest-zen4", "latest-lto-zen4", "bore", "bore-lto", "bore-x86_64-v3", "bore-lto-x86_64-v3", "bore-x86_64-v4", "bore-lto-x86_64-v4", "bore-zen4", "bore-lto-zen4", "eevdf", "eevdf-lto", "bmq", "bmq-lto", "lts", "lts-lto", "lts-x86_64-v3", "lts-lto-x86_64-v3", "lts-x86_64-v4", "lts-lto-x86_64-v4", "lts-zen4", "lts-lto-zen4", "rt-bore", "rt-bore-lto", "hardened", "hardened-lto", "server", "server-lto", "rc", "rc-lto", "deckify", "deckify-lto"
@@ -237,11 +237,11 @@ one of "latest", "latest-lto", "latest-x86_64-v3", "latest-lto-x86_64-v3", "late
 
 ## ft.cardwire
 
-Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
+Turns on the cardwired service, which can block or unblock GPU device nodes so you can switch between integrated, hybrid, or manual GPU power modes. It works by hooking into the kernel with eBPF, so it needs a kernel built with `CONFIG_BPF_LSM=y` and `lsm=...,bpf` added to the boot parameters.
 
 ### ft.cardwire.autoApplyGpuState
 
-Automatically restore the last saved GPU state when the cardwired service starts.
+When the cardwired service starts, automatically restore whichever GPU state was last saved.
 
 *Type:*
 boolean
@@ -254,7 +254,7 @@ boolean
 
 ### ft.cardwire.batteryAutoSwitch
 
-Automatically switch to integrated GPU mode when running on battery power.
+Switch to the integrated GPU automatically whenever the machine is running on battery.
 
 *Type:*
 boolean
@@ -267,7 +267,7 @@ boolean
 
 ### ft.cardwire.enable
 
-Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
+Turns on the cardwired service, which can block or unblock GPU device nodes so you can switch between integrated, hybrid, or manual GPU power modes. It works by hooking into the kernel with eBPF, so it needs a kernel built with `CONFIG_BPF_LSM=y` and `lsm=...,bpf` added to the boot parameters.
 
 *Type:*
 boolean
@@ -283,7 +283,7 @@ boolean
 
 ### ft.cardwire.experimentalNvidiaBlock
 
-Enable experimental blocking of NVIDIA-specific device files. Enabled automatically when ft.gpu is active with the NVIDIA driver.
+Turns on experimental support for blocking NVIDIA-specific device files. This switches on automatically whenever `ft.gpu` is active with the NVIDIA driver.
 
 *Type:*
 boolean
@@ -296,11 +296,11 @@ boolean
 
 ## ft.cli
 
-Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
+Installs `just` along with a small `ft` command that runs the framework's built-in recipes from anywhere on the system. It's on by default since almost every machine wants it. It needs `ft.repoPath` set to your consumer repo's location — turn this off for machines that don't have a real checkout of your repo, like a live ISO or a test-only build.
 
 ### ft.cli.enable
 
-Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
+Installs `just` along with a small `ft` command that runs the framework's built-in recipes from anywhere on the system. It's on by default since almost every machine wants it. It needs `ft.repoPath` set to your consumer repo's location — turn this off for machines that don't have a real checkout of your repo, like a live ISO or a test-only build.
 
 *Type:*
 boolean
@@ -316,11 +316,11 @@ boolean
 
 ## ft.containers
 
-Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
+Sets up a container runtime — Docker or Podman, running as root or rootless — along with the real Docker Compose v2 binary and, optionally, Distrobox. Other features, like ft.komodo, build on top of this and reach the daemon through the Docker-API-compatible socket this module provides.
 
 ### ft.containers.compose.enable
 
-Install the genuine Docker Compose v2 binary (pkgs.docker-compose). It drives either runtime through the Docker-API-compatible socket; podman-compose is never used.
+Installs the real Docker Compose v2 binary (pkgs.docker-compose), which drives either runtime through its Docker-API-compatible socket. podman-compose is never used.
 
 *Type:*
 boolean
@@ -333,7 +333,7 @@ boolean
 
 ### ft.containers.dataDir
 
-Base directory provisioned for docker-compose and bind-mount workloads. Owned by the service account when rootless, otherwise root.
+Base directory set up for docker-compose workloads and bind mounts. Owned by the rootless service account when rootless is enabled, otherwise owned by root.
 
 *Type:*
 string
@@ -346,7 +346,7 @@ string
 
 ### ft.containers.distrobox.enable
 
-Install Distrobox for running other-distribution containers as host-integrated environments on top of the selected runtime.
+Installs Distrobox, for running containers from other Linux distributions as environments integrated with the host, on top of whichever runtime is selected.
 
 *Type:*
 boolean
@@ -359,7 +359,7 @@ boolean
 
 ### ft.containers.enable
 
-Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
+Sets up a container runtime — Docker or Podman, running as root or rootless — along with the real Docker Compose v2 binary and, optionally, Distrobox. Other features, like ft.komodo, build on top of this and reach the daemon through the Docker-API-compatible socket this module provides.
 
 *Type:*
 boolean
@@ -375,7 +375,7 @@ boolean
 
 ### ft.containers.rootless
 
-Run the runtime rootless. When true, a dedicated unprivileged service account (ft.containers.user) gets subuid/subgid maps, systemd lingering, and a user-level daemon socket, with DOCKER_HOST pointed at it — running `podman system service` or rootless dockerd per ft.containers.runtime. When false the system daemon runs as root (podman gains dockerCompat + the docker socket).
+Run the container runtime without root privileges. When enabled, a dedicated unprivileged account (ft.containers.user) is created with its own subuid/subgid ranges, kept logged in via systemd lingering, and given a user-level daemon socket that DOCKER_HOST points at — this runs `podman system service` or rootless dockerd depending on ft.containers.runtime. When disabled, the system daemon runs as root instead (and Podman gains its Docker-compatible socket via dockerCompat).
 
 *Type:*
 boolean
@@ -388,7 +388,7 @@ boolean
 
 ### ft.containers.runtime
 
-OCI runtime. Podman is recommended for rootless use; both expose a Docker-API-compatible socket so the genuine docker-compose binary drives either unchanged.
+Which container runtime to use. Podman is the recommended choice for rootless setups; both runtimes expose a Docker-API-compatible socket, so the real docker-compose binary works unchanged against either one.
 
 *Type:*
 one of "docker", "podman"
@@ -401,7 +401,7 @@ one of "docker", "podman"
 
 ### ft.containers.socket
 
-Read-only: the Docker-API-compatible socket path the active cell exposes. Consumed by apps built on this module (e.g. ft.komodo) as DOCKER_HOST.
+Read-only: the Docker-API-compatible socket path exposed by whichever runtime and mode are active. Other features built on this module (e.g. ft.komodo) read this and use it as DOCKER_HOST.
 
 *Type:*
 string
@@ -414,7 +414,7 @@ string
 
 ### ft.containers.uid
 
-Fixed UID and GID for the rootless service account. The rootless daemon socket path derives from it (/run/user/<uid>/...). Ignored when rootless = false.
+Fixed UID/GID for the rootless service account. The rootless daemon's socket path is derived from this (/run/user/<uid>/...). Ignored when rootless = false.
 
 *Type:*
 signed integer
@@ -427,7 +427,7 @@ signed integer
 
 ### ft.containers.user
 
-Name of the unprivileged service account created for rootless mode. Ignored when rootless = false.
+Name of the unprivileged account created for rootless mode. Ignored when rootless = false.
 
 *Type:*
 string
@@ -440,11 +440,11 @@ string
 
 ## ft.core
 
-Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
+The baseline every machine starts from: network management, Bluetooth, network printing, zsh as the shell, and a set of everyday CLI tools. Every value here is just a default, so any host can override individual pieces.
 
 ### ft.core.enable
 
-Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
+The baseline every machine starts from: network management, Bluetooth, network printing, zsh as the shell, and a set of everyday CLI tools. Every value here is just a default, so any host can override individual pieces.
 
 *Type:*
 boolean
@@ -460,7 +460,7 @@ boolean
 
 ### ft.core.stateVersion
 
-The NixOS release version this machine was *first installed* on. Controls which state migration paths activate on boot — setting this wrong triggers unwanted migrations. Set it once at machine creation and never change it.
+The NixOS release this machine was originally installed on. NixOS uses this to decide which one-time upgrade steps to run at boot, so getting it wrong can trigger changes you don't want. Set it once when the machine is created and leave it alone after that.
 
 *Type:*
 string
@@ -470,11 +470,11 @@ string
 
 ## ft.cosmic
 
-Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
+Turns on the COSMIC desktop environment along with system76-scheduler, which prioritizes process scheduling for better responsiveness, and makes sure graphics hardware acceleration is on. Pair it with `ft.cosmicGreeter` to use cosmic-greeter as the login screen, or set up a different display manager to launch the COSMIC session instead.
 
 ### ft.cosmic.enable
 
-Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
+Turns on the COSMIC desktop environment along with system76-scheduler, which prioritizes process scheduling for better responsiveness, and makes sure graphics hardware acceleration is on. Pair it with `ft.cosmicGreeter` to use cosmic-greeter as the login screen, or set up a different display manager to launch the COSMIC session instead.
 
 *Type:*
 boolean
@@ -490,11 +490,11 @@ boolean
 
 ## ft.cosmicGreeter
 
-Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
+Turns on cosmic-greeter as the login screen. Pair it with `ft.cosmic` to boot straight into a COSMIC session.
 
 ### ft.cosmicGreeter.enable
 
-Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
+Turns on cosmic-greeter as the login screen. Pair it with `ft.cosmic` to boot straight into a COSMIC session.
 
 *Type:*
 boolean
@@ -510,11 +510,11 @@ boolean
 
 ## ft.deploy
 
-Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
+Adds this machine to the fleet that can be deployed remotely with `colmena apply`. It's off by default, so you opt each machine in individually — that way local-only machines or disk images never accidentally become a remote deploy target.
 
 ### ft.deploy.buildOnTarget
 
-Build the system closure on the target host instead of the control machine. Useful for cross-architecture targets or to avoid pushing large closures over the network.
+Build the system on the target machine itself instead of on your control machine. Handy when targeting a different CPU architecture, or to avoid pushing a large build over the network.
 
 *Type:*
 boolean
@@ -527,7 +527,7 @@ boolean
 
 ### ft.deploy.enable
 
-Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
+Adds this machine to the fleet that can be deployed remotely with `colmena apply`. It's off by default, so you opt each machine in individually — that way local-only machines or disk images never accidentally become a remote deploy target.
 
 *Type:*
 boolean
@@ -543,7 +543,7 @@ boolean
 
 ### ft.deploy.tags
 
-Colmena tags for this node, used to target subsets with `colmena apply --on @<tag>`.
+Tags for this machine, so you can target a subset of the fleet with `colmena apply --on @<tag>`.
 
 *Type:*
 list of string
@@ -556,7 +556,7 @@ list of string
 
 ### ft.deploy.targetHost
 
-Hostname or IP colmena connects to over SSH. Null uses the machine's attribute name, resolved via DNS or Tailscale MagicDNS.
+The hostname or IP address colmena connects to over SSH. Leave it null to use the machine's own name instead, resolved through DNS or Tailscale MagicDNS.
 
 *Type:*
 null or string
@@ -569,7 +569,7 @@ null or string
 
 ### ft.deploy.targetUser
 
-SSH user colmena connects as. Must be able to activate system closures — root, or a user with passwordless sudo.
+The SSH user colmena connects as. It needs to be able to activate system changes, so this must be root or a user with passwordless sudo.
 
 *Type:*
 string
@@ -582,11 +582,11 @@ string
 
 ## ft.diskBtrfs
 
-Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
+Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.
 
 ### ft.diskBtrfs.confirmDevice
 
-Must equal `device` whenever `device` is overridden away from the framework default (/dev/nvme0n1). A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage.
+A safety check: if you change `device` away from the framework default (/dev/nvme0n1), you must also set this to the exact same value. It's a typed double-entry confirmation — if a deploy script or a person picks the wrong disk, the mismatch causes evaluation to fail before disko or nixos-anywhere ever touches the storage.
 
 *Type:*
 string
@@ -599,7 +599,7 @@ string
 
 ### ft.diskBtrfs.device
 
-Block device to partition (e.g. /dev/nvme0n1).
+The block device to partition, for example `/dev/nvme0n1`.
 
 *Type:*
 string
@@ -612,7 +612,7 @@ string
 
 ### ft.diskBtrfs.enable
 
-Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
+Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.
 
 *Type:*
 boolean
@@ -628,7 +628,7 @@ boolean
 
 ### ft.diskBtrfs.excludeDevices
 
-Device paths that must never be used as the install target, e.g. a live installer's own boot media. Evaluation fails if `device` matches one of these.
+A list of device paths that should never be used as the install target — for example, the live installer's own boot media. If `device` matches any of these, evaluation fails.
 
 *Type:*
 list of string
@@ -641,7 +641,7 @@ list of string
 
 ### ft.diskBtrfs.impermanence.enable
 
-Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default.
+Makes the root filesystem ephemeral: replaces the btrfs root subvolume with a tmpfs ramdisk at `/`, so anything not explicitly kept is wiped on reboot, and adds a `@persist` subvolume at `/persist` for the state you do want to keep. This turns on the impermanence NixOS module, which persists `/etc/machine-id`, `/etc/ssh`, `/var/lib`, and `/var/log` by default.
 
 *Type:*
 boolean
@@ -657,7 +657,7 @@ boolean
 
 ### ft.diskBtrfs.impermanence.rootSize
 
-Size of the tmpfs ramdisk mounted at / when impermanence.enable is true.
+How large the tmpfs ramdisk at `/` is, when `impermanence.enable` is turned on.
 
 *Type:*
 string
@@ -670,7 +670,7 @@ string
 
 ### ft.diskBtrfs.luks.enable
 
-Wrap the btrfs partition in a LUKS2 container.
+Encrypts the btrfs partition inside a LUKS2 container.
 
 *Type:*
 boolean
@@ -683,7 +683,7 @@ boolean
 
 ### ft.diskBtrfs.luks.label
 
-Name of the LUKS dm-crypt device (appears under /dev/mapper/).
+The name given to the LUKS device, which shows up under `/dev/mapper/`.
 
 *Type:*
 string
@@ -696,7 +696,7 @@ string
 
 ### ft.diskBtrfs.luks.tpm.enable
 
-Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery. No PCR binding is configured (the PIN is the secret, not the boot-chain state). Declarative wiring only — you must run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared. Requires luks.enable.
+Lets you unlock the LUKS volume at boot with a short PIN instead of typing the full passphrase, using a key sealed inside the TPM2 chip. Turning this on switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so boot prompts for the PIN (the TPM rate-limits guesses) while the original passphrase keyslot stays available as a fallback. It doesn't bind to any boot-chain measurements (PCRs) — the PIN itself is the secret. This option only wires up the configuration; you still need to run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after installing to actually add the TPM+PIN keyslot, since the PIN can't be declared in config. Requires `luks.enable` to also be on.
 
 *Type:*
 boolean
@@ -712,11 +712,11 @@ boolean
 
 ## ft.dockervm
 
-Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
+Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
 
 ### ft.dockervm.dockerVolumeSize
 
-Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).
+Size, in MiB, of the persistent volume that stores Docker's data (the image lives at /var/lib/microvm/<vmName>/docker.img on the host).
 
 *Type:*
 signed integer
@@ -729,7 +729,7 @@ signed integer
 
 ### ft.dockervm.enable
 
-Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
+Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
 
 *Type:*
 boolean
@@ -745,7 +745,7 @@ boolean
 
 ### ft.dockervm.hostInterface
 
-Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.
+Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Needed by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.
 
 *Type:*
 string
@@ -758,7 +758,7 @@ string
 
 ### ft.dockervm.komodo.adminPassword
 
-Initial Komodo admin password. Stored in the Nix store — change after first login.
+Password for the initial Komodo admin account. Stored in the Nix store — change it after your first login.
 
 *Type:*
 string
@@ -771,7 +771,7 @@ string
 
 ### ft.dockervm.komodo.adminUsername
 
-Initial Komodo admin username created on first launch.
+Username for the initial Komodo admin account created on first launch.
 
 *Type:*
 string
@@ -784,7 +784,7 @@ string
 
 ### ft.dockervm.komodo.autoApply.enable
 
-After the guest's Komodo Core answers, run the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). See NOTES.md.
+Once the guest's Komodo Core is up, runs the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create and run the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ automatically — no UI needed. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to get these). See NOTES.md.
 
 *Type:*
 boolean
@@ -800,7 +800,7 @@ boolean
 
 ### ft.dockervm.komodo.coreSecrets.enable
 
-Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.
+Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, interpolatable as [[KEY]] into every Stack and Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient added to .sops.yaml — see NOTES.md.
 
 *Type:*
 boolean
@@ -816,7 +816,7 @@ boolean
 
 ### ft.dockervm.komodo.dbPassword
 
-Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.
+Password for the FerretDB/Postgres database. Stored in the Nix store — only suitable for local-only deployments.
 
 *Type:*
 string
@@ -829,7 +829,7 @@ string
 
 ### ft.dockervm.komodo.dbUsername
 
-Username for the FerretDB/Postgres database.
+Username for the FerretDB/Postgres database used by this Komodo instance.
 
 *Type:*
 string
@@ -842,7 +842,7 @@ string
 
 ### ft.dockervm.komodo.enable
 
-Deploy a Komodo instance (core + periphery + FerretDB) inside the VM. Container data is stored on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.
+Deploys a Komodo instance (Core + Periphery + FerretDB) inside the VM. Container data lives on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.
 
 *Type:*
 boolean
@@ -855,7 +855,7 @@ boolean
 
 ### ft.dockervm.komodo.host
 
-Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.
+Public URL of the Komodo Core instance; used for OAuth redirect URLs and suggested webhook addresses.
 
 *Type:*
 string
@@ -868,7 +868,7 @@ string
 
 ### ft.dockervm.komodo.imageTag
 
-Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.
+Docker image tag to use for ghcr.io/moghtech/komodo-core and komodo-periphery.
 
 *Type:*
 string
@@ -881,7 +881,7 @@ string
 
 ### ft.dockervm.komodo.jwtSecret
 
-Secret used to sign Komodo JWT tokens. Stored in the Nix store.
+Secret used to sign this Komodo instance's JWT tokens. Stored in the Nix store.
 
 *Type:*
 string
@@ -894,7 +894,7 @@ string
 
 ### ft.dockervm.komodo.peripherySecrets.enable
 
-Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.
+Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared into the guest read-only) and loads it into Komodo Periphery via `--config-path`. Its keys can be interpolated as [[KEY]] into the Stacks this Periphery deploys, stay entirely on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (which acts as the sops age recipient) and enables sshd so that key can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap step — see NOTES.md.
 
 *Type:*
 boolean
@@ -910,7 +910,7 @@ boolean
 
 ### ft.dockervm.komodo.serverName
 
-Name for the first Komodo server entry, and the name Periphery uses to connect to Core.
+Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.
 
 *Type:*
 string
@@ -923,7 +923,7 @@ string
 
 ### ft.dockervm.komodo.timezone
 
-Timezone for Komodo schedules (tz database name, e.g. America/New_York).
+Timezone Komodo uses for its schedules (a tz database name, e.g. America/New_York).
 
 *Type:*
 string
@@ -936,7 +936,7 @@ string
 
 ### ft.dockervm.komodo.webhookSecret
 
-Secret used to authenticate incoming Komodo webhooks. Stored in the Nix store.
+Secret used to authenticate incoming Komodo webhooks for this instance. Stored in the Nix store.
 
 *Type:*
 string
@@ -949,7 +949,7 @@ string
 
 ### ft.dockervm.mem
 
-Memory in MiB assigned to the VM.
+Memory, in MiB, given to the VM.
 
 *Type:*
 signed integer
@@ -962,7 +962,7 @@ signed integer
 
 ### ft.dockervm.sshAuthorizedKeys
 
-SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).
+SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge, so exposure is limited).
 
 *Type:*
 list of string
@@ -975,7 +975,7 @@ list of string
 
 ### ft.dockervm.vcpus
 
-Number of vCPUs assigned to the VM.
+Number of virtual CPUs given to the VM.
 
 *Type:*
 signed integer
@@ -988,7 +988,7 @@ signed integer
 
 ### ft.dockervm.vmAddressSuffix
 
-Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host.
+The last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microVM instances on this host.
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
@@ -1001,7 +1001,7 @@ Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hos
 
 ### ft.dockervm.vmMac
 
-MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).
+MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02).
 
 *Type:*
 string
@@ -1014,7 +1014,7 @@ string
 
 ### ft.dockervm.vmName
 
-Name for the microvm instance. Used as the systemd service name, guest hostname, and TAP interface suffix (tap-<vmName>).
+Name for this microVM. Used as the systemd service name, the guest's hostname, and the suffix of its TAP interface (tap-<vmName>).
 
 *Type:*
 string
@@ -1027,7 +1027,7 @@ string
 
 ### ft.dockervm.vsockCid
 
-vsock context ID (CID) for the VM. When set, enables systemd-notify support for cloud-hypervisor and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).
+vsock context ID (CID) for the VM. Setting this enables systemd-notify support in cloud-hypervisor, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).
 
 *Type:*
 null or signed integer
@@ -1040,11 +1040,11 @@ null or signed integer
 
 ## ft.facter
 
-Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
+Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.
 
 ### ft.facter.enable
 
-Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
+Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.
 
 *Type:*
 boolean
@@ -1060,7 +1060,7 @@ boolean
 
 ### ft.facter.reportPath
 
-Flake-relative path to the facter.json report committed in the consumer repo, e.g. reportPath = ./var/facter.json; from the machine's default.nix. Null disables the report wiring.
+The path to the committed `facter.json` report, relative to the flake, e.g. `reportPath = ./var/facter.json;` in the machine's `default.nix`. Leave it as `null` to skip this wiring entirely.
 
 *Type:*
 null or absolute path
@@ -1073,11 +1073,11 @@ null or absolute path
 
 ## ft.flatpak
 
-Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
+Turns on the system Flatpak service and adds the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the place to declare system-wide Flatpak apps — set it in any machine file, profile, or other module, and every definition merges together automatically. Pair this with `ft.flatpak.frontend.enable` to also get a graphical Flathub browser.
 
 ### ft.flatpak.enable
 
-Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
+Turns on the system Flatpak service and adds the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the place to declare system-wide Flatpak apps — set it in any machine file, profile, or other module, and every definition merges together automatically. Pair this with `ft.flatpak.frontend.enable` to also get a graphical Flathub browser.
 
 *Type:*
 boolean
@@ -1093,7 +1093,7 @@ boolean
 
 ### ft.flatpak.frontend.enable
 
-Installs `ft.flatpak.frontend.package`, a GUI application for browsing and installing Flatpaks from Flathub.
+Installs `ft.flatpak.frontend.package`, a graphical app for browsing and installing Flatpaks from Flathub.
 
 *Type:*
 boolean
@@ -1109,7 +1109,7 @@ boolean
 
 ### ft.flatpak.frontend.package
 
-Package providing the graphical Flathub frontend.
+The package providing the graphical Flathub browser.
 
 *Type:*
 package
@@ -1122,11 +1122,11 @@ package
 
 ## ft.gaming
 
-Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
+Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
 
 ### ft.gaming.bigPicture
 
-Run Steam inside a gamescope session (Big Picture mode), replacing the desktop session on login.
+Runs Steam in Big Picture mode inside a gamescope session, taking over the screen in place of the regular desktop session when you log in.
 
 *Type:*
 boolean
@@ -1139,7 +1139,7 @@ boolean
 
 ### ft.gaming.enable
 
-Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
+Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
 
 *Type:*
 boolean
@@ -1155,7 +1155,7 @@ boolean
 
 ### ft.gaming.gamescope.enable
 
-Enable the gamescope micro-compositor.
+Turns on gamescope, the lightweight compositor Steam uses to run games in their own window or display.
 
 *Type:*
 boolean
@@ -1168,7 +1168,7 @@ boolean
 
 ### ft.gaming.gamescope.hdr
 
-Enable HDR output in gamescope. Requires an HDR-capable display and a supporting GPU driver.
+Turns on HDR output in gamescope. Your display and GPU driver both need to support HDR for this to do anything.
 
 *Type:*
 boolean
@@ -1181,7 +1181,7 @@ boolean
 
 ### ft.gaming.openFirewall
 
-Open firewall ports for Steam Remote Play and local network game transfers.
+Opens the firewall ports needed for Steam Remote Play and for sending games to other devices on the local network.
 
 *Type:*
 boolean
@@ -1194,11 +1194,11 @@ boolean
 
 ## ft.gitops
 
-Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
+Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.
 
 ### ft.gitops.autoPromote.enable
 
-comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default. Normally a human must explicitly boot the "comin" bootloader submenu entry, or run a manual `nixos-rebuild switch`, to make a comin deployment the reboot default. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin's ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience.
+comin deliberately never touches /nix/var/nix/profiles/system - the profile the bootloader treats as the actual default - it always deploys into its own separate system-profiles/comin profile, so a bad automated deploy can never quietly become what boots by default. Normally you'd need to manually pick the "comin" entry in the bootloader menu, or run `nixos-rebuild switch` yourself, to make a comin deployment the default. Turning this on adds a hook that does that automatically after every successful deployment of deployBranch (never comin's temporary per-host test branch, which needs to stay revertible on reboot) - trading away that safety net for convenience.
 
 *Type:*
 boolean
@@ -1214,7 +1214,7 @@ boolean
 
 ### ft.gitops.deployBranch
 
-Branch comin deploys permanently with `switch` (comin remotes[].branches.main.name). Tracks your production branch; commits must be signed by one of `signingKeys` when that list is non-empty.
+The branch comin deploys permanently with `switch` (comin's remotes[].branches.main.name). This should track your production branch; when `signingKeys` is non-empty, commits on it must be signed by one of those keys.
 
 *Type:*
 string
@@ -1227,7 +1227,7 @@ string
 
 ### ft.gitops.enable
 
-Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
+Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.
 
 *Type:*
 boolean
@@ -1243,7 +1243,7 @@ boolean
 
 ### ft.gitops.pollPeriod
 
-How often, in seconds, comin polls each remote for new commits (comin remotes[].poller.period).
+How often, in seconds, comin checks each remote for new commits (comin's remotes[].poller.period).
 
 *Type:*
 signed integer
@@ -1256,7 +1256,7 @@ signed integer
 
 ### ft.gitops.remotes
 
-Ordered list of git remotes comin polls for this machine's configuration. Polled together as failover (anti-SPOF), primary first.
+Ordered list of git remotes comin polls for this machine's configuration. All of them are polled together so no single remote is a point of failure — list the primary one first.
 
 *Type:*
 list of (submodule)
@@ -1269,7 +1269,7 @@ list of (submodule)
 
 ### ft.gitops.remotes.*.name
 
-Short identifier for this remote (comin remotes[].name).
+A short name for this remote (comin's remotes[].name).
 
 *Type:*
 string
@@ -1279,7 +1279,7 @@ string
 
 ### ft.gitops.remotes.*.tokenSecret
 
-Name of a sops secret holding an access token for this remote. When set, the secret is declared and wired to comin's auth.access_token_path; null polls the remote anonymously (public repository). Requires ft.sops.enable.
+Name of a sops secret holding an access token for this remote. When set, the secret is decrypted and wired into comin's auth.access_token_path; leave it null to poll the remote anonymously (for a public repository). Requires ft.sops.enable.
 
 *Type:*
 null or string
@@ -1292,7 +1292,7 @@ null or string
 
 ### ft.gitops.remotes.*.url
 
-Git URL comin polls (comin remotes[].url). List the primary first (e.g. self-hosted Forgejo) and backups after (e.g. Codeberg); comin polls all to avoid a single point of failure.
+The git URL comin polls (comin's remotes[].url). List your primary remote first (e.g. a self-hosted Forgejo instance) and any backups after (e.g. Codeberg) — comin polls all of them so no single remote is a point of failure.
 
 *Type:*
 string
@@ -1302,7 +1302,7 @@ string
 
 ### ft.gitops.retry.checkInterval
 
-How often, in seconds, the watchdog polls comin's exporter for a failure. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt.
+How often, in seconds, the watchdog checks comin's exporter for a failure. Should comfortably exceed how long a typical evaluation, build, and switch takes, so it doesn't restart comin in the middle of an attempt.
 
 *Type:*
 signed integer
@@ -1315,7 +1315,7 @@ signed integer
 
 ### ft.gitops.retry.enable
 
-Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.
+Runs a watchdog timer that checks comin's Prometheus exporter for a failed evaluation, build, or deployment, and restarts comin.service to make it retry the current commit — up to retry.maxAttempts times before giving up until a new commit is pushed.
 
 *Type:*
 boolean
@@ -1331,7 +1331,7 @@ boolean
 
 ### ft.gitops.retry.maxAttempts
 
-Maximum number of times the watchdog restarts comin.service to recover the current failing commit before giving up on it until a new commit is pushed.
+How many times the watchdog restarts comin.service to try to recover from a failing commit, before giving up on it until a new commit arrives.
 
 *Type:*
 signed integer
@@ -1344,7 +1344,7 @@ signed integer
 
 ### ft.gitops.signingKeys
 
-Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths). An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing.
+Paths to armored GPG public key files; comin only deploys a commit if it's signed by one of these (comin's gpgPublicKeyPaths). Leaving this empty disables signature checking, meaning any commit pushed to a polled branch deploys automatically — strongly discouraged outside of testing.
 
 *Type:*
 list of absolute path
@@ -1357,11 +1357,11 @@ list of absolute path
 
 ## ft.gpu
 
-Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
+Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
 
 ### ft.gpu.autodetect
 
-Detect GPU vendor and Optimus configuration from ft.facter.reportPath. When true, sets ft.gpu.vendor and configures PRIME offloading automatically for Optimus setups. Set to false to use the vendor and prime options directly.
+Detects the GPU vendor and Optimus setup from the hardware report at `ft.facter.reportPath`. When on, it fills in `ft.gpu.vendor` and configures PRIME offloading automatically for Optimus laptops; turn it off to set `vendor` and the `prime` options yourself.
 
 *Type:*
 boolean
@@ -1374,7 +1374,7 @@ boolean
 
 ### ft.gpu.enable
 
-Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
+Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
 
 *Type:*
 boolean
@@ -1390,7 +1390,7 @@ boolean
 
 ### ft.gpu.enable32Bit
 
-Enable 32-bit graphics support (for older games/applications).
+Adds 32-bit graphics support, needed by some older games and applications.
 
 *Type:*
 boolean
@@ -1403,7 +1403,7 @@ boolean
 
 ### ft.gpu.nvidia.driverPackage
 
-NVIDIA driver package to use (stable or beta).
+Which NVIDIA driver package to use — `stable` or `beta`.
 
 *Type:*
 one of "stable", "beta"
@@ -1416,7 +1416,7 @@ one of "stable", "beta"
 
 ### ft.gpu.nvidia.enablePowerManagement
 
-Enable NVIDIA power management.
+Turns on NVIDIA's power management features.
 
 *Type:*
 boolean
@@ -1429,7 +1429,7 @@ boolean
 
 ### ft.gpu.nvidia.enableSettings
 
-Enable the nvidia-settings GUI.
+Installs the `nvidia-settings` graphical configuration tool.
 
 *Type:*
 boolean
@@ -1442,7 +1442,7 @@ boolean
 
 ### ft.gpu.nvidia.finegrainedPowerManagement
 
-Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems. Only applied while PRIME offloading is active, since the upstream nvidia module asserts fine-grained power management requires offload.
+Turns on fine-grained power management (D3cold), which lets a laptop's discrete NVIDIA GPU power down almost completely when it's idle. This only takes effect while PRIME offloading is active, since NVIDIA's own module requires offloading to be on before it will allow fine-grained power management.
 
 *Type:*
 boolean
@@ -1455,7 +1455,7 @@ boolean
 
 ### ft.gpu.nvidia.openKernelModules
 
-Use open-source NVIDIA kernel modules (Turing+). When autodetect = true this is set automatically based on the GPU device ID; set autodetect = false to override.
+Uses NVIDIA's open-source kernel modules, which only work on Turing-generation GPUs and newer. When `autodetect` is on, this gets set automatically based on the detected GPU; turn `autodetect` off if you need to override it.
 
 *Type:*
 boolean
@@ -1484,7 +1484,7 @@ boolean
 
 ### ft.gpu.prime.primaryBusId
 
-Bus ID of the GPU connected to the display (e.g. iGPU). Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.
+The bus ID of the GPU connected to the display — usually the integrated GPU. Filled in automatically from the hardware report when `autodetect` is on and an Optimus setup is detected; set it explicitly to override.
 
 *Type:*
 string
@@ -1500,7 +1500,7 @@ string
 
 ### ft.gpu.prime.secondaryBusId
 
-Bus ID of the discrete GPU. Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.
+The bus ID of the discrete GPU. Filled in automatically from the hardware report when `autodetect` is on and an Optimus setup is detected; set it explicitly to override.
 
 *Type:*
 string
@@ -1516,7 +1516,7 @@ string
 
 ### ft.gpu.vendor
 
-Primary GPU vendor (nvidia, amd, or intel). Ignored when autodetect = true and a known GPU is found in facter.json.
+Which GPU vendor to configure for — `nvidia`, `amd`, or `intel`. Ignored when `autodetect` is on and a known GPU is found in the hardware report.
 
 *Type:*
 one of "nvidia", "amd", "intel"
@@ -1529,11 +1529,11 @@ one of "nvidia", "amd", "intel"
 
 ## ft.keepass
 
-Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
+Installs KeePassXC and turns off the GNOME Keyring so KeePassXC is the only place secrets are stored. This matters on desktops that mix components from different environments, where GNOME Keyring's auto-unlock could otherwise bypass your hardware key authentication.
 
 ### ft.keepass.enable
 
-Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
+Installs KeePassXC and turns off the GNOME Keyring so KeePassXC is the only place secrets are stored. This matters on desktops that mix components from different environments, where GNOME Keyring's auto-unlock could otherwise bypass your hardware key authentication.
 
 *Type:*
 boolean
@@ -1549,11 +1549,11 @@ boolean
 
 ## ft.komodo
 
-Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
+Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 
 ### ft.komodo.adminPassword
 
-Default initial Komodo admin password, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.
+Default password for the initial Komodo admin account, only used when ft.komodo.sopsEnv.enable is false (in which case it's written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.
 
 *Type:*
 string
@@ -1566,7 +1566,7 @@ string
 
 ### ft.komodo.adminUsername
 
-Initial Komodo admin username created on first launch (not a secret).
+Username for the initial Komodo admin account created on first launch. Not sensitive.
 
 *Type:*
 string
@@ -1579,7 +1579,7 @@ string
 
 ### ft.komodo.autoApply.apiEnvSecret
 
-sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply service to authenticate to Komodo's API.
+sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to populate this). Read by the auto-apply service to authenticate against Komodo's API.
 
 *Type:*
 string
@@ -1592,7 +1592,7 @@ string
 
 ### ft.komodo.autoApply.enable
 
-After Komodo Core answers, run the bundled `komodo-apply` recipe from ft.repoPath to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with the consumer repo's containers/ directory with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Exempt from VM smoke tests: reconciles against a live Komodo API. See NOTES.md.
+Once Komodo Core is up, runs the bundled `komodo-apply` recipe from ft.repoPath to create and run the ResourceSync over Komodo's API, so every rebuild automatically reconciles Komodo with the consumer repo's containers/ directory — no clicking through the UI needed. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to get these). Exempt from VM smoke tests, since it reconciles against a live Komodo API. See NOTES.md.
 
 *Type:*
 boolean
@@ -1608,7 +1608,7 @@ boolean
 
 ### ft.komodo.backupsPath
 
-Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups.
+Path where Komodo Core writes its backup archives, bind-mounted into the Core container at /backups.
 
 *Type:*
 string
@@ -1621,7 +1621,7 @@ string
 
 ### ft.komodo.dbPassword
 
-Default password for the FerretDB/Postgres database, used only when ft.komodo.sopsEnv.enable is false — in that case it is written to the Nix store (local-only). With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it and this value is unused.
+Default password for the FerretDB/Postgres database. Only used when ft.komodo.sopsEnv.enable is false, in which case it's written to the Nix store (fine for local-only use). When sopsEnv is on, KOMODO_DATABASE_PASSWORD from the sops-decrypted env-file takes over instead and this value is ignored.
 
 *Type:*
 string
@@ -1634,7 +1634,7 @@ string
 
 ### ft.komodo.dbUsername
 
-Username for the FerretDB/Postgres database (not a secret — baked into the compose config).
+Username for the FerretDB/Postgres database. Not sensitive — it's baked directly into the compose config.
 
 *Type:*
 string
@@ -1647,7 +1647,7 @@ string
 
 ### ft.komodo.enable
 
-Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
+Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 
 *Type:*
 boolean
@@ -1663,7 +1663,7 @@ boolean
 
 ### ft.komodo.host
 
-Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.
+The URL this Komodo Core instance is reachable at from outside — used for OAuth redirect URLs and suggested webhook addresses.
 
 *Type:*
 string
@@ -1676,7 +1676,7 @@ string
 
 ### ft.komodo.imageTag
 
-Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.
+Docker image tag to use for ghcr.io/moghtech/komodo-core and komodo-periphery.
 
 *Type:*
 string
@@ -1689,7 +1689,7 @@ string
 
 ### ft.komodo.includeDiskMounts
 
-Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting so Periphery reports every detected mount.
+Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). Leave empty to have Periphery report every mount it detects.
 
 *Type:*
 list of string
@@ -1702,7 +1702,7 @@ list of string
 
 ### ft.komodo.jwtSecret
 
-Default secret for signing Komodo JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.
+Default secret used to sign Komodo's JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.
 
 *Type:*
 string
@@ -1715,7 +1715,7 @@ string
 
 ### ft.komodo.peripheryRootDirectory
 
-Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory.
+Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys, and the host side of every bind mount it manages, lives under this directory.
 
 *Type:*
 string
@@ -1728,7 +1728,7 @@ string
 
 ### ft.komodo.repoCachePath
 
-Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs. null leaves the clones on the container's ephemeral layer.
+Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repositories for repo-based Stacks and Resource Syncs. Leave as null to keep those clones on the container's throwaway filesystem layer.
 
 *Type:*
 null or string
@@ -1741,7 +1741,7 @@ null or string
 
 ### ft.komodo.secrets.core.enable
 
-Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
+Like peripherySecrets, but for the komodo/core_secrets key, loaded into Core as a global [secrets] file that's [[KEY]]-interpolatable into every Stack and Deployment. This is for injecting secrets into deployed Stacks — separate from ft.komodo.sopsEnv, which covers Komodo's own login credentials. Requires sops-nix to be configured (normally via ft.sops.enable).
 
 *Type:*
 boolean
@@ -1757,7 +1757,7 @@ boolean
 
 ### ft.komodo.secrets.periphery.enable
 
-Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
+Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it with `periphery --config-path`. Its keys can be interpolated as [[KEY]] into the Stacks this Periphery deploys, and are hidden from the Komodo UI and logs. This is for injecting secrets into deployed Stacks — separate from ft.komodo.sopsEnv, which covers Komodo's own login credentials. Requires sops-nix to be configured (normally via ft.sops.enable).
 
 *Type:*
 boolean
@@ -1773,7 +1773,7 @@ boolean
 
 ### ft.komodo.serverName
 
-Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.
+Name given to the first Komodo server entry, and the name Periphery uses to identify itself when connecting to Core.
 
 *Type:*
 string
@@ -1786,7 +1786,7 @@ string
 
 ### ft.komodo.sopsEnv.enable
 
-Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store. Requires a configured sops-nix (normally ft.sops.enable); populate the key as KEY=VALUE lines — see NOTES.md.
+Pulls Komodo's sensitive credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-priority env-file, so these credentials never touch the store. Requires sops-nix to be configured (normally via ft.sops.enable); populate the secret as KEY=VALUE lines — see NOTES.md.
 
 *Type:*
 boolean
@@ -1802,7 +1802,7 @@ boolean
 
 ### ft.komodo.sopsEnv.secretName
 
-sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines). Declared and decrypted when sopsEnv.enable is true.
+sops secret key holding Komodo's credentials as an env-file (KEY=VALUE lines). Decrypted and used whenever sopsEnv.enable is true.
 
 *Type:*
 string
@@ -1815,7 +1815,7 @@ string
 
 ### ft.komodo.syncPath
 
-Host path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. null leaves the files on the container's ephemeral layer.
+Host path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. Leave as null to keep those files on the container's throwaway filesystem layer.
 
 *Type:*
 null or string
@@ -1828,7 +1828,7 @@ null or string
 
 ### ft.komodo.timezone
 
-Timezone for Komodo schedules (tz database name, e.g. America/New_York).
+Timezone Komodo uses for its schedules (a tz database name, e.g. America/New_York).
 
 *Type:*
 string
@@ -1841,7 +1841,7 @@ string
 
 ### ft.komodo.webhookSecret
 
-Default secret for authenticating incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.
+Default secret used to authenticate incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.
 
 *Type:*
 string
@@ -1854,11 +1854,11 @@ string
 
 ## ft.limine
 
-Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
+Switches the boot loader to Limine and turns off systemd-boot, since having both active at once can leave the boot loader state in a confused mess.
 
 ### ft.limine.enable
 
-Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
+Switches the boot loader to Limine and turns off systemd-boot, since having both active at once can leave the boot loader state in a confused mess.
 
 *Type:*
 boolean
@@ -1874,11 +1874,11 @@ boolean
 
 ## ft.liveIso
 
-Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
+Builds a NixOS live environment with everything needed to set up a new machine, using nixos-anywhere, disko, and nixos-facter. To produce an ISO, add a var/format marker file to the machine's directory (see flake-parts/lib/machines.nix) — the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Add SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 
 ### ft.liveIso.authorizedKeys
 
-SSH public keys authorised for the root account on boot. Set this in the machine's default.nix.
+SSH public keys allowed to log in as root when the live environment boots. Set this in the machine's default.nix.
 
 *Type:*
 list of string
@@ -1891,7 +1891,7 @@ list of string
 
 ### ft.liveIso.enable
 
-Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
+Builds a NixOS live environment with everything needed to set up a new machine, using nixos-anywhere, disko, and nixos-facter. To produce an ISO, add a var/format marker file to the machine's directory (see flake-parts/lib/machines.nix) — the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Add SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 
 *Type:*
 boolean
@@ -1909,7 +1909,7 @@ boolean
 
 ### ft.microvms.hostAddress
 
-IP address of the shared host-side bridge interface (microvm0); becomes the default gateway for every microVM instance on this host. Every instance derives its guest address from this value's /24 network portion plus its own vmAddressSuffix — change the subnet once here, not per instance.
+IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.
 
 *Type:*
 string
@@ -1922,7 +1922,7 @@ string
 
 ### ft.microvms.instances
 
-Set of microVM instances to provision on this host. Each attribute key becomes the VM name, systemd service suffix, guest hostname, and TAP interface suffix (tap-<name>).
+The set of microVM instances to provision on this host. Each attribute name becomes that VM's name, its systemd service suffix, its guest hostname, and its TAP interface suffix (tap-<name>).
 
 *Type:*
 attribute set of (submodule)
@@ -1935,7 +1935,7 @@ attribute set of (submodule)
 
 ### ft.microvms.instances.<name>.enable
 
-Provisions a Cloud Hypervisor microVM on the host: attaches it to the shared bridge (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.
+Provisions a Cloud Hypervisor microVM on the host: connects it to the shared bridge (microvm0), sets up NAT so it can reach the internet, attaches a TAP interface, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.
 
 *Type:*
 boolean
@@ -1951,7 +1951,7 @@ boolean
 
 ### ft.microvms.instances.<name>.extraGuestConfig
 
-Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.containers + ft.komodo) without modifying this generic infrastructure module.
+Extra NixOS module merged into the guest's configuration. Use this to add application-level services (e.g. ft.containers plus ft.komodo) without changing this general-purpose infrastructure module.
 
 *Type:*
 module
@@ -1964,7 +1964,7 @@ module
 
 ### ft.microvms.instances.<name>.hostInterface
 
-Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Used by networking.nat to add the MASQUERADE rule that gives the VM internet access. All VMs on the same host must agree on this value.
+Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Every VM on the same host must agree on this value.
 
 *Type:*
 string
@@ -1974,7 +1974,7 @@ string
 
 ### ft.microvms.instances.<name>.mem
 
-Memory in MiB assigned to the VM.
+Memory, in MiB, given to the VM.
 
 *Type:*
 signed integer
@@ -1987,7 +1987,7 @@ signed integer
 
 ### ft.microvms.instances.<name>.shares
 
-Host directories shared into the guest via virtiofs. Requires cloud-hypervisor (Firecracker does not support virtiofs).
+Host directories shared into the guest over virtiofs. Requires cloud-hypervisor — Firecracker doesn't support virtiofs.
 
 *Type:*
 list of (submodule)
@@ -2000,7 +2000,7 @@ list of (submodule)
 
 ### ft.microvms.instances.<name>.shares.*.mountPoint
 
-Mount point inside the guest.
+Where this is mounted inside the guest.
 
 *Type:*
 string
@@ -2010,7 +2010,7 @@ string
 
 ### ft.microvms.instances.<name>.shares.*.proto
 
-Filesystem sharing protocol (virtiofs or 9p).
+Filesystem sharing protocol to use (virtiofs or 9p).
 
 *Type:*
 string
@@ -2033,7 +2033,7 @@ string
 
 ### ft.microvms.instances.<name>.shares.*.tag
 
-Unique virtiofs tag for this share.
+A unique virtiofs tag identifying this share.
 
 *Type:*
 string
@@ -2043,7 +2043,7 @@ string
 
 ### ft.microvms.instances.<name>.sshAuthorizedKeys
 
-SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge).
+SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge).
 
 *Type:*
 list of string
@@ -2056,7 +2056,7 @@ list of string
 
 ### ft.microvms.instances.<name>.vcpus
 
-Number of vCPUs assigned to the VM.
+Number of virtual CPUs given to the VM.
 
 *Type:*
 signed integer
@@ -2069,7 +2069,7 @@ signed integer
 
 ### ft.microvms.instances.<name>.vmAddressSuffix
 
-Last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to form the full guest address. Must be unique among all instances on this host.
+The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address. Must be unique among all instances on this host.
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
@@ -2079,7 +2079,7 @@ Last octet of this VM's IP address on the shared microvm0 subnet — combined wi
 
 ### ft.microvms.instances.<name>.vmMac
 
-MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02) and unique per host.
+MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02) and unique per host.
 
 *Type:*
 string
@@ -2089,7 +2089,7 @@ string
 
 ### ft.microvms.instances.<name>.volumes
 
-Persistent disk images attached to the guest. Each entry creates a host-side image file and mounts it at the given path inside the VM.
+Persistent disk images attached to the guest. Each entry creates a disk image file on the host and mounts it at the given path inside the VM.
 
 *Type:*
 list of (submodule)
@@ -2102,7 +2102,7 @@ list of (submodule)
 
 ### ft.microvms.instances.<name>.volumes.*.image
 
-Absolute path to the host-side disk image file.
+Absolute path to the disk image file on the host.
 
 *Type:*
 string
@@ -2112,7 +2112,7 @@ string
 
 ### ft.microvms.instances.<name>.volumes.*.mountPoint
 
-Mount point inside the guest.
+Where this is mounted inside the guest.
 
 *Type:*
 string
@@ -2122,7 +2122,7 @@ string
 
 ### ft.microvms.instances.<name>.volumes.*.size
 
-Size of the disk image in MiB.
+Size of the disk image, in MiB.
 
 *Type:*
 signed integer
@@ -2132,7 +2132,7 @@ signed integer
 
 ### ft.microvms.instances.<name>.vsockCid
 
-vsock context ID (CID) for the VM. When set, enables systemd-notify support and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).
+vsock context ID (CID) for the VM. Setting this enables systemd-notify support, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).
 
 *Type:*
 null or signed integer
@@ -2145,7 +2145,7 @@ null or signed integer
 
 ### ft.microvms.prefixLength
 
-Subnet prefix length shared by the host bridge and every guest interface (e.g. 24 for /24).
+Subnet prefix length shared by the host bridge and every guest interface (e.g. 24 for a /24).
 
 *Type:*
 signed integer
@@ -2158,11 +2158,11 @@ signed integer
 
 ## ft.moonlight
 
-Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
+Runs a Moonlight-compatible stream host (Sunshine) for remote desktop use and low-latency game streaming, opening the necessary firewall ports by default. Clients connect using Moonlight or Artemis. Anyone streaming from this machine also needs to be a member of the `input` group for virtual-input emulation (gamepad/keyboard/mouse) to work.
 
 ### ft.moonlight.applications
 
-Moonlight application list passed through to `services.sunshine.applications` (the `{ env; apps = [ ... ]; }` structure defining the entries clients can launch). Merged with the module defaults.
+The list of Moonlight applications passed through to `services.sunshine.applications` (the `{ env; apps = [ ... ]; }` structure defining what clients can launch). Merged with this module's own defaults.
 
 *Type:*
 attribute set
@@ -2175,7 +2175,7 @@ attribute set
 
 ### ft.moonlight.autoStart
 
-Start the systemd *user* service automatically on login to a graphical session.
+Starts the systemd user service automatically whenever you log into a graphical session.
 
 *Type:*
 boolean
@@ -2188,7 +2188,7 @@ boolean
 
 ### ft.moonlight.backend
 
-Stream-host implementation. Only `sunshine` (nixpkgs' in-tree `services.sunshine`) is implemented; `apollo` is reserved for a future ClassicOldSong/Apollo backend and currently fails an assertion because Apollo is not packaged in nixpkgs.
+Which stream-host software to use. Only `sunshine` (nixpkgs' built-in `services.sunshine`) is currently implemented; `apollo` is reserved for a future ClassicOldSong/Apollo backend and currently fails, since Apollo isn't packaged in nixpkgs yet.
 
 *Type:*
 one of "sunshine", "apollo"
@@ -2201,7 +2201,7 @@ one of "sunshine", "apollo"
 
 ### ft.moonlight.capSysAdmin
 
-Grant `CAP_SYS_ADMIN` on the host binary, required for KMS/Wayland screen capture on many setups. Disabled by default because it is a privilege escalation; enable it if screen capture fails under a Wayland session.
+Grants `CAP_SYS_ADMIN` on the host binary, which is needed for KMS/Wayland screen capture on many setups. Off by default since it's a privilege escalation — turn it on if screen capture fails under a Wayland session.
 
 *Type:*
 boolean
@@ -2214,7 +2214,7 @@ boolean
 
 ### ft.moonlight.enable
 
-Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
+Runs a Moonlight-compatible stream host (Sunshine) for remote desktop use and low-latency game streaming, opening the necessary firewall ports by default. Clients connect using Moonlight or Artemis. Anyone streaming from this machine also needs to be a member of the `input` group for virtual-input emulation (gamepad/keyboard/mouse) to work.
 
 *Type:*
 boolean
@@ -2230,7 +2230,7 @@ boolean
 
 ### ft.moonlight.installClient
 
-Also install the Moonlight client (`moonlight-qt`) so this machine can view streams from other hosts, not just serve them.
+Also installs the Moonlight client (`moonlight-qt`), so this machine can view streams from other hosts, not just serve its own.
 
 *Type:*
 boolean
@@ -2243,7 +2243,7 @@ boolean
 
 ### ft.moonlight.openFirewall
 
-Open the Moonlight port set in the firewall (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010). Enabled by default — a stream host is unreachable without it — but can be disabled to manage the ports manually or restrict them to a VPN interface.
+Opens the firewall ports Moonlight clients need to connect (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010). On by default, since a stream host is unreachable without them — turn this off if you'd rather manage the ports yourself or restrict them to a VPN interface.
 
 *Type:*
 boolean
@@ -2256,7 +2256,7 @@ boolean
 
 ### ft.moonlight.settings
 
-Free-form settings passed through to `services.sunshine.settings` (e.g. `sunshine_name`, `min_log_level`, `origin_web_ui_allowed`). Merged with the module defaults.
+Free-form settings passed straight through to `services.sunshine.settings` (e.g. `sunshine_name`, `min_log_level`, `origin_web_ui_allowed`). Merged with this module's own defaults.
 
 *Type:*
 attribute set
@@ -2269,11 +2269,11 @@ attribute set
 
 ## ft.mullet
 
-Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
+Installs every package listed in the plain text file at `ft.mullet.sourcePath`, one package name per line. This lets you add or remove packages by editing a text file instead of touching Nix code. Any name that doesn't resolve to a real package is just skipped.
 
 ### ft.mullet.enable
 
-Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
+Installs every package listed in the plain text file at `ft.mullet.sourcePath`, one package name per line. This lets you add or remove packages by editing a text file instead of touching Nix code. Any name that doesn't resolve to a real package is just skipped.
 
 *Type:*
 boolean
@@ -2289,7 +2289,7 @@ boolean
 
 ### ft.mullet.sourcePath
 
-Required: flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names. Set it in your machine config, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. No default is provided because a framework-relative default would resolve into the framework repo, not the consumer's.
+Required: the path (relative to your flake) to the text file listing package names, one per line, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. There's no default here, because a default path would resolve inside the framework's own repo instead of yours.
 
 *Type:*
 absolute path
@@ -2302,11 +2302,11 @@ absolute path
 
 ## ft.nfs
 
-Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
+Sets up NFS client mounts declared under `ft.nfs.mounts`. Each entry gives a `remotePath` (e.g. server:/share) and a `mountPoint`, and is mounted on demand — with a 10-minute idle timeout — via systemd's automount.
 
 ### ft.nfs.enable
 
-Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
+Sets up NFS client mounts declared under `ft.nfs.mounts`. Each entry gives a `remotePath` (e.g. server:/share) and a `mountPoint`, and is mounted on demand — with a 10-minute idle timeout — via systemd's automount.
 
 *Type:*
 boolean
@@ -2322,7 +2322,7 @@ boolean
 
 ### ft.nfs.mounts
 
-Attribute set of NFS mounts to configure.
+The set of NFS mounts to configure.
 
 *Type:*
 attribute set of (submodule)
@@ -2335,7 +2335,7 @@ attribute set of (submodule)
 
 ### ft.nfs.mounts.<name>.mountPoint
 
-Local mount point for the NFS share.
+Local mount point where the NFS share appears.
 
 *Type:*
 string
@@ -2345,7 +2345,7 @@ string
 
 ### ft.nfs.mounts.<name>.remotePath
 
-Remote path of the NFS share (e.g., server:/path).
+Remote path of the NFS share (e.g. server:/path).
 
 *Type:*
 string
@@ -2359,7 +2359,7 @@ Whether to enable nix-index with pre-built database and comma integration.
 
 ### ft.nixIndex.comma
 
-Enable comma — run uninstalled commands via nix-index.
+Turn on comma, which lets you run a command that isn't installed yet by looking it up via nix-index.
 
 *Type:*
 boolean
@@ -2388,11 +2388,11 @@ boolean
 
 ## ft.plasma
 
-Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
+Turns on KDE Plasma 6 with SDDM as the login screen and the X server enabled, along with KDE Connect for pairing with phones and other devices, KWallet for storing credentials, and a curated set of KDE apps (Kate, KCalc, Spectacle, Partition Manager, and KRDC). The Elisa music player is left out by default.
 
 ### ft.plasma.enable
 
-Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
+Turns on KDE Plasma 6 with SDDM as the login screen and the X server enabled, along with KDE Connect for pairing with phones and other devices, KWallet for storing credentials, and a curated set of KDE apps (Kate, KCalc, Spectacle, Partition Manager, and KRDC). The Elisa music player is left out by default.
 
 *Type:*
 boolean
@@ -2408,11 +2408,11 @@ boolean
 
 ## ft.plasmaBigscreen
 
-Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
+Installs Plasma Bigscreen, a TV-friendly interface, and registers its Wayland session so it can be selected as a login option. This module is exempt from the VM smoke test requirement, since it pulls in `qtwebengine` and the full KDE Frameworks stack (which depend on the binary cache) and its main input method, HDMI-CEC, can't be tested inside a VM (it depends on real hardware).
 
 ### ft.plasmaBigscreen.cecSupport
 
-Loads the cec kernel module and installs libcec and v4l-utils so a TV remote can drive Plasma Bigscreen over HDMI-CEC.
+Loads the `cec` kernel module and installs `libcec` and `v4l-utils`, so a TV remote can control Plasma Bigscreen over HDMI-CEC.
 
 *Type:*
 boolean
@@ -2425,7 +2425,7 @@ boolean
 
 ### ft.plasmaBigscreen.defaultSession
 
-Makes plasma-bigscreen-wayland the default SDDM session, and therefore the session autologin starts, instead of merely adding it as a selectable option alongside any other configured session.
+Makes the Plasma Bigscreen session the default one SDDM starts (including for autologin), instead of just offering it as one option alongside whatever other sessions are configured.
 
 *Type:*
 boolean
@@ -2438,7 +2438,7 @@ boolean
 
 ### ft.plasmaBigscreen.enable
 
-Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
+Installs Plasma Bigscreen, a TV-friendly interface, and registers its Wayland session so it can be selected as a login option. This module is exempt from the VM smoke test requirement, since it pulls in `qtwebengine` and the full KDE Frameworks stack (which depend on the binary cache) and its main input method, HDMI-CEC, can't be tested inside a VM (it depends on real hardware).
 
 *Type:*
 boolean
@@ -2454,11 +2454,11 @@ boolean
 
 ## ft.printing
 
-Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
+Starts CUPS along with a virtual PDF printer (CUPS-PDF) and Avahi for finding network printers via mDNS/Bonjour. Turn either piece off with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`, and add hardware drivers via `extraDrivers`.
 
 ### ft.printing.enable
 
-Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
+Starts CUPS along with a virtual PDF printer (CUPS-PDF) and Avahi for finding network printers via mDNS/Bonjour. Turn either piece off with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`, and add hardware drivers via `extraDrivers`.
 
 *Type:*
 boolean
@@ -2474,7 +2474,7 @@ boolean
 
 ### ft.printing.enableNetworkDiscovery
 
-Enable Avahi for network printer discovery (mDNS/Bonjour).
+Uses Avahi to automatically discover network printers via mDNS/Bonjour.
 
 *Type:*
 boolean
@@ -2487,7 +2487,7 @@ boolean
 
 ### ft.printing.enableVirtualPdfPrinter
 
-Enable CUPS-PDF virtual printer.
+Adds a virtual CUPS-PDF printer you can "print" to in order to save a PDF.
 
 *Type:*
 boolean
@@ -2500,7 +2500,7 @@ boolean
 
 ### ft.printing.extraDrivers
 
-List of additional printer driver packages.
+Additional printer driver packages to install.
 
 *Type:*
 list of package
@@ -2516,11 +2516,11 @@ list of package
 
 ## ft.rclone
 
-Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
+Installs rclone and FUSE for the whole system and allows FUSE mounts to be shared with other users, so a per-user rclone mount service can expose a cloud drive (like Google Drive) at the configured mount point.
 
 ### ft.rclone.enable
 
-Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
+Installs rclone and FUSE for the whole system and allows FUSE mounts to be shared with other users, so a per-user rclone mount service can expose a cloud drive (like Google Drive) at the configured mount point.
 
 *Type:*
 boolean
@@ -2536,7 +2536,7 @@ boolean
 
 ### ft.rclone.mountPoint
 
-Mount-point name a consumer's per-user rclone mount service references (e.g. a home-manager systemd user service mounting under ~/<mountPoint>). Convention only — this module does not create the mount itself.
+The name of the folder your per-user rclone mount service should mount to, e.g. a Home Manager service mounting under `~/<mountPoint>`. This is just a naming convention — this module doesn't create the mount itself.
 
 *Type:*
 string
@@ -2552,7 +2552,7 @@ string
 
 ### ft.rclone.remoteName
 
-rclone remote name a consumer's per-user mount service references (e.g. `rclone mount <remoteName>: ...`). Convention only — this module does not create the mount itself.
+The rclone remote name your per-user mount service should use, e.g. `rclone mount <remoteName>: ...`. Again, just a naming convention — this module doesn't create the mount itself.
 
 *Type:*
 string
@@ -2568,7 +2568,7 @@ string
 
 ## ft.repoPath
 
-Absolute path to the consumer's flake repo root. Set this in your host file.
+Absolute path to your consumer repo on disk. Set this in your machine's config file.
 
 *Type:*
 string
@@ -2581,11 +2581,11 @@ string
 
 ## ft.sops
 
-Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
+Sets up encrypted secrets management, pointing sops-nix at `ft.repoPath/var/secrets/secrets.yaml` and decrypting with the machine's SSH host key. Turn on `ft.sops.useTPM` or `ft.sops.useYubikey` instead if you'd rather decrypt with a hardware token.
 
 ### ft.sops.enable
 
-Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
+Sets up encrypted secrets management, pointing sops-nix at `ft.repoPath/var/secrets/secrets.yaml` and decrypting with the machine's SSH host key. Turn on `ft.sops.useTPM` or `ft.sops.useYubikey` instead if you'd rather decrypt with a hardware token.
 
 *Type:*
 boolean
@@ -2601,7 +2601,7 @@ boolean
 
 ### ft.sops.useTPM
 
-Adds age-plugin-tpm, enables the TPM2 subsystem, and configures sops to read the age identity from /var/lib/sops-nix/key.txt (populated by the TPM plugin).
+Adds `age-plugin-tpm`, turns on the TPM2 subsystem, and points sops at the age identity in `/var/lib/sops-nix/key.txt`, which the TPM plugin fills in.
 
 *Type:*
 boolean
@@ -2617,7 +2617,7 @@ boolean
 
 ### ft.sops.useYubikey
 
-Adds age-plugin-yubikey, starts pcscd for smart-card access, and configures sops to read the age identity stub from /var/lib/sops-nix/key.txt (populated by the YubiKey plugin).
+Adds `age-plugin-yubikey`, starts the `pcscd` service for smart-card access, and points sops at the age identity stub in `/var/lib/sops-nix/key.txt`, which the YubiKey plugin fills in.
 
 *Type:*
 boolean
@@ -2633,11 +2633,11 @@ boolean
 
 ## ft.steamConfig
 
-Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
+Turns on steam-config-nix, which lets you declare Steam launch options, per-game compatibility-tool choices, and shortcuts for non-Steam games in your configuration instead of clicking through Steam's UI. Once enabled, configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps.
 
 ### ft.steamConfig.enable
 
-Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
+Turns on steam-config-nix, which lets you declare Steam launch options, per-game compatibility-tool choices, and shortcuts for non-Steam games in your configuration instead of clicking through Steam's UI. Once enabled, configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps.
 
 *Type:*
 boolean
@@ -2653,19 +2653,20 @@ boolean
 
 ## ft.tailscale
 
-Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
+Joins the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run this machine as an exit node.
 
 ### ft.tailscale.autoJoin
 
 Declares the `tailscale/authkey` sops secret and points
-`services.tailscale.authKeyFile` at it, so tailscaled authenticates and
-joins the tailnet automatically on first boot instead of requiring a
-manual `sudo tailscale up`. Defaults to `ft.sops.enable`, so any machine
-with sops already enabled auto-joins with no extra toggle. Requires a
-`tailscale/authkey` value populated in the encrypted secrets file. The
-key must be a reusable auth key generated in the Tailscale admin
-console; if it expires, rotate it and re-encrypt the secrets file or
-auto-join silently stops working for any newly built machine.
+`services.tailscale.authKeyFile` at it, so tailscaled logs in and joins
+the tailnet automatically on first boot instead of needing a manual
+`sudo tailscale up`. Defaults to whatever `ft.sops.enable` is set to, so
+any machine that already has sops enabled joins automatically with no
+extra toggle. Requires a `tailscale/authkey` value in the encrypted
+secrets file — it must be a reusable auth key generated in the
+Tailscale admin console. If that key expires, rotate it and re-encrypt
+the secrets file, or auto-join will silently stop working for any
+newly built machine.
 
 *Type:*
 boolean
@@ -2678,7 +2679,7 @@ boolean
 
 ### ft.tailscale.enable
 
-Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
+Joins the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run this machine as an exit node.
 
 *Type:*
 boolean
@@ -2694,7 +2695,7 @@ boolean
 
 ### ft.tailscale.enableTrayApp
 
-Enable Trayscale GUI tray application.
+Installs the Trayscale graphical tray application.
 
 *Type:*
 boolean
@@ -2707,7 +2708,7 @@ boolean
 
 ### ft.tailscale.useRoutingFeatures
 
-Tailscale routing features (client or server/exit node).
+Whether this machine acts as a regular Tailscale client or as a server/exit node.
 
 *Type:*
 one of "client", "server"
@@ -2720,7 +2721,7 @@ one of "client", "server"
 
 ### ft.tailscale.useSSH
 
-Enables Tailscale's built-in SSH server (`tailscale up --ssh`), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale's browser-based SSH Console, with no client app or authorized_keys entry needed. Access is governed entirely by your tailnet's ACL policy (configured in the Tailscale admin console), not by this option.
+Turns on Tailscale's built-in SSH server (`tailscale up --ssh`), so tailnet peers can connect over SSH using their Tailscale identity instead of a separate SSH keypair — including through Tailscale's browser-based SSH Console, with no client app or authorized_keys entry required. Who can actually connect is controlled entirely by your tailnet's ACL policy in the Tailscale admin console, not by this option.
 
 *Type:*
 boolean
@@ -2736,11 +2737,11 @@ boolean
 
 ## ft.users
 
-Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
+Creates sudo users from `superUsers` and regular unprivileged users from `normalUsers`; everyone gets zsh as their shell and membership in the common hardware/service groups. The dedicated admin account is handled separately by the `ft.admin` module.
 
 ### ft.users.enable
 
-Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
+Creates sudo users from `superUsers` and regular unprivileged users from `normalUsers`; everyone gets zsh as their shell and membership in the common hardware/service groups. The dedicated admin account is handled separately by the `ft.admin` module.
 
 *Type:*
 boolean
@@ -2756,7 +2757,7 @@ boolean
 
 ### ft.users.initialPasswords
 
-Per-user initial plaintext passwords set at first boot. Key is username; value overrides the 'changeme' default. Use sops secrets for production credentials.
+Plain-text passwords to set for individual users the first time the machine boots. Keyed by username, each value overrides the default `changeme` password. Use sops secrets instead for real production credentials.
 
 *Type:*
 attribute set of string
@@ -2775,7 +2776,7 @@ attribute set of string
 
 ### ft.users.mainUser
 
-The primary username other modules (like Home Manager) will target. Defaults to the admin account created by `ft.admin`.
+The main username that other modules, like Home Manager, will apply their configuration to. Defaults to the admin account created by `ft.admin`.
 
 *Type:*
 string
@@ -2788,7 +2789,7 @@ string
 
 ### ft.users.normalUsers
 
-Standard users with no administrative privileges.
+Usernames for regular accounts with no admin privileges.
 
 *Type:*
 list of string
@@ -2801,7 +2802,7 @@ list of string
 
 ### ft.users.superUsers
 
-Extra users who get sudo (wheel) access.
+Extra usernames that should get sudo access.
 
 *Type:*
 list of string
@@ -2814,7 +2815,7 @@ list of string
 
 ### ft.users.u2f.enable
 
-Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.
+Turns on U2F hardware-key authentication for login and sudo. Set up each user's FIDO2 credentials with `ft.users.u2f.mappings`. Users without a key on file always fall back to password login, so nobody gets locked out.
 
 *Type:*
 boolean
@@ -2830,7 +2831,7 @@ boolean
 
 ### ft.users.u2f.mappings
 
-Per-user U2F key data. Attribute name is the username; value is the raw credential string (the part after 'username:' in the pam-u2f authfile format).
+Each user's U2F key data. The attribute name is the username, and the value is the raw credential string — the part that comes after `username:` in the pam-u2f authfile format.
 
 *Type:*
 attribute set of string
@@ -2849,11 +2850,11 @@ attribute set of string
 
 ## ft.vendorHw
 
-Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
+Installs and configures the right drivers, background services, and tools for whichever hardware brand is detected in the hardware report. Covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
 
 ### ft.vendorHw.asus
 
-Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) for ASUS ROG/TUF laptops. Null uses autodetect via DMI manufacturer string.
+Overrides autodetection for asusctl (the `asusd` daemon, fan curve control, and AuraSync) on ASUS ROG/TUF laptops. Leave as `null` to detect this automatically from the machine's manufacturer information.
 
 *Type:*
 null or boolean
@@ -2866,7 +2867,7 @@ null or boolean
 
 ### ft.vendorHw.autodetect
 
-Read ft.facter.reportPath and enable matching vendor tooling automatically. Set to false to use only the per-brand override options below.
+Reads the hardware report at `ft.facter.reportPath` and turns on matching vendor tooling automatically. Turn this off to rely only on the per-brand override options below.
 
 *Type:*
 boolean
@@ -2879,7 +2880,7 @@ boolean
 
 ### ft.vendorHw.corsair
 
-Override autodetect for ckb-next Corsair keyboard/mouse driver and GUI. Null uses autodetect via USB vendor ID 1b1c.
+Overrides autodetection for ckb-next, the driver and GUI for Corsair keyboards and mice. Leave as `null` to detect this automatically from USB vendor ID `1b1c`.
 
 *Type:*
 null or boolean
@@ -2892,7 +2893,7 @@ null or boolean
 
 ### ft.vendorHw.enable
 
-Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
+Installs and configures the right drivers, background services, and tools for whichever hardware brand is detected in the hardware report. Covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
 
 *Type:*
 boolean
@@ -2908,7 +2909,7 @@ boolean
 
 ### ft.vendorHw.handheld
 
-Override autodetect for InputPlumber (OGC input remapping framework) and PowerStation (TDP and power-profile control) for handheld gaming devices (Legion Go, GPD, Ayaneo, AYN). Null uses autodetect via SMBIOS chassis type 11 or known DMI manufacturer strings.
+Overrides autodetection for InputPlumber (which remaps controls into standard gamepad input) and PowerStation (which controls TDP and power profiles), for handheld gaming devices like the Legion Go, GPD, Ayaneo, and AYN. Leave as `null` to detect this automatically from the chassis type or known manufacturer information reported by the hardware.
 
 *Type:*
 null or boolean
@@ -2921,7 +2922,7 @@ null or boolean
 
 ### ft.vendorHw.lenovo
 
-Override autodetect for Lenovo Legion Linux (out-of-tree kernel driver and legiond daemon). Null uses autodetect via DMI manufacturer/family strings.
+Overrides autodetection for Lenovo Legion Linux support (an out-of-tree kernel driver plus the `legiond` daemon). Leave as `null` to detect this automatically from the machine's manufacturer and family information.
 
 *Type:*
 null or boolean
@@ -2934,7 +2935,7 @@ null or boolean
 
 ### ft.vendorHw.logitech
 
-Override autodetect for Solaar (Unifying/Bolt receivers) and Piper/ratbagd (gaming mice/keyboards). Null uses autodetect via USB vendor ID 046d.
+Overrides autodetection for Solaar (for Unifying/Bolt receivers) and Piper/ratbagd (for gaming mice and keyboards). Leave as `null` to detect this automatically from USB vendor ID `046d`.
 
 *Type:*
 null or boolean
@@ -2947,7 +2948,7 @@ null or boolean
 
 ### ft.vendorHw.msi
 
-Override autodetect for the msi-ec kernel module (mainlined since Linux 5.16) and MControlCenter GUI. Null uses autodetect via DMI manufacturer string.
+Overrides autodetection for the `msi-ec` kernel module (part of the mainline kernel since Linux 5.16) and the MControlCenter GUI. Leave as `null` to detect this automatically from the machine's manufacturer information.
 
 *Type:*
 null or boolean
@@ -2960,7 +2961,7 @@ null or boolean
 
 ### ft.vendorHw.openrgb
 
-Enable OpenRGB universal RGB lighting daemon and the i2c-dev kernel module it requires. No facter autodetect — set true to enable explicitly.
+Turns on OpenRGB, a vendor-agnostic RGB lighting daemon, along with the `i2c-dev` kernel module it needs. There's no autodetection for this one — set it to `true` explicitly to enable it.
 
 *Type:*
 null or boolean
@@ -2973,7 +2974,7 @@ null or boolean
 
 ### ft.vendorHw.razer
 
-Override autodetect for OpenRazer kernel driver/daemon and Polychromatic GUI. Null uses autodetect via USB vendor ID 1532.
+Overrides autodetection for OpenRazer support (kernel driver, daemon, and the Polychromatic GUI). Leave as `null` to detect this automatically from USB vendor ID `1532`.
 
 *Type:*
 null or boolean
@@ -2986,11 +2987,11 @@ null or boolean
 
 ## ft.vicinae
 
-Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
+Registers the upstream vicinae.cachix.org binary cache, so the Vicinae launcher (ft.vicinae.enable in Home Manager) doesn't have to compile its Qt6/C++ stack from source.
 
 ### ft.vicinae.enable
 
-Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
+Registers the upstream vicinae.cachix.org binary cache, so the Vicinae launcher (ft.vicinae.enable in Home Manager) doesn't have to compile its Qt6/C++ stack from source.
 
 *Type:*
 boolean
@@ -3006,7 +3007,7 @@ boolean
 
 ### ft.vicinae.inputServer.enable
 
-Wraps vicinae-input-server with cap_dac_override via security.wrappers, granting it raw input-device access for Vicinae's global-hotkey and keystroke-injection features. This bypasses normal file-permission checks for the wrapped binary — leave disabled if Vicinae is only invoked through a compositor-bound shortcut (e.g. a KWin global shortcut running `vicinae toggle`).
+Wraps vicinae-input-server with cap_dac_override (via security.wrappers), giving it raw input-device access for Vicinae's global-hotkey and keystroke-injection features. This bypasses the wrapped binary's normal file-permission checks, so leave it disabled if Vicinae is only ever launched through a compositor-bound shortcut (e.g. a KWin global shortcut running `vicinae toggle`).
 
 *Type:*
 boolean
@@ -3022,11 +3023,11 @@ boolean
 
 ## ft.virt
 
-Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
+Sets up virtual machine support with libvirt/KVM and virt-manager, and adds `ft.users.mainUser` to the libvirtd group so they can manage VMs. You can also turn on `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` to pass USB devices through to VMs.
 
 ### ft.virt.enable
 
-Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
+Sets up virtual machine support with libvirt/KVM and virt-manager, and adds `ft.users.mainUser` to the libvirtd group so they can manage VMs. You can also turn on `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` to pass USB devices through to VMs.
 
 *Type:*
 boolean
@@ -3042,7 +3043,7 @@ boolean
 
 ### ft.virt.enableIncus
 
-Enable Incus (LXD fork) container hypervisor.
+Turn on Incus, the LXD-based container and VM hypervisor.
 
 *Type:*
 boolean
@@ -3055,7 +3056,7 @@ boolean
 
 ### ft.virt.enableSpiceUsbRedirection
 
-Enable SPICE USB redirection for VMs.
+Turn on SPICE USB redirection, letting VMs use USB devices plugged into the host.
 
 *Type:*
 boolean
@@ -3068,7 +3069,7 @@ boolean
 
 ### ft.virt.enableVmwareHost
 
-Enable VMware Workstation host support.
+Turn on support for running VMware Workstation on this machine.
 
 *Type:*
 boolean
@@ -3081,11 +3082,11 @@ boolean
 
 ## ft.wine
 
-Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
+Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam.
 
 ### ft.wine.enable
 
-Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
+Installs Bottles, Wine (the WOW64 build), and Winetricks so you can run Windows applications outside of Steam.
 
 *Type:*
 boolean
@@ -3101,11 +3102,11 @@ boolean
 
 ## ft.yubikey
 
-Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
+Installs YubiKey management tools (`yubikey-manager`, `yubico-piv-tool`, `pam_u2f`), turns on the `pcscd` smart-card service, and activates `ft.users.u2f` so YubiKeys can be used for login. Set each user's FIDO2 credentials with `ft.users.u2f.mappings` in your machine config.
 
 ### ft.yubikey.enable
 
-Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
+Installs YubiKey management tools (`yubikey-manager`, `yubico-piv-tool`, `pam_u2f`), turns on the `pcscd` smart-card service, and activates `ft.users.u2f` so YubiKeys can be used for login. Set each user's FIDO2 credentials with `ft.users.u2f.mappings` in your machine config.
 
 *Type:*
 boolean
