@@ -13,7 +13,6 @@
 - [ft.cosmicGreeter](#ftcosmicgreeter) — Turns on cosmic-greeter as the login screen. Pair it with `ft.cosmic` to boot straight into a COSMIC session.
 - [ft.deploy](#ftdeploy) — Adds this machine to the fleet that can be deployed remotely with `colmena apply`. It's off by default, so you opt each machine in individually — that way local-only machines or disk images never accidentally become a remote deploy target.
 - [ft.diskBtrfs](#ftdiskbtrfs) — Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.
-- [ft.dockervm](#ftdockervm) — Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
 - [ft.facter](#ftfacter) — Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.
 - [ft.flatpak](#ftflatpak) — Turns on the system Flatpak service and adds the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the place to declare system-wide Flatpak apps — set it in any machine file, profile, or other module, and every definition merges together automatically. Pair this with `ft.flatpak.frontend.enable` to also get a graphical Flathub browser.
 - [ft.gaming](#ftgaming) — Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
@@ -709,334 +708,6 @@ boolean
 
 *Declared by:*
 - [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
-
-## ft.dockervm
-
-Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
-
-### ft.dockervm.dockerVolumeSize
-
-Size, in MiB, of the persistent volume that stores Docker's data (the image lives at /var/lib/microvm/<vmName>/docker.img on the host).
-
-*Type:*
-signed integer
-
-*Default:*
-`20480`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.enable
-
-Boots a Cloud Hypervisor microVM connected to a host network bridge, installs rootful Docker and docker-compose inside it, and routes the guest's internet traffic through the host via NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
-
-*Type:*
-boolean
-
-*Default:*
-`false`
-
-*Example:*
-`true`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.hostInterface
-
-Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Needed by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.
-
-*Type:*
-string
-
-*Default:*
-`""`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.adminPassword
-
-Password for the initial Komodo admin account. Stored in the Nix store — change it after your first login.
-
-*Type:*
-string
-
-*Default:*
-`"admin"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.adminUsername
-
-Username for the initial Komodo admin account created on first launch.
-
-*Type:*
-string
-
-*Default:*
-`"admin"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.autoApply.enable
-
-Once the guest's Komodo Core is up, runs the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create and run the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ automatically — no UI needed. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once to get these). See NOTES.md.
-
-*Type:*
-boolean
-
-*Default:*
-`false`
-
-*Example:*
-`true`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.coreSecrets.enable
-
-Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, interpolatable as [[KEY]] into every Stack and Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient added to .sops.yaml — see NOTES.md.
-
-*Type:*
-boolean
-
-*Default:*
-`false`
-
-*Example:*
-`true`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.dbPassword
-
-Password for the FerretDB/Postgres database. Stored in the Nix store — only suitable for local-only deployments.
-
-*Type:*
-string
-
-*Default:*
-`"komodo"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.dbUsername
-
-Username for the FerretDB/Postgres database used by this Komodo instance.
-
-*Type:*
-string
-
-*Default:*
-`"komodo"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.enable
-
-Deploys a Komodo instance (Core + Periphery + FerretDB) inside the VM. Container data lives on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.
-
-*Type:*
-boolean
-
-*Default:*
-`true`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.host
-
-Public URL of the Komodo Core instance; used for OAuth redirect URLs and suggested webhook addresses.
-
-*Type:*
-string
-
-*Default:*
-`"http://10.0.100.2:9120"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.imageTag
-
-Docker image tag to use for ghcr.io/moghtech/komodo-core and komodo-periphery.
-
-*Type:*
-string
-
-*Default:*
-`"latest"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.jwtSecret
-
-Secret used to sign this Komodo instance's JWT tokens. Stored in the Nix store.
-
-*Type:*
-string
-
-*Default:*
-`"komodo-jwt-secret"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.peripherySecrets.enable
-
-Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared into the guest read-only) and loads it into Komodo Periphery via `--config-path`. Its keys can be interpolated as [[KEY]] into the Stacks this Periphery deploys, stay entirely on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (which acts as the sops age recipient) and enables sshd so that key can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap step — see NOTES.md.
-
-*Type:*
-boolean
-
-*Default:*
-`false`
-
-*Example:*
-`true`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.serverName
-
-Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.
-
-*Type:*
-string
-
-*Default:*
-`"Local"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.timezone
-
-Timezone Komodo uses for its schedules (a tz database name, e.g. America/New_York).
-
-*Type:*
-string
-
-*Default:*
-`"Etc/UTC"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.komodo.webhookSecret
-
-Secret used to authenticate incoming Komodo webhooks for this instance. Stored in the Nix store.
-
-*Type:*
-string
-
-*Default:*
-`"komodo-webhook-secret"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.mem
-
-Memory, in MiB, given to the VM.
-
-*Type:*
-signed integer
-
-*Default:*
-`2048`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.sshAuthorizedKeys
-
-SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge, so exposure is limited).
-
-*Type:*
-list of string
-
-*Default:*
-`[ ]`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.vcpus
-
-Number of virtual CPUs given to the VM.
-
-*Type:*
-signed integer
-
-*Default:*
-`2`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.vmAddressSuffix
-
-The last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microVM instances on this host.
-
-*Type:*
-8 bit unsigned integer; between 0 and 255 (both inclusive)
-
-*Default:*
-`2`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.vmMac
-
-MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02).
-
-*Type:*
-string
-
-*Default:*
-`"02:00:00:00:00:01"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.vmName
-
-Name for this microVM. Used as the systemd service name, the guest's hostname, and the suffix of its TAP interface (tap-<vmName>).
-
-*Type:*
-string
-
-*Default:*
-`"docker-vm"`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
-
-### ft.dockervm.vsockCid
-
-vsock context ID (CID) for the VM. Setting this enables systemd-notify support in cloud-hypervisor, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).
-
-*Type:*
-null or signed integer
-
-*Default:*
-`null`
-
-*Declared by:*
-- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
 ## ft.facter
 
@@ -1909,7 +1580,7 @@ boolean
 
 ### ft.microvms.hostAddress
 
-IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.
+IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway and DHCP server for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.
 
 *Type:*
 string
@@ -1922,7 +1593,7 @@ string
 
 ### ft.microvms.instances
 
-The set of microVM instances to provision on this host. Each attribute name becomes that VM's name, its systemd service suffix, its guest hostname, and its TAP interface suffix (tap-<name>).
+The set of microVM instances to run on this host. Each attribute name must match a vms/<name>/ directory (its standalone nixosConfigurations.<name>), and becomes that VM's systemd service suffix (microvm@<name>), TAP interface suffix (tap-<name>), and host share directory (/var/lib/microvm/<name>/share).
 
 *Type:*
 attribute set of (submodule)
@@ -1935,7 +1606,7 @@ attribute set of (submodule)
 
 ### ft.microvms.instances.<name>.enable
 
-Provisions a Cloud Hypervisor microVM on the host: connects it to the shared bridge (microvm0), sets up NAT so it can reach the internet, attaches a TAP interface, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.
+Runs the standalone guest nixosConfigurations.<name> (built by flake-parts/vms.nix from vms/<name>/) on this host: connects it to the shared bridge (microvm0), gives it a DHCP static lease, sets up NAT so it can reach the internet, attaches a TAP interface, provisions its host-side directories, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input. The instance name must match the vms/<name>/ directory name.
 
 *Type:*
 boolean
@@ -1949,22 +1620,9 @@ boolean
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
 
-### ft.microvms.instances.<name>.extraGuestConfig
-
-Extra NixOS module merged into the guest's configuration. Use this to add application-level services (e.g. ft.containers plus ft.komodo) without changing this general-purpose infrastructure module.
-
-*Type:*
-module
-
-*Default:*
-`{ }`
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
 ### ft.microvms.instances.<name>.hostInterface
 
-Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Every VM on the same host must agree on this value.
+Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Set to the empty string for a VM that should have no internet access. Every VM on the same host that wants internet must agree on this value.
 
 *Type:*
 string
@@ -1972,104 +1630,35 @@ string
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
 
-### ft.microvms.instances.<name>.mem
+### ft.microvms.instances.<name>.shareGroup
 
-Memory, in MiB, given to the VM.
-
-*Type:*
-signed integer
-
-*Default:*
-`2048`
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.shares
-
-Host directories shared into the guest over virtiofs. Requires cloud-hypervisor — Firecracker doesn't support virtiofs.
-
-*Type:*
-list of (submodule)
-
-*Default:*
-`[ ]`
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.shares.*.mountPoint
-
-Where this is mounted inside the guest.
-
-*Type:*
-string
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.shares.*.proto
-
-Filesystem sharing protocol to use (virtiofs or 9p).
+Group of the auto-provisioned host share directory (/var/lib/microvm/<name>/share), created mode 0770. Set this to a group the guest's writing service belongs to (e.g. container for a docker/Komodo guest) so it can write through the virtiofs share.
 
 *Type:*
 string
 
 *Default:*
-`"virtiofs"`
+`"root"`
 
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
 
-### ft.microvms.instances.<name>.shares.*.source
+### ft.microvms.instances.<name>.shareOwner
 
-Absolute path on the host to share into the guest.
+Owner of the auto-provisioned host share directory (/var/lib/microvm/<name>/share), which the guest mounts over virtiofs at /srv/host-share. Set this to the user a guest service writes as when it needs write access through the share.
 
 *Type:*
 string
 
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.shares.*.tag
-
-A unique virtiofs tag identifying this share.
-
-*Type:*
-string
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.sshAuthorizedKeys
-
-SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge).
-
-*Type:*
-list of string
-
 *Default:*
-`[ ]`
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.vcpus
-
-Number of virtual CPUs given to the VM.
-
-*Type:*
-signed integer
-
-*Default:*
-`2`
+`"root"`
 
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
 
 ### ft.microvms.instances.<name>.vmAddressSuffix
 
-The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address. Must be unique among all instances on this host.
+The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease keyed on vmMac. Must be unique among all instances on this host.
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
@@ -2079,66 +1668,10 @@ The last octet of this VM's IP address on the shared microvm0 subnet — combine
 
 ### ft.microvms.instances.<name>.vmMac
 
-MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02) and unique per host.
+MAC address of this VM's TAP-backed network interface. Used as the key for its DHCP static lease, so it MUST match the MAC the guest declares on the matching tap interface in vms/<name>/. Must be a locally administered address (first octet 02) and unique per host.
 
 *Type:*
 string
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.volumes
-
-Persistent disk images attached to the guest. Each entry creates a disk image file on the host and mounts it at the given path inside the VM.
-
-*Type:*
-list of (submodule)
-
-*Default:*
-`[ ]`
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.volumes.*.image
-
-Absolute path to the disk image file on the host.
-
-*Type:*
-string
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.volumes.*.mountPoint
-
-Where this is mounted inside the guest.
-
-*Type:*
-string
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.volumes.*.size
-
-Size of the disk image, in MiB.
-
-*Type:*
-signed integer
-
-*Declared by:*
-- [modules/nixos/services/microvm.nix](services/microvm.nix)
-
-### ft.microvms.instances.<name>.vsockCid
-
-vsock context ID (CID) for the VM. Setting this enables systemd-notify support, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).
-
-*Type:*
-null or signed integer
-
-*Default:*
-`null`
 
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
