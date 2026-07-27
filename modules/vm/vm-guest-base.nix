@@ -36,6 +36,14 @@
   # bridge, so nothing is trusted implicitly. A VM that needs inbound access
   # opens its own ports (or disables the firewall) in its vms/<name> config.
 
+  # ft.cli is on by default, but the `ft` wrapper drives `just` recipes against
+  # a consumer repo checkout via ft.repoPath — a headless microVM guest has no
+  # such checkout (ft.repoPath stays at the framework default, which the ft.cli
+  # assertion rejects). Disable it in the baseline, exactly as the framework's
+  # test-only machines do; a specific vms/<name> that genuinely mounts a repo can
+  # set ft.cli.enable = true + ft.repoPath at normal priority to override this.
+  ft.cli.enable = lib.mkDefault false;
+
   # ft.core is enabled by default and assigns system.stateVersion = cfg.stateVersion
   # with a plain (non-mkDefault) assignment, and ft.core.stateVersion has no
   # default — every consumer must set it. A guest is analogous to a machine, so
