@@ -282,5 +282,5 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 - [x] Consumer quickstart guide in `README.md` (machine + user + first switch)
 - [x] Module authoring guide (option naming convention, `lib.mkDefault` rule, etc.)
 - [x] Create `template/` directory with minimal consumer flake skeleton (include blank `mullet.txt`)
-- [ ] **Regenerate `modules/nixos/README.md`** — the auto-generated `nixosOptionsDoc` output is stale: it still documents `ft.guacamole.*` and `ft.dockervm.guacamole.*`, both deleted in the Phase 1 microVM cleanup (see Container Module Cleanup section), with dead store-path links. Re-run the doc generation and consider wiring it into CI so it can't drift again.
+- [x] **Regenerate `modules/nixos/README.md`** — the auto-generated `nixosOptionsDoc` output is stale: it still documents `ft.guacamole.*` and `ft.dockervm.guacamole.*`, both deleted in the Phase 1 microVM cleanup (see Container Module Cleanup section), with dead store-path links. Re-run the doc generation and consider wiring it into CI so it can't drift again.
 - [ ] **Module docs custom formatter** — replace `nixosOptionsDoc`'s flat CommonMark output with a custom renderer that groups `ft.*` options by feature (`##` per feature), emits a table of contents, and adds one-line feature summaries; source from `optionsJSON` rather than `optionsCommonMark`
