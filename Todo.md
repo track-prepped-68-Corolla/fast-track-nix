@@ -271,8 +271,20 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
   discovered from a `vms/` directory (analogous to `machines/`), with the host
   slimmed to bridge/NAT/TAP + attach-by-reference. Removes the inline-guest
   recursion fragility and unlocks the Trolley ephemeral-VM / named-shapes
-  roadmap. Open decision before starting: per-VM network injection — DHCP on the
-  bridge (preferred) vs cloud-init.
+  roadmap. Network injection decided: DHCP on the bridge (guests are DHCP
+  clients; the host serves MAC-keyed static leases).
+  - [x] `flake-parts/vms.nix` generator + `modules/vm/vm-guest-base.nix` guest
+    baseline (standalone `nixosConfigurations.<name>` from `vms/<name>/`).
+  - [x] `ft.microvms` slimmed to host-only: bridge + DHCP server + NAT + TAP +
+    `microvm.vms.<name>.flake = self` attach-by-reference, plus an auto
+    per-VM virtiofs share (`/var/lib/microvm/<name>/share` → guest
+    `/srv/host-share`, ownership via `shareOwner`/`shareGroup`).
+  - [x] Retired `ft.dockervm` (`microvm-docker.nix`) — the inline-guest
+    appliance; its guest becomes a `vms/docker-vm/` template.
+  - [ ] Consumer migration: `vms/docker-vm/` template in `ft-testing`/
+    `ft-template`; migrate `ft-testing` dockervm machines and `ft-home`
+    strix/mimir to `vms/<name>/` guest + `ft.microvms.instances.<name>` host
+    entry.
 
 ---
 

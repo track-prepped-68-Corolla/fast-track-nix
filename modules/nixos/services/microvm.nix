@@ -6,7 +6,30 @@
 }:
 
 ################################################################################
-# GENERIC MICROVM HOST INFRASTRUCTURE — MULTI-INSTANCE
+# GENERIC MICROVM HOST INFRASTRUCTURE — MULTI-INSTANCE, ATTACH-BY-REFERENCE
+#
+# Host-side only: bridge (microvm0) + DHCP server + NAT + per-VM TAP, and each
+# instance attaches a STANDALONE guest by reference (microvm.vms.<name>.flake =
+# self → self.nixosConfigurations.<name>, produced by flake-parts/vms.nix from a
+# vms/<name>/ directory). The guest closure is never evaluated inside the host,
+# which removes the inline-guest recursion fragility of the old model.
+#
+# Everything guest-side — vcpus/mem, volumes, shares, sshd, vsock, stateVersion —
+# now lives in the guest's own vms/<name>/ config plus the guest baseline
+# (modules/vm/vm-guest-base.nix), NOT here. This module only decides where a VM
+# sits on the host network, gives it internet access, and provisions its
+# host-side directories.
+#
+# Addressing: guests are DHCP clients (see vm-guest-base.nix); the host bridge
+# runs a DHCP server that hands each guest a stable address via a MAC-keyed
+# static lease (vmMac → vmAddressSuffix). The instance's vmMac MUST match the MAC
+# its guest declares on the matching tap interface in vms/<name>/.
+#
+# Auto host share: every enabled instance gets /var/lib/microvm/<name>/share
+# created here, which the guest baseline mounts over virtiofs at /srv/host-share
+# by convention (keyed on the VM name) — so every VM has a host-backed, host-
+# browsable data directory with nothing for the consumer to wire up. shareOwner/
+# shareGroup set its ownership for guests whose services must write to it.
 ################################################################################
 
 {
@@ -14,7 +37,7 @@
     hostAddress = lib.mkOption {
       type = lib.types.str;
       default = "10.0.100.1";
-      description = "IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.";
+      description = "IP address of the shared host-side bridge interface (microvm0), which acts as the default gateway and DHCP server for every microVM on this host. Each VM's guest address is built from this value's /24 network portion plus its own vmAddressSuffix — change the subnet here once, rather than per instance.";
     };
 
     prefixLength = lib.mkOption {
@@ -31,109 +54,40 @@
         lib.types.submodule {
           options = {
             enable = lib.mkEnableOption "microVM instance" // {
-              description = "Provisions a Cloud Hypervisor microVM on the host: connects it to the shared bridge (microvm0), sets up NAT so it can reach the internet, attaches a TAP interface, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.";
-            };
-
-            vcpus = lib.mkOption {
-              type = lib.types.int;
-              default = 2;
-              description = "Number of virtual CPUs given to the VM.";
-            };
-
-            mem = lib.mkOption {
-              type = lib.types.int;
-              default = 2048;
-              description = "Memory, in MiB, given to the VM.";
+              description = "Runs the standalone guest nixosConfigurations.<name> (built by flake-parts/vms.nix from vms/<name>/) on this host: connects it to the shared bridge (microvm0), gives it a DHCP static lease, sets up NAT so it can reach the internet, attaches a TAP interface, provisions its host-side directories, and manages its microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input. The instance name must match the vms/<name>/ directory name.";
             };
 
             vmAddressSuffix = lib.mkOption {
               type = lib.types.ints.u8;
-              description = "The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address. Must be unique among all instances on this host.";
+              description = "The last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to build the full guest address, handed to the guest as a DHCP static lease keyed on vmMac. Must be unique among all instances on this host.";
             };
 
             vmMac = lib.mkOption {
               type = lib.types.str;
-              description = "MAC address for the VM's TAP-backed network interface. Must be a locally administered address (first octet 02) and unique per host.";
-            };
-
-            vsockCid = lib.mkOption {
-              type = lib.types.nullOr lib.types.int;
-              default = null;
-              description = "vsock context ID (CID) for the VM. Setting this enables systemd-notify support, so the host service waits until the VM signals it's ready — don't set this if any guest service takes a long time to reach multi-user.target (e.g. pulling images on first boot). Must be unique per host (valid range: 3–4294967293).";
+              description = "MAC address of this VM's TAP-backed network interface. Used as the key for its DHCP static lease, so it MUST match the MAC the guest declares on the matching tap interface in vms/<name>/. Must be a locally administered address (first octet 02) and unique per host.";
             };
 
             hostInterface = lib.mkOption {
               type = lib.types.str;
-              description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Every VM on the same host must agree on this value.";
+              description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Set to the empty string for a VM that should have no internet access. Every VM on the same host that wants internet must agree on this value.";
             };
 
-            sshAuthorizedKeys = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ ];
-              description = "SSH public keys allowed to log in as root inside the VM. If this list is non-empty, an OpenSSH server is enabled in the guest on port 22 (reachable only from the host bridge).";
+            shareOwner = lib.mkOption {
+              type = lib.types.str;
+              default = "root";
+              description = "Owner of the auto-provisioned host share directory (/var/lib/microvm/<name>/share), which the guest mounts over virtiofs at /srv/host-share. Set this to the user a guest service writes as when it needs write access through the share.";
             };
 
-            volumes = lib.mkOption {
-              type = lib.types.listOf (
-                lib.types.submodule {
-                  options = {
-                    image = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Absolute path to the disk image file on the host.";
-                    };
-                    mountPoint = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Where this is mounted inside the guest.";
-                    };
-                    size = lib.mkOption {
-                      type = lib.types.int;
-                      description = "Size of the disk image, in MiB.";
-                    };
-                  };
-                }
-              );
-              default = [ ];
-              description = "Persistent disk images attached to the guest. Each entry creates a disk image file on the host and mounts it at the given path inside the VM.";
-            };
-
-            shares = lib.mkOption {
-              type = lib.types.listOf (
-                lib.types.submodule {
-                  options = {
-                    source = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Absolute path on the host to share into the guest.";
-                    };
-                    mountPoint = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Where this is mounted inside the guest.";
-                    };
-                    tag = lib.mkOption {
-                      type = lib.types.str;
-                      description = "A unique virtiofs tag identifying this share.";
-                    };
-                    proto = lib.mkOption {
-                      type = lib.types.str;
-                      default = "virtiofs";
-                      description = "Filesystem sharing protocol to use (virtiofs or 9p).";
-                    };
-                  };
-                }
-              );
-              default = [ ];
-              description = "Host directories shared into the guest over virtiofs. Requires cloud-hypervisor — Firecracker doesn't support virtiofs.";
-            };
-
-            extraGuestConfig = lib.mkOption {
-              type = lib.types.deferredModule;
-              default = { };
-              description = "Extra NixOS module merged into the guest's configuration. Use this to add application-level services (e.g. ft.containers plus ft.komodo) without changing this general-purpose infrastructure module.";
+            shareGroup = lib.mkOption {
+              type = lib.types.str;
+              default = "root";
+              description = "Group of the auto-provisioned host share directory (/var/lib/microvm/<name>/share), created mode 0770. Set this to a group the guest's writing service belongs to (e.g. container for a docker/Komodo guest) so it can write through the virtiofs share.";
             };
           };
         }
       );
       default = { };
-      description = "The set of microVM instances to provision on this host. Each attribute name becomes that VM's name, its systemd service suffix, its guest hostname, and its TAP interface suffix (tap-<name>).";
+      description = "The set of microVM instances to run on this host. Each attribute name must match a vms/<name>/ directory (its standalone nixosConfigurations.<name>), and becomes that VM's systemd service suffix (microvm@<name>), TAP interface suffix (tap-<name>), and host share directory (/var/lib/microvm/<name>/share).";
     };
   };
 
@@ -178,22 +132,38 @@
       );
 
       systemd.network.networks = lib.mkMerge (
-        # Bridge network — contributed by each enabled VM, values must be identical
+        # Bridge network + DHCP server — contributed by each enabled VM; the
+        # scalar leaves are mkDefault (identical across VMs, overridable) while
+        # the static-lease list is left unwrapped so each VM's lease merges in.
         (lib.mapAttrsToList (
           _vmName: vmCfg:
           lib.mkIf vmCfg.enable {
-            "10-microvm0" = lib.mkDefault {
-              matchConfig.Name = "microvm0";
+            "10-microvm0" = {
+              matchConfig.Name = lib.mkDefault "microvm0";
               networkConfig = {
-                Address = "${netCfg.hostAddress}/${toString netCfg.prefixLength}";
-                ConfigureWithoutCarrier = true;
-                IPv4Forwarding = true;
+                Address = lib.mkDefault "${netCfg.hostAddress}/${toString netCfg.prefixLength}";
+                ConfigureWithoutCarrier = lib.mkDefault true;
+                IPv4Forwarding = lib.mkDefault true;
+                DHCPServer = lib.mkDefault true;
               };
-              linkConfig.RequiredForOnline = "no";
+              linkConfig.RequiredForOnline = lib.mkDefault "no";
             };
           }
         ) vms)
-        # Per-VM TAP — unique key per instance
+        # Per-VM DHCP static lease — concatenated into the bridge's lease list so
+        # each guest gets a stable address keyed on its MAC.
+        ++ (lib.mapAttrsToList (
+          _vmName: vmCfg:
+          lib.mkIf vmCfg.enable {
+            "10-microvm0".dhcpServerStaticLeases = [
+              {
+                MACAddress = vmCfg.vmMac;
+                Address = vmAddress vmCfg;
+              }
+            ];
+          }
+        ) vms)
+        # Per-VM TAP — unique key per instance, enslaved to the bridge.
         ++ (lib.mapAttrsToList (
           vmName: vmCfg:
           lib.mkIf vmCfg.enable {
@@ -225,69 +195,34 @@
         ) vms
       );
 
+      # ── Host-side directories ──────────────────────────────────────────────
+      # Per instance: the state dir (holds volume images microvm.nix creates) and
+      # the auto share dir the guest baseline mounts at /srv/host-share. The
+      # state-dir rule sorts before its /share child, so systemd-tmpfiles creates
+      # the parent first.
       systemd.tmpfiles.rules = lib.concatLists (
         lib.mapAttrsToList (
-          vmName: vmCfg: lib.optional vmCfg.enable "d /var/lib/microvm/${vmName} 0750 microvm - -"
+          vmName: vmCfg:
+          lib.optionals vmCfg.enable [
+            "d /var/lib/microvm/${vmName} 0750 microvm - -"
+            "d /var/lib/microvm/${vmName}/share 0770 ${vmCfg.shareOwner} ${vmCfg.shareGroup} -"
+          ]
         ) vms
       );
 
-      # ── VM definitions ─────────────────────────────────────────────────────
+      # ── VM definitions — ATTACH BY REFERENCE ───────────────────────────────
+      # microvm.vms.<name>.flake = self pulls self.nixosConfigurations.<name>
+      # (the standalone guest built by flake-parts/vms.nix) rather than building
+      # a guest inline here. `self` is the consumer flake: the generator passes
+      # the merged input set (consumer self winning) as specialArgs, and that is
+      # the flake carrying vms/<name>'s nixosConfigurations entry. Only forced
+      # when an instance is enabled, so framework/docs/test evals (no enabled
+      # instances) never touch it.
       microvm.vms = lib.mapAttrs (
-        vmName: vmCfg:
+        _vmName: vmCfg:
         lib.mkIf vmCfg.enable {
+          flake = inputs.self;
           autostart = lib.mkDefault true;
-
-          config =
-            { ... }:
-            {
-              imports = [ vmCfg.extraGuestConfig ];
-
-              microvm.hypervisor = lib.mkDefault "cloud-hypervisor";
-              microvm.vcpu = lib.mkDefault vmCfg.vcpus;
-              microvm.mem = lib.mkDefault vmCfg.mem;
-              microvm.vsock.cid = lib.mkIf (vmCfg.vsockCid != null) (lib.mkDefault vmCfg.vsockCid);
-
-              microvm.interfaces = lib.mkDefault [
-                {
-                  type = "tap";
-                  id = "tap-${vmName}";
-                  mac = vmCfg.vmMac;
-                }
-              ];
-
-              microvm.volumes = lib.mkDefault vmCfg.volumes;
-              microvm.shares = lib.mkDefault vmCfg.shares;
-
-              systemd.network.enable = lib.mkDefault true;
-              systemd.network.networks."10-eth" = lib.mkDefault {
-                matchConfig.Name = "en* eth*";
-                networkConfig = {
-                  Address = "${vmAddress vmCfg}/${toString netCfg.prefixLength}";
-                  Gateway = netCfg.hostAddress;
-                  DNS = [
-                    "1.1.1.1"
-                    "8.8.8.8"
-                  ];
-                };
-              };
-
-              services.openssh = lib.mkIf (vmCfg.sshAuthorizedKeys != [ ]) {
-                enable = lib.mkDefault true;
-                settings = {
-                  PermitRootLogin = lib.mkDefault "yes";
-                  PasswordAuthentication = lib.mkDefault false;
-                };
-              };
-
-              users.users.root = lib.mkIf (vmCfg.sshAuthorizedKeys != [ ]) {
-                openssh.authorizedKeys.keys = lib.mkDefault vmCfg.sshAuthorizedKeys;
-              };
-
-              networking.hostName = lib.mkDefault vmName;
-              networking.firewall.enable = lib.mkDefault false;
-              system.stateVersion = lib.mkDefault "25.05";
-              nixpkgs.hostPlatform = lib.mkDefault config.nixpkgs.hostPlatform;
-            };
         }
       ) vms;
     };
