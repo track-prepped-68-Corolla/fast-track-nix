@@ -1,5495 +1,3121 @@
-## ft\.admin\.enable
+# Module Options
 
+## Table of Contents
 
+- [ft.admin](#ftadmin) — Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
+- [ft.bulkPool](#ftbulkpool) — Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
+- [ft.cachyos](#ftcachyos) — Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
+- [ft.cardwire](#ftcardwire) — Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
+- [ft.cli](#ftcli) — Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
+- [ft.containers](#ftcontainers) — Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
+- [ft.core](#ftcore) — Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
+- [ft.cosmic](#ftcosmic) — Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
+- [ft.cosmicGreeter](#ftcosmicgreeter) — Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
+- [ft.deploy](#ftdeploy) — Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
+- [ft.diskBtrfs](#ftdiskbtrfs) — Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
+- [ft.dockervm](#ftdockervm) — Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
+- [ft.facter](#ftfacter) — Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
+- [ft.flatpak](#ftflatpak) — Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
+- [ft.gaming](#ftgaming) — Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
+- [ft.gitops](#ftgitops) — Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
+- [ft.gpu](#ftgpu) — Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
+- [ft.keepass](#ftkeepass) — Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
+- [ft.komodo](#ftkomodo) — Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
+- [ft.limine](#ftlimine) — Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
+- [ft.liveIso](#ftliveiso) — Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
+- [ft.microvms](#ftmicrovms)
+- [ft.moonlight](#ftmoonlight) — Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
+- [ft.mullet](#ftmullet) — Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
+- [ft.nfs](#ftnfs) — Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
+- [ft.nixIndex](#ftnixindex) — Whether to enable nix-index with pre-built database and comma integration.
+- [ft.plasma](#ftplasma) — Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
+- [ft.plasmaBigscreen](#ftplasmabigscreen) — Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
+- [ft.printing](#ftprinting) — Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
+- [ft.rclone](#ftrclone) — Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
+- [ft.repoPath](#ftrepopath) — Absolute path to the consumer's flake repo root. Set this in your host file.
+- [ft.sops](#ftsops) — Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
+- [ft.steamConfig](#ftsteamconfig) — Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
+- [ft.tailscale](#fttailscale) — Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
+- [ft.users](#ftusers) — Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
+- [ft.vendorHw](#ftvendorhw) — Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
+- [ft.vicinae](#ftvicinae) — Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
+- [ft.virt](#ftvirt) — Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
+- [ft.wine](#ftwine) — Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
+- [ft.yubikey](#ftyubikey) — Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
 
-Creates a wheel (sudo) management account — present on every machine by default, but toggleable\. Authenticates via ` authorizedKeys ` (key-based) and/or ` initialPassword `, so it is never a locked-out account\. Pulled out of ` ft.users ` so the administrator is owned by one dedicated, predictable place\.
+---
 
+## ft.admin
 
+Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
+
+### ft.admin.authorizedKeys
+
+SSH public keys authorized for key-based login as the admin user.
+
+*Type:*
+list of string
+
+*Default:*
+`[ ]`
+
+*Declared by:*
+- [modules/nixos/system/admin.nix](system/admin.nix)
+
+### ft.admin.enable
+
+Creates a wheel (sudo) management account — present on every machine by default, but toggleable. Authenticates via `authorizedKeys` (key-based) and/or `initialPassword`, so it is never a locked-out account. Pulled out of `ft.users` so the administrator is owned by one dedicated, predictable place.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-
+`true`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+- [modules/nixos/system/admin.nix](system/admin.nix)
 
+### ft.admin.extraGroups
 
-
-## ft\.admin\.authorizedKeys
-
-SSH public keys authorized for key-based login as the admin user\.
-
-
+Additional groups for the admin user, on top of wheel and the common hardware/service groups.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+- [modules/nixos/system/admin.nix](system/admin.nix)
 
+### ft.admin.hashedPasswordFile
 
-
-## ft\.admin\.extraGroups
-
-
-
-Additional groups for the admin user, on top of wheel and the common hardware/service groups\.
-
-
-
-*Type:*
-list of string
-
-
-
-*Default:*
-
-```nix
-[ ]
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
-
-
-
-## ft\.admin\.hashedPasswordFile
-
-
-
-Path to a file containing the admin’s hashed password (e\.g\. a sops secret)\. Takes precedence over ` initialPassword ` when set\.
-
-
+Path to a file containing the admin's hashed password (e.g. a sops secret). Takes precedence over `initialPassword` when set.
 
 *Type:*
 null or absolute path
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+- [modules/nixos/system/admin.nix](system/admin.nix)
 
+### ft.admin.initialPassword
 
-
-## ft\.admin\.initialPassword
-
-
-
-Plaintext password set at first boot so the account is never locked out\. Override per machine; set to null to rely solely on key-based auth; or supply a real credential via ` hashedPasswordFile ` for production\. Ignored when ` hashedPasswordFile ` is set\.
-
-
+Plaintext password set at first boot so the account is never locked out. Override per machine; set to null to rely solely on key-based auth; or supply a real credential via `hashedPasswordFile` for production. Ignored when `hashedPasswordFile` is set.
 
 *Type:*
 null or string
 
-
-
 *Default:*
-
-```nix
-"changeme"
-```
+`"changeme"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+- [modules/nixos/system/admin.nix](system/admin.nix)
 
+### ft.admin.name
 
-
-## ft\.admin\.name
-
-
-
-Username of the admin/management account\.
-
-
+Username of the admin/management account.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"admin"
-```
+`"admin"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/admin.nix)
+- [modules/nixos/system/admin.nix](system/admin.nix)
 
+## ft.bulkPool
 
+Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
 
-## ft\.bulkPool\.enable
+### ft.bulkPool.driveBase
 
-
-
-Reads machines/\<host>/var/bulk-drives\.nix to discover registered bulk drives (labelled bulk-\*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync\. A no-op when drivesFile is unset or all drive lists are empty\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
-
-
-
-## ft\.bulkPool\.driveBase
-
-
-
-Directory prefix for individual drive mount points (e\.g\. /mnt/bulk/bulk-data-1 mounts the btrfs root of that drive)\.
-
-
+Directory prefix for individual drive mount points (e.g. /mnt/bulk/bulk-data-1 mounts the btrfs root of that drive).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/mnt/bulk"
-```
+`"/mnt/bulk"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
+- [modules/nixos/services/bulk-pool.nix](services/bulk-pool.nix)
 
+### ft.bulkPool.drivesFile
 
-
-## ft\.bulkPool\.drivesFile
-
-
-
-Path to the bulk-drives\.nix file listing registered drive labels by role (parity, data, cache)\. Managed by ft drives-format and ft drives-sync in the consumer repo\. When null or the file is absent, the module is a complete no-op\.
-
-
+Path to the bulk-drives.nix file listing registered drive labels by role (parity, data, cache). Managed by ft drives-format and ft drives-sync in the consumer repo. When null or the file is absent, the module is a complete no-op.
 
 *Type:*
 null or absolute path
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
+- [modules/nixos/services/bulk-pool.nix](services/bulk-pool.nix)
 
+### ft.bulkPool.enable
 
+Reads machines/<host>/var/bulk-drives.nix to discover registered bulk drives (labelled bulk-*), mounts each btrfs root, pools data and cache drives via mergerfs, protects data drives with snapraid parity, and runs a nightly snapraid-btrfs sync. A no-op when drivesFile is unset or all drive lists are empty.
 
-## ft\.bulkPool\.poolMount
+*Type:*
+boolean
 
+*Default:*
+`false`
 
+*Example:*
+`true`
 
-Mount point for the mergerfs union pool of data and cache drives (@data subvolume of each)\.
+*Declared by:*
+- [modules/nixos/services/bulk-pool.nix](services/bulk-pool.nix)
 
+### ft.bulkPool.poolMount
 
+Mount point for the mergerfs union pool of data and cache drives (@data subvolume of each).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/mnt/bulk-pool"
-```
+`"/mnt/bulk-pool"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
+- [modules/nixos/services/bulk-pool.nix](services/bulk-pool.nix)
 
+### ft.bulkPool.snapraid.contentFile
 
-
-## ft\.bulkPool\.snapraid\.contentFile
-
-
-
-Primary snapraid content file path on the system drive (not on a data disk)\.
-
-
+Primary snapraid content file path on the system drive (not on a data disk).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/var/lib/snapraid/content"
-```
+`"/var/lib/snapraid/content"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/bulk-pool.nix)
+- [modules/nixos/services/bulk-pool.nix](services/bulk-pool.nix)
 
+## ft.cachyos
 
+Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
 
-## ft\.cachyos\.enable
+### ft.cachyos.enable
 
-
-
-Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input\. Select a variant with ` ft.cachyos.variant ` (default: latest)\. Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds\. Append -lto for LTO-compiled editions\.
-
-
+Replaces the default kernel with a CachyOS-optimised build sourced from the nix-cachyos flake input. Select a variant with `ft.cachyos.variant` (default: latest). Append -x86_64-v3, -x86_64-v4, or -zen4 for microarchitecture-optimised builds. Append -lto for LTO-compiled editions.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel.nix)
+- [modules/nixos/system/kernel.nix](system/kernel.nix)
 
+### ft.cachyos.variant
 
-
-## ft\.cachyos\.variant
-
-
-
-CachyOS kernel variant\. Maps to linux-cachyos-\<variant> from nix-cachyos\.
-
-
+CachyOS kernel variant. Maps to linux-cachyos-<variant> from nix-cachyos.
 
 *Type:*
-one of “latest”, “latest-lto”, “latest-x86_64-v3”, “latest-lto-x86_64-v3”, “latest-x86_64-v4”, “latest-lto-x86_64-v4”, “latest-zen4”, “latest-lto-zen4”, “bore”, “bore-lto”, “bore-x86_64-v3”, “bore-lto-x86_64-v3”, “bore-x86_64-v4”, “bore-lto-x86_64-v4”, “bore-zen4”, “bore-lto-zen4”, “eevdf”, “eevdf-lto”, “bmq”, “bmq-lto”, “lts”, “lts-lto”, “lts-x86_64-v3”, “lts-lto-x86_64-v3”, “lts-x86_64-v4”, “lts-lto-x86_64-v4”, “lts-zen4”, “lts-lto-zen4”, “rt-bore”, “rt-bore-lto”, “hardened”, “hardened-lto”, “server”, “server-lto”, “rc”, “rc-lto”, “deckify”, “deckify-lto”
-
-
+one of "latest", "latest-lto", "latest-x86_64-v3", "latest-lto-x86_64-v3", "latest-x86_64-v4", "latest-lto-x86_64-v4", "latest-zen4", "latest-lto-zen4", "bore", "bore-lto", "bore-x86_64-v3", "bore-lto-x86_64-v3", "bore-x86_64-v4", "bore-lto-x86_64-v4", "bore-zen4", "bore-lto-zen4", "eevdf", "eevdf-lto", "bmq", "bmq-lto", "lts", "lts-lto", "lts-x86_64-v3", "lts-lto-x86_64-v3", "lts-x86_64-v4", "lts-lto-x86_64-v4", "lts-zen4", "lts-lto-zen4", "rt-bore", "rt-bore-lto", "hardened", "hardened-lto", "server", "server-lto", "rc", "rc-lto", "deckify", "deckify-lto"
 
 *Default:*
-
-```nix
-"latest"
-```
+`"latest"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/kernel.nix)
+- [modules/nixos/system/kernel.nix](system/kernel.nix)
 
+## ft.cardwire
 
+Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
 
-## ft\.cardwire\.enable
+### ft.cardwire.autoApplyGpuState
 
-
-
-Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control\. Requires a kernel with CONFIG_BPF_LSM=y and lsm=…,bpf in boot parameters\.
-
-
+Automatically restore the last saved GPU state when the cardwired service starts.
 
 *Type:*
 boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/hardware/cardwire.nix](hardware/cardwire.nix)
+
+### ft.cardwire.batteryAutoSwitch
+
+Automatically switch to integrated GPU mode when running on battery power.
+
+*Type:*
+boolean
 
 *Default:*
+`false`
 
-```nix
-false
-```
+*Declared by:*
+- [modules/nixos/hardware/cardwire.nix](hardware/cardwire.nix)
 
+### ft.cardwire.enable
 
+Enables the cardwired D-Bus service, which uses eBPF LSM hooks to block and unblock GPU device nodes for integrated/hybrid/manual GPU power control. Requires a kernel with CONFIG_BPF_LSM=y and lsm=...,bpf in boot parameters.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
+- [modules/nixos/hardware/cardwire.nix](hardware/cardwire.nix)
 
+### ft.cardwire.experimentalNvidiaBlock
 
-
-## ft\.cardwire\.autoApplyGpuState
-
-
-
-Automatically restore the last saved GPU state when the cardwired service starts\.
-
-
+Enable experimental blocking of NVIDIA-specific device files. Enabled automatically when ft.gpu is active with the NVIDIA driver.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
+- [modules/nixos/hardware/cardwire.nix](hardware/cardwire.nix)
 
+## ft.cli
 
+Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
 
-## ft\.cardwire\.batteryAutoSwitch
+### ft.cli.enable
 
-
-
-Automatically switch to integrated GPU mode when running on battery power\.
-
-
+Installs just and a thin `ft` wrapper that invokes the repo's `scripts/ft.just` justfile from any working directory. Defaults to on, since every consumer machine wants this in practice. Requires `ft.repoPath` to point to your consumer repo root — set `ft.cli.enable = false` for machines with no real consumer checkout (a live ISO, an eval-only test fixture).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
-
-
-
-## ft\.cardwire\.experimentalNvidiaBlock
-
-
-
-Enable experimental blocking of NVIDIA-specific device files\. Enabled automatically when ft\.gpu is active with the NVIDIA driver\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/cardwire.nix)
-
-
-
-## ft\.cli\.enable
-
-
-
-Installs just and a thin ` ft ` wrapper that invokes the repo’s ` scripts/ft.just ` justfile from any working directory\. Defaults to on, since every consumer machine wants this in practice\. Requires ` ft.repoPath ` to point to your consumer repo root — set ` ft.cli.enable = false ` for machines with no real consumer checkout (a live ISO, an eval-only test fixture)\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-true
-```
-
-
+`true`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/just\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/just.nix)
+- [modules/nixos/system/just.nix](system/just.nix)
 
+## ft.containers
 
+Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
 
-## ft\.containers\.enable
+### ft.containers.compose.enable
 
-
-
-Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox\. Apps like ft\.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes\.
-
-
+Install the genuine Docker Compose v2 binary (pkgs.docker-compose). It drives either runtime through the Docker-API-compatible socket; podman-compose is never used.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.dataDir
 
-
-## ft\.containers\.compose\.enable
-
-
-
-Install the genuine Docker Compose v2 binary (pkgs\.docker-compose)\. It drives either runtime through the Docker-API-compatible socket; podman-compose is never used\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
-
-
-
-## ft\.containers\.dataDir
-
-
-
-Base directory provisioned for docker-compose and bind-mount workloads\. Owned by the service account when rootless, otherwise root\.
-
-
+Base directory provisioned for docker-compose and bind-mount workloads. Owned by the service account when rootless, otherwise root.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/opt/containers"
-```
+`"/opt/containers"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.distrobox.enable
 
-
-## ft\.containers\.distrobox\.enable
-
-
-
-Install Distrobox for running other-distribution containers as host-integrated environments on top of the selected runtime\.
-
-
+Install Distrobox for running other-distribution containers as host-integrated environments on top of the selected runtime.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.enable
 
-
-## ft\.containers\.rootless
-
-
-
-Run the runtime rootless\. When true, a dedicated unprivileged service account (ft\.containers\.user) gets subuid/subgid maps, systemd lingering, and a user-level daemon socket, with DOCKER_HOST pointed at it — running ` podman system service ` or rootless dockerd per ft\.containers\.runtime\. When false the system daemon runs as root (podman gains dockerCompat + the docker socket)\.
-
-
+Sets up a Docker or Podman runtime — rootful or rootless — with the real Docker Compose v2 binary and optional Distrobox. Apps like ft.komodo build on top and reach the daemon via the Docker-API-compatible socket this module exposes.
 
 *Type:*
 boolean
 
-
-
 *Default:*
+`false`
 
-```nix
-true
-```
+*Example:*
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.rootless
 
-
-## ft\.containers\.runtime
-
-
-
-OCI runtime\. Podman is recommended for rootless use; both expose a Docker-API-compatible socket so the genuine docker-compose binary drives either unchanged\.
-
-
+Run the runtime rootless. When true, a dedicated unprivileged service account (ft.containers.user) gets subuid/subgid maps, systemd lingering, and a user-level daemon socket, with DOCKER_HOST pointed at it — running `podman system service` or rootless dockerd per ft.containers.runtime. When false the system daemon runs as root (podman gains dockerCompat + the docker socket).
 
 *Type:*
-one of “docker”, “podman”
-
-
+boolean
 
 *Default:*
-
-```nix
-"podman"
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.runtime
 
-
-## ft\.containers\.socket
-
-
-
-Read-only: the Docker-API-compatible socket path the active cell exposes\. Consumed by apps built on this module (e\.g\. ft\.komodo) as DOCKER_HOST\.
-
-
+OCI runtime. Podman is recommended for rootless use; both expose a Docker-API-compatible socket so the genuine docker-compose binary drives either unchanged.
 
 *Type:*
-string *(read only)*
-
-
+one of "docker", "podman"
 
 *Default:*
-
-```nix
-"/run/user/2000/podman/podman.sock"
-```
+`"podman"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.socket
 
+Read-only: the Docker-API-compatible socket path the active cell exposes. Consumed by apps built on this module (e.g. ft.komodo) as DOCKER_HOST.
 
-## ft\.containers\.uid
+*Type:*
+string
 
+*Default:*
+`"/run/user/2000/podman/podman.sock"`
 
+*Declared by:*
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
-Fixed UID and GID for the rootless service account\. The rootless daemon socket path derives from it (/run/user/\<uid>/…)\. Ignored when rootless = false\.
+### ft.containers.uid
 
-
+Fixed UID and GID for the rootless service account. The rootless daemon socket path derives from it (/run/user/<uid>/...). Ignored when rootless = false.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-2000
-```
+`2000`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+### ft.containers.user
 
-
-## ft\.containers\.user
-
-
-
-Name of the unprivileged service account created for rootless mode\. Ignored when rootless = false\.
-
-
+Name of the unprivileged service account created for rootless mode. Ignored when rootless = false.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"podman"
-```
+`"podman"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/containers.nix)
+- [modules/nixos/services/containers.nix](services/containers.nix)
 
+## ft.core
 
+Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
 
-## ft\.core\.enable
+### ft.core.enable
 
-
-
-Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US\.UTF-8), zsh shell, and core CLI packages\. All values use mkDefault and can be overridden per host\.
-
-
+Sets the system-wide baseline every host shares: NetworkManager, Bluetooth, CUPS/Avahi printing, flakes + nix-command, store auto-optimisation, locale (en_US.UTF-8), zsh shell, and core CLI packages. All values use mkDefault and can be overridden per host.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-
+`true`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
+- [modules/nixos/system/core.nix](system/core.nix)
 
+### ft.core.stateVersion
 
-
-## ft\.core\.stateVersion
-
-
-
-The NixOS release version this machine was *first installed* on\. Controls which state migration paths activate on boot — setting this wrong triggers unwanted migrations\. Set it once at machine creation and never change it\.
-
-
+The NixOS release version this machine was *first installed* on. Controls which state migration paths activate on boot — setting this wrong triggers unwanted migrations. Set it once at machine creation and never change it.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
+- [modules/nixos/system/core.nix](system/core.nix)
 
+## ft.cosmic
 
+Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
 
-## ft\.cosmic\.enable
+### ft.cosmic.enable
 
-
-
-Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling\. Also ensures graphics hardware acceleration is active\. Pair with ft\.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead\.
-
-
+Enables the COSMIC desktop environment session and system76-scheduler for performance-aware process scheduling. Also ensures graphics hardware acceleration is active. Pair with ft.cosmicGreeter to use cosmic-greeter as the display manager, or configure a different display manager to launch the COSMIC session instead.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic.nix)
+- [modules/nixos/desktops/cosmic.nix](desktops/cosmic.nix)
 
+## ft.cosmicGreeter
 
+Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
 
-## ft\.cosmicGreeter\.enable
+### ft.cosmicGreeter.enable
 
-
-
-Enables cosmic-greeter as the display manager\. Pair with ft\.cosmic to boot directly into a COSMIC session\.
-
-
+Enables cosmic-greeter as the display manager. Pair with ft.cosmic to boot directly into a COSMIC session.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic-greeter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/cosmic-greeter.nix)
+- [modules/nixos/desktops/cosmic-greeter.nix](desktops/cosmic-greeter.nix)
 
+## ft.deploy
 
+Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
 
-## ft\.deploy\.enable
+### ft.deploy.buildOnTarget
 
-
-
-Includes this machine as a node in the ` colmenaHive ` flake output so it can be built and activated remotely with ` colmena apply `\. Off by default; opt machines in individually so local-only or image machines never become remote-push targets\.
-
-
+Build the system closure on the target host instead of the control machine. Useful for cross-architecture targets or to avoid pushing large closures over the network.
 
 *Type:*
 boolean
 
+*Default:*
+`false`
 
+*Declared by:*
+- [modules/nixos/system/deploy.nix](system/deploy.nix)
+
+### ft.deploy.enable
+
+Includes this machine as a node in the `colmenaHive` flake output so it can be built and activated remotely with `colmena apply`. Off by default; opt machines in individually so local-only or image machines never become remote-push targets.
+
+*Type:*
+boolean
 
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+- [modules/nixos/system/deploy.nix](system/deploy.nix)
 
+### ft.deploy.tags
 
-
-## ft\.deploy\.buildOnTarget
-
-
-
-Build the system closure on the target host instead of the control machine\. Useful for cross-architecture targets or to avoid pushing large closures over the network\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
-
-
-
-## ft\.deploy\.tags
-
-
-
-Colmena tags for this node, used to target subsets with ` colmena apply --on @<tag> `\.
-
-
+Colmena tags for this node, used to target subsets with `colmena apply --on @<tag>`.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+- [modules/nixos/system/deploy.nix](system/deploy.nix)
 
+### ft.deploy.targetHost
 
-
-## ft\.deploy\.targetHost
-
-
-
-Hostname or IP colmena connects to over SSH\. Null uses the machine’s attribute name, resolved via DNS or Tailscale MagicDNS\.
-
-
+Hostname or IP colmena connects to over SSH. Null uses the machine's attribute name, resolved via DNS or Tailscale MagicDNS.
 
 *Type:*
 null or string
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+- [modules/nixos/system/deploy.nix](system/deploy.nix)
 
+### ft.deploy.targetUser
 
-
-## ft\.deploy\.targetUser
-
-
-
-SSH user colmena connects as\. Must be able to activate system closures — root, or a user with passwordless sudo\.
-
-
+SSH user colmena connects as. Must be able to activate system closures — root, or a user with passwordless sudo.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"root"
-```
+`"root"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/deploy.nix)
+- [modules/nixos/system/deploy.nix](system/deploy.nix)
 
+## ft.diskBtrfs
 
+Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
 
-## ft\.diskBtrfs\.enable
+### ft.diskBtrfs.confirmDevice
 
+Must equal `device` whenever `device` is overridden away from the framework default (/dev/nvme0n1). A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage.
 
+*Type:*
+string
 
-Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/\.snapshots) with zstd compression\. Optionally wraps the btrfs partition in a LUKS2 container\. When impermanence\.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state\. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process’s umask or when the file was created\. System-wide git safe\.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning\.
+*Default:*
+`""`
 
+*Declared by:*
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.device
+
+Block device to partition (e.g. /dev/nvme0n1).
+
+*Type:*
+string
+
+*Default:*
+`"/dev/nvme0n1"`
+
+*Declared by:*
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
+
+### ft.diskBtrfs.enable
+
+Configures a GPT disk with a 1 GiB ESP and a btrfs root partition containing subvolumes @home (/home), @nix (/nix, nodatacow), @src (/src), and @snapshots (/.snapshots) with zstd compression. Optionally wraps the btrfs partition in a LUKS2 container. When impermanence.enable is set, replaces the @ root subvolume with a tmpfs ramdisk and adds @persist (/persist) for durable state. /src is root:wheel 2775 with a default ACL granting wheel group-write on everything created under it (plus a boot-time repair pass for files that predate the ACL), so wheel members can write without sudo regardless of the creating process's umask or when the file was created. System-wide git safe.directory is also disabled, since every repo under /src is bundled by nixos-anywhere as root during provisioning.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.excludeDevices
 
-
-## ft\.diskBtrfs\.confirmDevice
-
-
-
-Must equal ` device ` whenever ` device ` is overridden away from the framework default (/dev/nvme0n1)\. A typed double-entry confirmation: a deploy script or a human that selects the wrong disk produces a mismatch here, which fails evaluation before disko or nixos-anywhere ever touches storage\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-""
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
-
-
-
-## ft\.diskBtrfs\.device
-
-
-
-Block device to partition (e\.g\. /dev/nvme0n1)\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"/dev/nvme0n1"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
-
-
-
-## ft\.diskBtrfs\.excludeDevices
-
-
-
-Device paths that must never be used as the install target, e\.g\. a live installer’s own boot media\. Evaluation fails if ` device ` matches one of these\.
-
-
+Device paths that must never be used as the install target, e.g. a live installer's own boot media. Evaluation fails if `device` matches one of these.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.impermanence.enable
 
-
-## ft\.diskBtrfs\.impermanence\.enable
-
-
-
-Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state\. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default\.
-
-
+Replace the btrfs @ root subvolume with a tmpfs ramdisk at / and add @persist (/persist) for durable state. Enables the impermanence NixOS module with /etc/machine-id, /etc/ssh, /var/lib, and /var/log persisted by default.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.impermanence.rootSize
 
-
-## ft\.diskBtrfs\.impermanence\.rootSize
-
-
-
-Size of the tmpfs ramdisk mounted at / when impermanence\.enable is true\.
-
-
+Size of the tmpfs ramdisk mounted at / when impermanence.enable is true.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"2G"
-```
+`"2G"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.luks.enable
 
-
-## ft\.diskBtrfs\.luks\.enable
-
-
-
-Wrap the btrfs partition in a LUKS2 container\.
-
-
+Wrap the btrfs partition in a LUKS2 container.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.luks.label
 
-
-## ft\.diskBtrfs\.luks\.label
-
-
-
-Name of the LUKS dm-crypt device (appears under /dev/mapper/)\.
-
-
+Name of the LUKS dm-crypt device (appears under /dev/mapper/).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"cryptroot"
-```
+`"cryptroot"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+### ft.diskBtrfs.luks.tpm.enable
 
-
-## ft\.diskBtrfs\.luks\.tpm\.enable
-
-
-
-Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds ` tpm2-device=auto ` to the device’s crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery\. No PCR binding is configured (the PIN is the secret, not the boot-chain state)\. Declarative wiring only — you must run ` systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition> ` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared\. Requires luks\.enable\.
-
-
+Unlock the LUKS volume at boot with a TPM2-sealed key gated by a PIN instead of the full passphrase: switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so early boot prompts for a short PIN (rate-limited by the TPM) and the passphrase keyslot remains as recovery. No PCR binding is configured (the PIN is the secret, not the boot-chain state). Declarative wiring only — you must run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after install to add the TPM+PIN keyslot, since the PIN is a secret and cannot be declared. Requires luks.enable.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/disko-btrfs.nix)
+- [modules/nixos/hardware/disko-btrfs.nix](hardware/disko-btrfs.nix)
 
+## ft.dockervm
 
+Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
 
-## ft\.dockervm\.enable
+### ft.dockervm.dockerVolumeSize
 
-
-
-Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT\. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix)\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.dockerVolumeSize
-
-
-
-Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/\<vmName>/docker\.img on the host)\.
-
-
+Size of the persistent Docker data volume in MiB (image stored at /var/lib/microvm/<vmName>/docker.img on the host).
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-20480
-```
+`20480`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.enable
 
-
-## ft\.dockervm\.hostInterface
-
-
-
-Name of the host’s external network interface (e\.g\. eth0, wlp3s0, enp3s0)\. Required by networking\.nat to add the MASQUERADE rule that gives the VM internet access\. Must be set when enable = true\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-""
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.enable
-
-
-
-Deploy a Komodo instance (core + periphery + FerretDB) inside the VM\. Container data is stored on the docker\.img volume; backups are written to /opt/komodo/backups on the host via virtiofs\.
-
-
+Boots a Cloud Hypervisor microVM attached to a host TAP bridge, installs rootful Docker and docker-compose inside the guest, and routes guest internet traffic via host NAT. Requires KVM (/dev/kvm) on the host and the microvm flake input (bundled with fast-track-nix).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.adminPassword
-
-
-
-Initial Komodo admin password\. Stored in the Nix store — change after first login\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"admin"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.adminUsername
-
-
-
-Initial Komodo admin username created on first launch\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"admin"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.autoApply\.enable
-
-
-
-After the guest’s Komodo Core answers, run the bundled ` komodo-apply ` recipe from the host (in ft\.repoPath) to create/execute the ResourceSync over Komodo’s API, so every rebuild reconciles Komodo with containers/ with no UI\. Requires ft\.cli, ft\.sops and ft\.repoPath, plus a ` komodo/api_env ` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. See NOTES\.md\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.hostInterface
 
+Name of the host's external network interface (e.g. eth0, wlp3s0, enp3s0). Required by networking.nat to add the MASQUERADE rule that gives the VM internet access. Must be set when enable = true.
 
-## ft\.dockervm\.komodo\.coreSecrets\.enable
+*Type:*
+string
 
+*Default:*
+`""`
 
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
-Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global \[secrets] file, \[\[KEY]]-interpolatable into every Stack/Deployment\. Shares the same guest sops age identity and var/secrets share\. Requires ft\.repoPath and the guest recipient in \.sops\.yaml — see NOTES\.md\.
+### ft.dockervm.komodo.adminPassword
 
+Initial Komodo admin password. Stored in the Nix store — change after first login.
 
+*Type:*
+string
+
+*Default:*
+`"admin"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.adminUsername
+
+Initial Komodo admin username created on first launch.
+
+*Type:*
+string
+
+*Default:*
+`"admin"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.autoApply.enable
+
+After the guest's Komodo Core answers, run the bundled `komodo-apply` recipe from the host (in ft.repoPath) to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with containers/ with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a `komodo/api_env` sops secret holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). See NOTES.md.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.komodo.coreSecrets.enable
 
-
-## ft\.dockervm\.komodo\.dbPassword
-
-
-
-Password for the FerretDB/Postgres database\. Stored in the Nix store — suitable only for local-only deployments\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.dbUsername
-
-
-
-Username for the FerretDB/Postgres database\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.host
-
-
-
-Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"http://10.0.100.2:9120"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.imageTag
-
-
-
-Docker image tag for ghcr\.io/moghtech/komodo-core and komodo-periphery\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"latest"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.jwtSecret
-
-
-
-Secret used to sign Komodo JWT tokens\. Stored in the Nix store\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo-jwt-secret"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
-
-
-
-## ft\.dockervm\.komodo\.peripherySecrets\.enable
-
-
-
-Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo\.yaml (shared read-only into the guest) and loads it into Komodo Periphery via ` --config-path `\. Its keys become \[\[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs\. Adds a persistent volume for the guest’s ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan\. Requires ft\.repoPath and a one-time recipient bootstrap — see NOTES\.md\.
-
-
+Like peripherySecrets, but decrypts komodo/core_secrets and loads it into Komodo Core as a global [secrets] file, [[KEY]]-interpolatable into every Stack/Deployment. Shares the same guest sops age identity and var/secrets share. Requires ft.repoPath and the guest recipient in .sops.yaml — see NOTES.md.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.komodo.dbPassword
 
-
-## ft\.dockervm\.komodo\.serverName
-
-
-
-Name for the first Komodo server entry, and the name Periphery uses to connect to Core\.
-
-
+Password for the FerretDB/Postgres database. Stored in the Nix store — suitable only for local-only deployments.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"Local"
-```
+`"komodo"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.komodo.dbUsername
 
-
-## ft\.dockervm\.komodo\.timezone
-
-
-
-Timezone for Komodo schedules (tz database name, e\.g\. America/New_York)\.
-
-
+Username for the FerretDB/Postgres database.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"Etc/UTC"
-```
+`"komodo"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.komodo.enable
 
+Deploy a Komodo instance (core + periphery + FerretDB) inside the VM. Container data is stored on the docker.img volume; backups are written to /opt/komodo/backups on the host via virtiofs.
 
-## ft\.dockervm\.komodo\.webhookSecret
+*Type:*
+boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
-Secret used to authenticate incoming Komodo webhooks\. Stored in the Nix store\.
+### ft.dockervm.komodo.host
 
-
+Public URL of the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"komodo-webhook-secret"
-```
+`"http://10.0.100.2:9120"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.komodo.imageTag
 
+Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.
 
-## ft\.dockervm\.mem
+*Type:*
+string
 
+*Default:*
+`"latest"`
 
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
-Memory in MiB assigned to the VM\.
+### ft.dockervm.komodo.jwtSecret
 
+Secret used to sign Komodo JWT tokens. Stored in the Nix store.
 
+*Type:*
+string
+
+*Default:*
+`"komodo-jwt-secret"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.peripherySecrets.enable
+
+Runs sops-nix inside the guest to decrypt the komodo/periphery_secrets key from var/secrets/komodo.yaml (shared read-only into the guest) and loads it into Komodo Periphery via `--config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys, stay on the guest, and are hidden from the Komodo UI and logs. Adds a persistent volume for the guest's ed25519 SSH host key (the sops age recipient) and enables sshd so the recipient can be read via ssh-keyscan. Requires ft.repoPath and a one-time recipient bootstrap — see NOTES.md.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.serverName
+
+Name for the first Komodo server entry, and the name Periphery uses to connect to Core.
+
+*Type:*
+string
+
+*Default:*
+`"Local"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.timezone
+
+Timezone for Komodo schedules (tz database name, e.g. America/New_York).
+
+*Type:*
+string
+
+*Default:*
+`"Etc/UTC"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.komodo.webhookSecret
+
+Secret used to authenticate incoming Komodo webhooks. Stored in the Nix store.
+
+*Type:*
+string
+
+*Default:*
+`"komodo-webhook-secret"`
+
+*Declared by:*
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
+
+### ft.dockervm.mem
+
+Memory in MiB assigned to the VM.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-2048
-```
+`2048`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.sshAuthorizedKeys
 
-
-## ft\.dockervm\.sshAuthorizedKeys
-
-
-
-SSH public keys authorized to log in as root inside the VM\. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host)\.
-
-
+SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge, so exposure is limited to the host).
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.vcpus
 
-
-## ft\.dockervm\.vcpus
-
-
-
-Number of vCPUs assigned to the VM\.
-
-
+Number of vCPUs assigned to the VM.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-2
-```
+`2`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.vmAddressSuffix
 
-
-## ft\.dockervm\.vmAddressSuffix
-
-
-
-Last octet of the VM’s IP address on the shared microvm0 subnet (ft\.microvms\.hostAddress)\. Must be unique among all microvm instances on this host\.
-
-
+Last octet of the VM's IP address on the shared microvm0 subnet (ft.microvms.hostAddress). Must be unique among all microvm instances on this host.
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
 
-
-
 *Default:*
-
-```nix
-2
-```
+`2`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.vmMac
 
-
-## ft\.dockervm\.vmMac
-
-
-
-MAC address assigned to the VM’s TAP-backed network interface\. Must be locally administered (first octet 02)\.
-
-
+MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"02:00:00:00:00:01"
-```
+`"02:00:00:00:00:01"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.vmName
 
-
-## ft\.dockervm\.vmName
-
-
-
-Name for the microvm instance\. Used as the systemd service name, guest hostname, and TAP interface suffix (tap-\<vmName>)\.
-
-
+Name for the microvm instance. Used as the systemd service name, guest hostname, and TAP interface suffix (tap-<vmName>).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"docker-vm"
-```
+`"docker-vm"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+### ft.dockervm.vsockCid
 
-
-## ft\.dockervm\.vsockCid
-
-
-
-vsock context ID (CID) for the VM\. When set, enables systemd-notify support for cloud-hypervisor and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user\.target for a long time (e\.g\. first-boot image pulls)\. Must be unique per host (valid range: 3–4294967293)\.
-
-
+vsock context ID (CID) for the VM. When set, enables systemd-notify support for cloud-hypervisor and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).
 
 *Type:*
 null or signed integer
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm-docker.nix)
+- [modules/nixos/services/microvm-docker.nix](services/microvm-docker.nix)
 
+## ft.facter
 
+Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
 
-## ft\.facter\.enable
+### ft.facter.enable
 
-
-
-Points the nixos-facter NixOS module at a facter\.json report committed to the machine directory\. Replaces hardware-configuration\.nix for kernel-module detection\. Generate the report on the target with ` nixos-facter `, commit it to machines/\<name>/var/facter\.json, and set ft\.facter\.reportPath = \./var/facter\.json in the machine’s default\.nix\.
-
-
+Points the nixos-facter NixOS module at a facter.json report committed to the machine directory. Replaces hardware-configuration.nix for kernel-module detection. Generate the report on the target with `nixos-facter`, commit it to machines/<name>/var/facter.json, and set ft.facter.reportPath = ./var/facter.json in the machine's default.nix.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter.nix)
+- [modules/nixos/hardware/facter.nix](hardware/facter.nix)
 
+### ft.facter.reportPath
 
-
-## ft\.facter\.reportPath
-
-
-
-Flake-relative path to the facter\.json report committed in the consumer repo, e\.g\. reportPath = \./var/facter\.json; from the machine’s default\.nix\. Null disables the report wiring\.
-
-
+Flake-relative path to the facter.json report committed in the consumer repo, e.g. reportPath = ./var/facter.json; from the machine's default.nix. Null disables the report wiring.
 
 *Type:*
 null or absolute path
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/facter.nix)
+- [modules/nixos/hardware/facter.nix](hardware/facter.nix)
 
+## ft.flatpak
 
+Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
 
-## ft\.flatpak\.enable
+### ft.flatpak.enable
 
-
-
-Enables the system Flatpak service and registers the Flathub remote\. Once enabled, ` services.flatpak.packages ` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically\. Pair with ` ft.flatpak.frontend.enable ` for a graphical Flathub browser\.
-
-
+Enables the system Flatpak service and registers the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the declarative install surface for system-wide apps — set it in any machine file, profile, or other submodule and the lists from every definition are merged automatically. Pair with `ft.flatpak.frontend.enable` for a graphical Flathub browser.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
+- [modules/nixos/services/flatpak.nix](services/flatpak.nix)
 
+### ft.flatpak.frontend.enable
 
-
-## ft\.flatpak\.frontend\.enable
-
-
-
-Installs ` ft.flatpak.frontend.package `, a GUI application for browsing and installing Flatpaks from Flathub\.
-
-
+Installs `ft.flatpak.frontend.package`, a GUI application for browsing and installing Flatpaks from Flathub.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
+- [modules/nixos/services/flatpak.nix](services/flatpak.nix)
 
+### ft.flatpak.frontend.package
 
-
-## ft\.flatpak\.frontend\.package
-
-
-
-Package providing the graphical Flathub frontend\.
-
-
+Package providing the graphical Flathub frontend.
 
 *Type:*
 package
 
-
-
 *Default:*
-
-```nix
-<derivation discover-6.7.3>
-```
+`<derivation discover-6.7.3>`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/flatpak.nix)
+- [modules/nixos/services/flatpak.nix](services/flatpak.nix)
 
+## ft.gaming
 
+Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
 
-## ft\.gaming\.enable
+### ft.gaming.bigPicture
 
-
-
-Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools\. Set ft\.gaming\.bigPicture = true to boot Steam into Big Picture mode via a gamescope session\.
-
-
+Run Steam inside a gamescope session (Big Picture mode), replacing the desktop session on login.
 
 *Type:*
 boolean
 
+*Default:*
+`false`
 
+*Declared by:*
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
+
+### ft.gaming.enable
+
+Enables Steam with GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Set ft.gaming.bigPicture = true to boot Steam into Big Picture mode via a gamescope session.
+
+*Type:*
+boolean
 
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
 
+### ft.gaming.gamescope.enable
 
-
-## ft\.gaming\.bigPicture
-
-
-
-Run Steam inside a gamescope session (Big Picture mode), replacing the desktop session on login\.
-
-
+Enable the gamescope micro-compositor.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
 
+### ft.gaming.gamescope.hdr
 
-
-## ft\.gaming\.gamescope\.enable
-
-
-
-Enable the gamescope micro-compositor\.
-
-
+Enable HDR output in gamescope. Requires an HDR-capable display and a supporting GPU driver.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
 
+### ft.gaming.openFirewall
 
-
-## ft\.gaming\.gamescope\.hdr
-
-
-
-Enable HDR output in gamescope\. Requires an HDR-capable display and a supporting GPU driver\.
-
-
+Open firewall ports for Steam Remote Play and local network game transfers.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
 
+## ft.gitops
 
+Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
 
-## ft\.gaming\.openFirewall
+### ft.gitops.autoPromote.enable
 
-
-
-Open firewall ports for Steam Remote Play and local network game transfers\.
-
-
+comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default. Normally a human must explicitly boot the "comin" bootloader submenu entry, or run a manual `nixos-rebuild switch`, to make a comin deployment the reboot default. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin's ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/gaming.nix)
-
-
-
-## ft\.gitops\.enable
-
-
-
-Runs the comin daemon, which polls the configured git remotes and deploys this machine’s own nixosConfiguration on new commits — ` switch ` (permanent) for ` deployBranch `, ` test ` (ephemeral, reverted on reboot) for comin’s per-host ` testing-<hostname> ` branch\. Multiple remotes are polled as failover (anti-SPOF)\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.deployBranch
 
-
-## ft\.gitops\.autoPromote\.enable
-
-
-
-comin deliberately never updates /nix/var/nix/profiles/system (the profile the bootloader treats as the real default) - it always deploys into its own isolated system-profiles/comin profile, so a bad automated deploy can never silently become what boots by default\. Normally a human must explicitly boot the “comin” bootloader submenu entry, or run a manual ` nixos-rebuild switch `, to make a comin deployment the reboot default\. Enabling this runs a postDeploymentCommand hook that does that automatically after every successful deployment of deployBranch specifically (never comin’s ephemeral per-host test branch, which must stay revertible on reboot) - trading that safety net for convenience\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
-
-
-
-## ft\.gitops\.deployBranch
-
-
-
-Branch comin deploys permanently with ` switch ` (comin remotes\[]\.branches\.main\.name)\. Tracks your production branch; commits must be signed by one of ` signingKeys ` when that list is non-empty\.
-
-
+Branch comin deploys permanently with `switch` (comin remotes[].branches.main.name). Tracks your production branch; commits must be signed by one of `signingKeys` when that list is non-empty.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"main"
-```
+`"main"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.enable
 
+Runs the comin daemon, which polls the configured git remotes and deploys this machine's own nixosConfiguration on new commits — `switch` (permanent) for `deployBranch`, `test` (ephemeral, reverted on reboot) for comin's per-host `testing-<hostname>` branch. Multiple remotes are polled as failover (anti-SPOF).
 
-## ft\.gitops\.pollPeriod
+*Type:*
+boolean
 
+*Default:*
+`false`
 
+*Example:*
+`true`
 
-How often, in seconds, comin polls each remote for new commits (comin remotes\[]\.poller\.period)\.
+*Declared by:*
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.pollPeriod
 
+How often, in seconds, comin polls each remote for new commits (comin remotes[].poller.period).
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-60
-```
+`60`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.remotes
 
-
-## ft\.gitops\.remotes
-
-
-
-Ordered list of git remotes comin polls for this machine’s configuration\. Polled together as failover (anti-SPOF), primary first\.
-
-
+Ordered list of git remotes comin polls for this machine's configuration. Polled together as failover (anti-SPOF), primary first.
 
 *Type:*
 list of (submodule)
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.remotes.*.name
 
-
-## ft\.gitops\.remotes\.\*\.name
-
-
-
-Short identifier for this remote (comin remotes\[]\.name)\.
-
-
+Short identifier for this remote (comin remotes[].name).
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.remotes.*.tokenSecret
 
-
-## ft\.gitops\.remotes\.\*\.tokenSecret
-
-
-
-Name of a sops secret holding an access token for this remote\. When set, the secret is declared and wired to comin’s auth\.access_token_path; null polls the remote anonymously (public repository)\. Requires ft\.sops\.enable\.
-
-
+Name of a sops secret holding an access token for this remote. When set, the secret is declared and wired to comin's auth.access_token_path; null polls the remote anonymously (public repository). Requires ft.sops.enable.
 
 *Type:*
 null or string
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.remotes.*.url
 
-
-## ft\.gitops\.remotes\.\*\.url
-
-
-
-Git URL comin polls (comin remotes\[]\.url)\. List the primary first (e\.g\. self-hosted Forgejo) and backups after (e\.g\. Codeberg); comin polls all to avoid a single point of failure\.
-
-
+Git URL comin polls (comin remotes[].url). List the primary first (e.g. self-hosted Forgejo) and backups after (e.g. Codeberg); comin polls all to avoid a single point of failure.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.retry.checkInterval
 
+How often, in seconds, the watchdog polls comin's exporter for a failure. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt.
 
-## ft\.gitops\.retry\.enable
+*Type:*
+signed integer
 
+*Default:*
+`300`
 
+*Declared by:*
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
-Runs a watchdog timer that polls comin’s Prometheus exporter for an eval, build, or deployment failure and restarts comin\.service to force it to reprocess the current commit, up to retry\.maxAttempts times before giving up until a new commit is pushed\.
+### ft.gitops.retry.enable
 
-
+Runs a watchdog timer that polls comin's Prometheus exporter for an eval, build, or deployment failure and restarts comin.service to force it to reprocess the current commit, up to retry.maxAttempts times before giving up until a new commit is pushed.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.retry.maxAttempts
 
-
-## ft\.gitops\.retry\.checkInterval
-
-
-
-How often, in seconds, the watchdog polls comin’s exporter for a failure\. Should comfortably exceed the time a typical evaluation, build, and switch takes, to avoid restarting comin mid-attempt\.
-
-
+Maximum number of times the watchdog restarts comin.service to recover the current failing commit before giving up on it until a new commit is pushed.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-300
-```
+`3`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.signingKeys
 
-
-## ft\.gitops\.retry\.maxAttempts
-
-
-
-Maximum number of times the watchdog restarts comin\.service to recover the current failing commit before giving up on it until a new commit is pushed\.
-
-
-
-*Type:*
-signed integer
-
-
-
-*Default:*
-
-```nix
-3
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
-
-
-
-## ft\.gitops\.signingKeys
-
-
-
-Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths)\. An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing\.
-
-
+Armored GPG public key files; comin deploys a commit only if it is signed by one of these (comin gpgPublicKeyPaths). An empty list disables signature verification, letting any commit on a polled branch deploy unattended — strongly discouraged outside testing.
 
 *Type:*
 list of absolute path
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/gitops.nix)
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+## ft.gpu
 
+Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
 
-## ft\.gpu\.enable
+### ft.gpu.autodetect
 
-
-
-Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops\.
-
-
+Detect GPU vendor and Optimus configuration from ft.facter.reportPath. When true, sets ft.gpu.vendor and configures PRIME offloading automatically for Optimus setups. Set to false to use the vendor and prime options directly.
 
 *Type:*
 boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
+
+### ft.gpu.enable
+
+Configures graphics drivers for NVIDIA, AMD, or Intel GPUs, with optional facter-driven autodetection of the vendor and PRIME offloading for hybrid (Optimus) laptops.
+
+*Type:*
+boolean
 
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.enable32Bit
 
-
-## ft\.gpu\.enable32Bit
-
-
-
-Enable 32-bit graphics support (for older games/applications)\.
-
-
+Enable 32-bit graphics support (for older games/applications).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.nvidia.driverPackage
 
+NVIDIA driver package to use (stable or beta).
 
-## ft\.gpu\.autodetect
+*Type:*
+one of "stable", "beta"
 
+*Default:*
+`"beta"`
 
+*Declared by:*
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
-Detect GPU vendor and Optimus configuration from ft\.facter\.reportPath\. When true, sets ft\.gpu\.vendor and configures PRIME offloading automatically for Optimus setups\. Set to false to use the vendor and prime options directly\.
+### ft.gpu.nvidia.enablePowerManagement
 
-
+Enable NVIDIA power management.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.nvidia.enableSettings
 
-
-## ft\.gpu\.nvidia\.enablePowerManagement
-
-
-
-Enable NVIDIA power management\.
-
-
+Enable the nvidia-settings GUI.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.nvidia.finegrainedPowerManagement
 
-
-## ft\.gpu\.nvidia\.enableSettings
-
-
-
-Enable the nvidia-settings GUI\.
-
-
+Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems. Only applied while PRIME offloading is active, since the upstream nvidia module asserts fine-grained power management requires offload.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.nvidia.openKernelModules
 
-
-## ft\.gpu\.nvidia\.driverPackage
-
-
-
-NVIDIA driver package to use (stable or beta)\.
-
-
-
-*Type:*
-one of “stable”, “beta”
-
-
-
-*Default:*
-
-```nix
-"beta"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
-
-
-
-## ft\.gpu\.nvidia\.finegrainedPowerManagement
-
-
-
-Enable fine-grained NVIDIA power management (D3cold) for laptops/hybrid systems\. Only applied while PRIME offloading is active, since the upstream nvidia module asserts fine-grained power management requires offload\.
-
-
+Use open-source NVIDIA kernel modules (Turing+). When autodetect = true this is set automatically based on the GPU device ID; set autodetect = false to override.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.prime.enable
 
-
-## ft\.gpu\.nvidia\.openKernelModules
-
-
-
-Use open-source NVIDIA kernel modules (Turing+)\. When autodetect = true this is set automatically based on the GPU device ID; set autodetect = false to override\.
-
-
+Whether to enable PRIME GPU offloading (for hybrid graphics).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
-
-
-
-## ft\.gpu\.prime\.enable
-
-
-
-Whether to enable PRIME GPU offloading (for hybrid graphics)\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.prime.primaryBusId
 
-
-## ft\.gpu\.prime\.primaryBusId
-
-Bus ID of the GPU connected to the display (e\.g\. iGPU)\. Derived automatically from facter\.json when autodetect = true and an Optimus setup is detected; set explicitly to override\.
-
-
+Bus ID of the GPU connected to the display (e.g. iGPU). Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-""
-```
-
-
+`""`
 
 *Example:*
-
-```nix
-"PCI:35:0:0"
-```
+`"PCI:35:0:0"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.prime.secondaryBusId
 
-
-## ft\.gpu\.prime\.secondaryBusId
-
-
-
-Bus ID of the discrete GPU\. Derived automatically from facter\.json when autodetect = true and an Optimus setup is detected; set explicitly to override\.
-
-
+Bus ID of the discrete GPU. Derived automatically from facter.json when autodetect = true and an Optimus setup is detected; set explicitly to override.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-""
-```
-
-
+`""`
 
 *Example:*
-
-```nix
-"PCI:45:0:0"
-```
+`"PCI:45:0:0"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+### ft.gpu.vendor
 
-
-## ft\.gpu\.vendor
-
-
-
-Primary GPU vendor (nvidia, amd, or intel)\. Ignored when autodetect = true and a known GPU is found in facter\.json\.
-
-
+Primary GPU vendor (nvidia, amd, or intel). Ignored when autodetect = true and a known GPU is found in facter.json.
 
 *Type:*
-one of “nvidia”, “amd”, “intel”
-
-
+one of "nvidia", "amd", "intel"
 
 *Default:*
-
-```nix
-"amd"
-```
+`"amd"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/gpu.nix)
+- [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
 
+## ft.keepass
 
+Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
 
-## ft\.keepass\.enable
+### ft.keepass.enable
 
-
-
-Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend\. Useful on hybrid DE setups where GNOME Keyring’s auto-unlock would bypass hardware key authentication\.
-
-
+Installs KeePassXC and force-disables the GNOME Keyring so KeePassXC becomes the sole secret storage backend. Useful on hybrid DE setups where GNOME Keyring's auto-unlock would bypass hardware key authentication.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/keepass\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/keepass.nix)
+- [modules/nixos/system/keepass.nix](system/keepass.nix)
 
+## ft.komodo
 
+Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
 
-## ft\.komodo\.enable
+### ft.komodo.adminPassword
 
+Default initial Komodo admin password, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store — local-only). With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it.
 
+*Type:*
+string
 
-Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft\.containers\. Requires ft\.containers\.enable with compose\.enable\. Exempt from VM smoke tests: pulls images from ghcr\.io at runtime\.
+*Default:*
+`"admin"`
 
+*Declared by:*
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.adminUsername
+
+Initial Komodo admin username created on first launch (not a secret).
+
+*Type:*
+string
+
+*Default:*
+`"admin"`
+
+*Declared by:*
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
+
+### ft.komodo.autoApply.apiEnvSecret
+
+sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Declared and read by the auto-apply service to authenticate to Komodo's API.
+
+*Type:*
+string
+
+*Default:*
+`"komodo/api_env"`
+
+*Declared by:*
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
+
+### ft.komodo.autoApply.enable
+
+After Komodo Core answers, run the bundled `komodo-apply` recipe from ft.repoPath to create/execute the ResourceSync over Komodo's API, so every rebuild reconciles Komodo with the consumer repo's containers/ directory with no UI. Requires ft.cli, ft.sops and ft.repoPath, plus a sops secret (autoApply.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once). Exempt from VM smoke tests: reconciles against a live Komodo API. See NOTES.md.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.backupsPath
 
-
-## ft\.komodo\.adminPassword
-
-
-
-Default initial Komodo admin password, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store — local-only)\. With sopsEnv on, KOMODO_INIT_ADMIN_PASSWORD from the sops env-file overrides it\.
-
-
+Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"admin"
-```
+`"/opt/komodo/backups"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.dbPassword
 
-
-## ft\.komodo\.adminUsername
-
-
-
-Initial Komodo admin username created on first launch (not a secret)\.
-
-
+Default password for the FerretDB/Postgres database, used only when ft.komodo.sopsEnv.enable is false — in that case it is written to the Nix store (local-only). With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it and this value is unused.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"admin"
-```
+`"komodo"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.dbUsername
 
+Username for the FerretDB/Postgres database (not a secret — baked into the compose config).
 
-## ft\.komodo\.autoApply\.enable
+*Type:*
+string
 
+*Default:*
+`"komodo"`
 
+*Declared by:*
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
-After Komodo Core answers, run the bundled ` komodo-apply ` recipe from ft\.repoPath to create/execute the ResourceSync over Komodo’s API, so every rebuild reconciles Komodo with the consumer repo’s containers/ directory with no UI\. Requires ft\.cli, ft\.sops and ft\.repoPath, plus a sops secret (autoApply\.apiEnvSecret) holding KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. Exempt from VM smoke tests: reconciles against a live Komodo API\. See NOTES\.md\.
+### ft.komodo.enable
 
-
+Deploys the upstream Komodo compose stack (Core, Periphery, FerretDB/Postgres) via docker-compose on top of ft.containers. Requires ft.containers.enable with compose.enable. Exempt from VM smoke tests: pulls images from ghcr.io at runtime.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.host
 
-
-## ft\.komodo\.autoApply\.apiEnvSecret
-
-
-
-sops secret key holding an env-file with KOMODO_API_KEY and KOMODO_API_SECRET (create a Komodo API key once)\. Declared and read by the auto-apply service to authenticate to Komodo’s API\.
-
-
+Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"komodo/api_env"
-```
+`"http://localhost:9120"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.imageTag
 
-
-## ft\.komodo\.backupsPath
-
-
-
-Path where Komodo Core writes backup archives, bind-mounted into the Core container at /backups\.
-
-
+Docker image tag for ghcr.io/moghtech/komodo-core and komodo-periphery.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/opt/komodo/backups"
-```
+`"latest"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.includeDiskMounts
 
-
-## ft\.komodo\.dbPassword
-
-
-
-Default password for the FerretDB/Postgres database, used only when ft\.komodo\.sopsEnv\.enable is false — in that case it is written to the Nix store (local-only)\. With sopsEnv on, KOMODO_DATABASE_PASSWORD from the sops env-file overrides it and this value is unused\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
-
-
-
-## ft\.komodo\.dbUsername
-
-
-
-Username for the FerretDB/Postgres database (not a secret — baked into the compose config)\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"komodo"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
-
-
-
-## ft\.komodo\.host
-
-
-
-Externally accessible URL for the Komodo Core instance; used for OAuth redirect URLs and webhook suggestions\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"http://localhost:9120"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
-
-
-
-## ft\.komodo\.imageTag
-
-
-
-Docker image tag for ghcr\.io/moghtech/komodo-core and komodo-periphery\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"latest"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
-
-
-
-## ft\.komodo\.includeDiskMounts
-
-
-
-Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS)\. An empty list omits the setting so Periphery reports every detected mount\.
-
-
+Guest mount points Periphery reports disk usage for in the Komodo UI (PERIPHERY_INCLUDE_DISK_MOUNTS). An empty list omits the setting so Periphery reports every detected mount.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.jwtSecret
 
-
-## ft\.komodo\.jwtSecret
-
-
-
-Default secret for signing Komodo JWT tokens, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store)\. With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it\.
-
-
+Default secret for signing Komodo JWT tokens, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_JWT_SECRET from the sops env-file overrides it.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"komodo-jwt-secret"
-```
+`"komodo-jwt-secret"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.peripheryRootDirectory
 
-
-## ft\.komodo\.peripheryRootDirectory
-
-
-
-Periphery’s root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path\. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory\.
-
-
+Periphery's root directory (PERIPHERY_ROOT_DIRECTORY), bind-mounted into the periphery container at the same path. Every stack Periphery deploys and the source side of every bind mount it manages live under this directory.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/etc/komodo"
-```
+`"/etc/komodo"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.repoCachePath
 
-
-## ft\.komodo\.repoCachePath
-
-
-
-Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs\. null leaves the clones on the container’s ephemeral layer\.
-
-
+Host path bind-mounted into Komodo Core at /repo-cache, where it clones git repos for repo-based Stacks and Resource Syncs. null leaves the clones on the container's ephemeral layer.
 
 *Type:*
 null or string
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.secrets.core.enable
 
-
-## ft\.komodo\.secrets\.core\.enable
-
-
-
-Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via ` core --config-path `\. Its keys become globally \[\[KEY]]-interpolatable into every Stack/Deployment\. This is for interpolation into deployed Stacks — distinct from ft\.komodo\.sopsEnv, which covers Komodo’s own credentials\. Requires a configured sops-nix (normally ft\.sops\.enable)\.
-
-
+Declares the komodo/core_secrets sops key, mounts it read-only into the Core container, and loads it via `core --config-path`. Its keys become globally [[KEY]]-interpolatable into every Stack/Deployment. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.secrets.periphery.enable
 
-
-## ft\.komodo\.secrets\.periphery\.enable
-
-
-
-Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via ` periphery --config-path `\. Its keys become \[\[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs\. This is for interpolation into deployed Stacks — distinct from ft\.komodo\.sopsEnv, which covers Komodo’s own credentials\. Requires a configured sops-nix (normally ft\.sops\.enable)\.
-
-
+Declares the komodo/periphery_secrets sops key, mounts it read-only into the Periphery container, and loads it via `periphery --config-path`. Its keys become [[KEY]]-interpolatable into the Stacks this Periphery deploys and are hidden from the Komodo UI and logs. This is for interpolation into deployed Stacks — distinct from ft.komodo.sopsEnv, which covers Komodo's own credentials. Requires a configured sops-nix (normally ft.sops.enable).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.serverName
 
-
-## ft\.komodo\.serverName
-
-
-
-Name for the first Komodo server entry, and the name Periphery uses when connecting to Core\.
-
-
+Name for the first Komodo server entry, and the name Periphery uses when connecting to Core.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"Local"
-```
+`"Local"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.sopsEnv.enable
 
-
-## ft\.komodo\.sopsEnv\.enable
-
-
-
-Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft\.komodo\.sopsEnv\.secretName) instead of the Nix store\. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store\. Requires a configured sops-nix (normally ft\.sops\.enable); populate the key as KEY=VALUE lines — see NOTES\.md\.
-
-
+Sources the sensitive Komodo credentials (KOMODO_DATABASE_PASSWORD, KOMODO_INIT_ADMIN_PASSWORD, KOMODO_JWT_SECRET, KOMODO_WEBHOOK_SECRET) from a sops-decrypted env-file (ft.komodo.sopsEnv.secretName) instead of the Nix store. docker-compose loads it as the highest-precedence env-file, so credentials never touch the store. Requires a configured sops-nix (normally ft.sops.enable); populate the key as KEY=VALUE lines — see NOTES.md.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.sopsEnv.secretName
 
-
-## ft\.komodo\.sopsEnv\.secretName
-
-
-
-sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines)\. Declared and decrypted when sopsEnv\.enable is true\.
-
-
+sops secret key holding the Komodo credentials as an env-file (KEY=VALUE lines). Declared and decrypted when sopsEnv.enable is true.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"komodo/env"
-```
+`"komodo/env"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.syncPath
 
-
-## ft\.komodo\.syncPath
-
-
-
-Host path bind-mounted into Komodo Core at /syncs, used for ‘Files on Server’ Resource Syncs\. null leaves the files on the container’s ephemeral layer\.
-
-
+Host path bind-mounted into Komodo Core at /syncs, used for 'Files on Server' Resource Syncs. null leaves the files on the container's ephemeral layer.
 
 *Type:*
 null or string
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.timezone
 
-
-## ft\.komodo\.timezone
-
-
-
-Timezone for Komodo schedules (tz database name, e\.g\. America/New_York)\.
-
-
+Timezone for Komodo schedules (tz database name, e.g. America/New_York).
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"Etc/UTC"
-```
+`"Etc/UTC"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+### ft.komodo.webhookSecret
 
-
-## ft\.komodo\.webhookSecret
-
-
-
-Default secret for authenticating incoming Komodo webhooks, used only when ft\.komodo\.sopsEnv\.enable is false (written to the Nix store)\. With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it\.
-
-
+Default secret for authenticating incoming Komodo webhooks, used only when ft.komodo.sopsEnv.enable is false (written to the Nix store). With sopsEnv on, KOMODO_WEBHOOK_SECRET from the sops env-file overrides it.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"komodo-webhook-secret"
-```
+`"komodo-webhook-secret"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/komodo.nix)
+- [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+## ft.limine
 
+Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
 
-## ft\.limine\.enable
+### ft.limine.enable
 
-
-
-Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts\.
-
-
+Enables the Limine UEFI bootloader and disables systemd-boot to prevent loader state conflicts.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/limine\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/limine.nix)
+- [modules/nixos/system/limine.nix](system/limine.nix)
 
+## ft.liveIso
 
+Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 
-## ft\.liveIso\.enable
+### ft.liveIso.authorizedKeys
 
-
-
-Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter\. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines\.nix); the generator then emits it as packages\.\<system>\.\<name> instead of a nixosConfiguration\. Inject SSH keys via ft\.liveIso\.authorizedKeys in the machine’s default\.nix\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso.nix)
-
-
-
-## ft\.liveIso\.authorizedKeys
-
-
-
-SSH public keys authorised for the root account on boot\. Set this in the machine’s default\.nix\.
-
-
+SSH public keys authorised for the root account on boot. Set this in the machine's default.nix.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/live-iso.nix)
+- [modules/nixos/profiles/live-iso.nix](profiles/live-iso.nix)
 
+### ft.liveIso.enable
 
+Configures a NixOS live environment with all tools needed to provision a new machine via nixos-anywhere, disko, and nixos-facter. To build an ISO, add a var/format marker file to the machine directory (see flake-parts/lib/machines.nix); the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Inject SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 
-## ft\.microvms\.hostAddress
+*Type:*
+boolean
 
+*Default:*
+`false`
 
+*Example:*
+`true`
 
-IP address of the shared host-side bridge interface (microvm0); becomes the default gateway for every microVM instance on this host\. Every instance derives its guest address from this value’s /24 network portion plus its own vmAddressSuffix — change the subnet once here, not per instance\.
+*Declared by:*
+- [modules/nixos/profiles/live-iso.nix](profiles/live-iso.nix)
 
+## ft.microvms
 
+### ft.microvms.hostAddress
+
+IP address of the shared host-side bridge interface (microvm0); becomes the default gateway for every microVM instance on this host. Every instance derives its guest address from this value's /24 network portion plus its own vmAddressSuffix — change the subnet once here, not per instance.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"10.0.100.1"
-```
+`"10.0.100.1"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances
 
-
-## ft\.microvms\.instances
-
-
-
-Set of microVM instances to provision on this host\. Each attribute key becomes the VM name, systemd service suffix, guest hostname, and TAP interface suffix (tap-\<name>)\.
-
-
+Set of microVM instances to provision on this host. Each attribute key becomes the VM name, systemd service suffix, guest hostname, and TAP interface suffix (tap-<name>).
 
 *Type:*
 attribute set of (submodule)
 
-
-
 *Default:*
-
-```nix
-{ }
-```
+`{ }`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.enable
 
-
-## ft\.microvms\.instances\.\<name>\.enable
-
-
-
-Provisions a Cloud Hypervisor microVM on the host: attaches it to the shared bridge (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@\<name> systemd service\. Requires KVM (/dev/kvm) and the microvm flake input\.
-
-
+Provisions a Cloud Hypervisor microVM on the host: attaches it to the shared bridge (microvm0), configures NAT for guest internet access, attaches a TAP interface, and manages the microvm@<name> systemd service. Requires KVM (/dev/kvm) and the microvm flake input.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.extraGuestConfig
 
-
-## ft\.microvms\.instances\.\<name>\.extraGuestConfig
-
-
-
-Additional NixOS module merged into the guest configuration\. Use this to inject application-level services (e\.g\. ft\.containers + ft\.komodo) without modifying this generic infrastructure module\.
-
-
+Additional NixOS module merged into the guest configuration. Use this to inject application-level services (e.g. ft.containers + ft.komodo) without modifying this generic infrastructure module.
 
 *Type:*
 module
 
-
-
 *Default:*
-
-```nix
-{ }
-```
+`{ }`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.hostInterface
 
-
-## ft\.microvms\.instances\.\<name>\.hostInterface
-
-
-
-Name of the host’s external network interface (e\.g\. eth0, wlan0, enp3s0)\. Used by networking\.nat to add the MASQUERADE rule that gives the VM internet access\. All VMs on the same host must agree on this value\.
-
-
+Name of the host's external network interface (e.g. eth0, wlan0, enp3s0). Used by networking.nat to add the MASQUERADE rule that gives the VM internet access. All VMs on the same host must agree on this value.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.mem
 
-
-## ft\.microvms\.instances\.\<name>\.mem
-
-
-
-Memory in MiB assigned to the VM\.
-
-
+Memory in MiB assigned to the VM.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-2048
-```
+`2048`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.shares
 
-
-## ft\.microvms\.instances\.\<name>\.shares
-
-
-
-Host directories shared into the guest via virtiofs\. Requires cloud-hypervisor (Firecracker does not support virtiofs)\.
-
-
+Host directories shared into the guest via virtiofs. Requires cloud-hypervisor (Firecracker does not support virtiofs).
 
 *Type:*
 list of (submodule)
 
+*Default:*
+`[ ]`
 
+*Declared by:*
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
+
+### ft.microvms.instances.<name>.shares.*.mountPoint
+
+Mount point inside the guest.
+
+*Type:*
+string
+
+*Declared by:*
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
+
+### ft.microvms.instances.<name>.shares.*.proto
+
+Filesystem sharing protocol (virtiofs or 9p).
+
+*Type:*
+string
 
 *Default:*
-
-```nix
-[ ]
-```
+`"virtiofs"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.shares.*.source
 
-
-## ft\.microvms\.instances\.\<name>\.shares\.\*\.mountPoint
-
-
-
-Mount point inside the guest\.
-
-
+Absolute path on the host to share into the guest.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.shares.*.tag
 
-
-## ft\.microvms\.instances\.\<name>\.shares\.\*\.proto
-
-
-
-Filesystem sharing protocol (virtiofs or 9p)\.
-
-
-
-*Type:*
-string
-
-
-
-*Default:*
-
-```nix
-"virtiofs"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
-
-
-
-## ft\.microvms\.instances\.\<name>\.shares\.\*\.source
-
-
-
-Absolute path on the host to share into the guest\.
-
-
+Unique virtiofs tag for this share.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.sshAuthorizedKeys
 
-
-## ft\.microvms\.instances\.\<name>\.shares\.\*\.tag
-
-
-
-Unique virtiofs tag for this share\.
-
-
-
-*Type:*
-string
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
-
-
-
-## ft\.microvms\.instances\.\<name>\.sshAuthorizedKeys
-
-
-
-SSH public keys authorized to log in as root inside the VM\. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge)\.
-
-
+SSH public keys authorized to log in as root inside the VM. When non-empty, enables OpenSSH server in the guest on port 22 (the VM is only reachable from the host bridge).
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.vcpus
 
-
-## ft\.microvms\.instances\.\<name>\.vcpus
-
-
-
-Number of vCPUs assigned to the VM\.
-
-
+Number of vCPUs assigned to the VM.
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-2
-```
+`2`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.vmAddressSuffix
 
-
-## ft\.microvms\.instances\.\<name>\.vmAddressSuffix
-
-
-
-Last octet of this VM’s IP address on the shared microvm0 subnet — combined with the network portion of ft\.microvms\.hostAddress to form the full guest address\. Must be unique among all instances on this host\.
-
-
+Last octet of this VM's IP address on the shared microvm0 subnet — combined with the network portion of ft.microvms.hostAddress to form the full guest address. Must be unique among all instances on this host.
 
 *Type:*
 8 bit unsigned integer; between 0 and 255 (both inclusive)
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.vmMac
 
-
-## ft\.microvms\.instances\.\<name>\.vmMac
-
-
-
-MAC address assigned to the VM’s TAP-backed network interface\. Must be locally administered (first octet 02) and unique per host\.
-
-
+MAC address assigned to the VM's TAP-backed network interface. Must be locally administered (first octet 02) and unique per host.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.volumes
 
-
-## ft\.microvms\.instances\.\<name>\.volumes
-
-
-
-Persistent disk images attached to the guest\. Each entry creates a host-side image file and mounts it at the given path inside the VM\.
-
-
+Persistent disk images attached to the guest. Each entry creates a host-side image file and mounts it at the given path inside the VM.
 
 *Type:*
 list of (submodule)
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.volumes.*.image
 
-
-## ft\.microvms\.instances\.\<name>\.volumes\.\*\.image
-
-
-
-Absolute path to the host-side disk image file\.
-
-
+Absolute path to the host-side disk image file.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.volumes.*.mountPoint
 
-
-## ft\.microvms\.instances\.\<name>\.volumes\.\*\.mountPoint
-
-
-
-Mount point inside the guest\.
-
-
+Mount point inside the guest.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.volumes.*.size
 
-
-## ft\.microvms\.instances\.\<name>\.volumes\.\*\.size
-
-
-
-Size of the disk image in MiB\.
-
-
+Size of the disk image in MiB.
 
 *Type:*
 signed integer
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.instances.<name>.vsockCid
 
-
-## ft\.microvms\.instances\.\<name>\.vsockCid
-
-
-
-vsock context ID (CID) for the VM\. When set, enables systemd-notify support and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user\.target for a long time (e\.g\. first-boot image pulls)\. Must be unique per host (valid range: 3–4294967293)\.
-
-
+vsock context ID (CID) for the VM. When set, enables systemd-notify support and the host service will wait for the VM to signal readiness — do not set this if any service blocks multi-user.target for a long time (e.g. first-boot image pulls). Must be unique per host (valid range: 3–4294967293).
 
 *Type:*
 null or signed integer
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+### ft.microvms.prefixLength
 
-
-## ft\.microvms\.prefixLength
-
-
-
-Subnet prefix length shared by the host bridge and every guest interface (e\.g\. 24 for /24)\.
-
-
+Subnet prefix length shared by the host bridge and every guest interface (e.g. 24 for /24).
 
 *Type:*
 signed integer
 
-
-
 *Default:*
-
-```nix
-24
-```
+`24`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/microvm.nix)
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
 
+## ft.moonlight
 
+Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
 
-## ft\.moonlight\.enable
+### ft.moonlight.applications
 
-
-
-Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default\. Clients connect with Moonlight/Artemis\. Streaming users must additionally be members of the ` input ` group for virtual-input emulation\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
-
-
-
-## ft\.moonlight\.applications
-
-
-
-Moonlight application list passed through to ` services.sunshine.applications ` (the ` { env; apps = [ ... ]; } ` structure defining the entries clients can launch)\. Merged with the module defaults\.
-
-
+Moonlight application list passed through to `services.sunshine.applications` (the `{ env; apps = [ ... ]; }` structure defining the entries clients can launch). Merged with the module defaults.
 
 *Type:*
 attribute set
 
-
-
 *Default:*
-
-```nix
-{ }
-```
+`{ }`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.autoStart
 
-
-## ft\.moonlight\.autoStart
-
-
-
-Start the systemd *user* service automatically on login to a graphical session\.
-
-
+Start the systemd *user* service automatically on login to a graphical session.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.backend
 
-
-## ft\.moonlight\.backend
-
-
-
-Stream-host implementation\. Only ` sunshine ` (nixpkgs’ in-tree ` services.sunshine `) is implemented; ` apollo ` is reserved for a future ClassicOldSong/Apollo backend and currently fails an assertion because Apollo is not packaged in nixpkgs\.
-
-
+Stream-host implementation. Only `sunshine` (nixpkgs' in-tree `services.sunshine`) is implemented; `apollo` is reserved for a future ClassicOldSong/Apollo backend and currently fails an assertion because Apollo is not packaged in nixpkgs.
 
 *Type:*
-one of “sunshine”, “apollo”
-
-
+one of "sunshine", "apollo"
 
 *Default:*
-
-```nix
-"sunshine"
-```
+`"sunshine"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.capSysAdmin
 
-
-## ft\.moonlight\.capSysAdmin
-
-
-
-Grant ` CAP_SYS_ADMIN ` on the host binary, required for KMS/Wayland screen capture on many setups\. Disabled by default because it is a privilege escalation; enable it if screen capture fails under a Wayland session\.
-
-
+Grant `CAP_SYS_ADMIN` on the host binary, required for KMS/Wayland screen capture on many setups. Disabled by default because it is a privilege escalation; enable it if screen capture fails under a Wayland session.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.enable
 
-
-## ft\.moonlight\.installClient
-
-
-
-Also install the Moonlight client (` moonlight-qt `) so this machine can view streams from other hosts, not just serve them\.
-
-
+Runs a Moonlight-compatible stream host (Sunshine) for remote desktop and low-latency game streaming, opening the Moonlight port set in the firewall by default. Clients connect with Moonlight/Artemis. Streaming users must additionally be members of the `input` group for virtual-input emulation.
 
 *Type:*
 boolean
 
-
-
 *Default:*
+`false`
 
-```nix
-false
-```
+*Example:*
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.installClient
 
-
-## ft\.moonlight\.openFirewall
-
-
-
-Open the Moonlight port set in the firewall (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010)\. Enabled by default — a stream host is unreachable without it — but can be disabled to manage the ports manually or restrict them to a VPN interface\.
-
-
+Also install the Moonlight client (`moonlight-qt`) so this machine can view streams from other hosts, not just serve them.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+### ft.moonlight.openFirewall
 
+Open the Moonlight port set in the firewall (TCP 47984/47989/47990/48010, UDP 47998-48000/48002/48010). Enabled by default — a stream host is unreachable without it — but can be disabled to manage the ports manually or restrict them to a VPN interface.
 
-## ft\.moonlight\.settings
+*Type:*
+boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
-Free-form settings passed through to ` services.sunshine.settings ` (e\.g\. ` sunshine_name `, ` min_log_level `, ` origin_web_ui_allowed `)\. Merged with the module defaults\.
+### ft.moonlight.settings
 
-
+Free-form settings passed through to `services.sunshine.settings` (e.g. `sunshine_name`, `min_log_level`, `origin_web_ui_allowed`). Merged with the module defaults.
 
 *Type:*
 attribute set
 
-
-
 *Default:*
-
-```nix
-{ }
-```
+`{ }`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/moonlight.nix)
+- [modules/nixos/services/moonlight.nix](services/moonlight.nix)
 
+## ft.mullet
 
+Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
 
-## ft\.mullet\.enable
+### ft.mullet.enable
 
-
-
-Installs every package named in the newline-delimited file at ` ft.mullet.sourcePath ` into the system closure\. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix\. Unresolved names are silently skipped\.
-
-
+Installs every package named in the newline-delimited file at `ft.mullet.sourcePath` into the system closure. Lets a consumer add or remove packages by editing a plain text file instead of editing Nix. Unresolved names are silently skipped.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet.nix)
+- [modules/nixos/apps/mullet.nix](apps/mullet.nix)
 
+### ft.mullet.sourcePath
 
-
-## ft\.mullet\.sourcePath
-
-
-
-Required: flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names\. Set it in your machine config, e\.g\. ` ft.mullet.sourcePath = ./var/mullet.txt; `\. No default is provided because a framework-relative default would resolve into the framework repo, not the consumer’s\.
-
-
+Required: flake-relative path to the flat newline-delimited text file tracking imperatively-managed package attribute names. Set it in your machine config, e.g. `ft.mullet.sourcePath = ./var/mullet.txt;`. No default is provided because a framework-relative default would resolve into the framework repo, not the consumer's.
 
 *Type:*
 absolute path
 
-
-
 *Example:*
-
-```nix
-./var/mullet.txt
-```
+`./var/mullet.txt`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/apps/mullet.nix)
+- [modules/nixos/apps/mullet.nix](apps/mullet.nix)
 
+## ft.nfs
 
+Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
 
-## ft\.nfs\.enable
+### ft.nfs.enable
 
-
-
-Configures NFS client mounts declared under ` ft.nfs.mounts `\. Each entry specifies a ` remotePath ` (e\.g\. server:/share) and a ` mountPoint `, and is auto-mounted on demand with a 10-minute idle timeout via systemd\.automount\.
-
-
+Configures NFS client mounts declared under `ft.nfs.mounts`. Each entry specifies a `remotePath` (e.g. server:/share) and a `mountPoint`, and is auto-mounted on demand with a 10-minute idle timeout via systemd.automount.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
+- [modules/nixos/services/nfs.nix](services/nfs.nix)
 
+### ft.nfs.mounts
 
-
-## ft\.nfs\.mounts
-
-
-
-Attribute set of NFS mounts to configure\.
-
-
+Attribute set of NFS mounts to configure.
 
 *Type:*
 attribute set of (submodule)
 
-
-
 *Default:*
-
-```nix
-{ }
-```
+`{ }`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
+- [modules/nixos/services/nfs.nix](services/nfs.nix)
 
+### ft.nfs.mounts.<name>.mountPoint
 
-
-## ft\.nfs\.mounts\.\<name>\.mountPoint
-
-
-
-Local mount point for the NFS share\.
-
-
+Local mount point for the NFS share.
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
+- [modules/nixos/services/nfs.nix](services/nfs.nix)
 
+### ft.nfs.mounts.<name>.remotePath
 
-
-## ft\.nfs\.mounts\.\<name>\.remotePath
-
-
-
-Remote path of the NFS share (e\.g\., server:/path)\.
-
-
+Remote path of the NFS share (e.g., server:/path).
 
 *Type:*
 string
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/nfs.nix)
+- [modules/nixos/services/nfs.nix](services/nfs.nix)
 
+## ft.nixIndex
 
+Whether to enable nix-index with pre-built database and comma integration.
 
-## ft\.nixIndex\.enable
+### ft.nixIndex.comma
 
-
-
-Whether to enable nix-index with pre-built database and comma integration\.
-
-
+Enable comma — run uninstalled commands via nix-index.
 
 *Type:*
 boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/system/nix-index.nix](system/nix-index.nix)
+
+### ft.nixIndex.enable
+
+Whether to enable nix-index with pre-built database and comma integration.
+
+*Type:*
+boolean
 
 *Default:*
-
-```nix
-true
-```
-
-
+`true`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index.nix)
+- [modules/nixos/system/nix-index.nix](system/nix-index.nix)
 
+## ft.plasma
 
+Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
 
-## ft\.nixIndex\.comma
+### ft.plasma.enable
 
-
-
-Enable comma — run uninstalled commands via nix-index\.
-
-
+Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc). Elisa music player is excluded by default.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/nix-index.nix)
-
-
-
-## ft\.plasma\.enable
-
-
-
-Enables KDE Plasma 6 with SDDM as the display manager, X server, KDE Connect for device pairing, KWallet for credential storage, and a curated set of KDE apps (kate, kcalc, spectacle, partitionmanager, krdc)\. Elisa music player is excluded by default\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma.nix)
+- [modules/nixos/desktops/plasma.nix](desktops/plasma.nix)
 
+## ft.plasmaBigscreen
 
+Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
 
-## ft\.plasmaBigscreen\.enable
+### ft.plasmaBigscreen.cecSupport
 
-
-
-Installs kdePackages\.plasma\.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services\.displayManager\.sessionPackages\. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent)\.
-
-
+Loads the cec kernel module and installs libcec and v4l-utils so a TV remote can drive Plasma Bigscreen over HDMI-CEC.
 
 *Type:*
 boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/desktops/plasma-bigscreen.nix](desktops/plasma-bigscreen.nix)
+
+### ft.plasmaBigscreen.defaultSession
+
+Makes plasma-bigscreen-wayland the default SDDM session, and therefore the session autologin starts, instead of merely adding it as a selectable option alongside any other configured session.
+
+*Type:*
+boolean
 
 *Default:*
+`false`
 
-```nix
-false
-```
+*Declared by:*
+- [modules/nixos/desktops/plasma-bigscreen.nix](desktops/plasma-bigscreen.nix)
 
+### ft.plasmaBigscreen.enable
 
+Installs kdePackages.plasma.plasma-bigscreen and registers its plasma-bigscreen-wayland session via services.displayManager.sessionPackages. Exempt from the VM smoke test requirement: pulls in qtwebengine and the full KDE Frameworks stack (binary-cache-dependent), and its primary input path (HDMI-CEC) cannot be exercised inside a VM (hardware-dependent).
+
+*Type:*
+boolean
+
+*Default:*
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
+- [modules/nixos/desktops/plasma-bigscreen.nix](desktops/plasma-bigscreen.nix)
 
+## ft.printing
 
+Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
 
-## ft\.plasmaBigscreen\.cecSupport
+### ft.printing.enable
 
-
-
-Loads the cec kernel module and installs libcec and v4l-utils so a TV remote can drive Plasma Bigscreen over HDMI-CEC\.
-
-
+Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery. Disable either sub-feature with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`. Add hardware drivers via `extraDrivers`.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
-
-
-
-## ft\.plasmaBigscreen\.defaultSession
-
-
-
-Makes plasma-bigscreen-wayland the default SDDM session, and therefore the session autologin starts, instead of merely adding it as a selectable option alongside any other configured session\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/desktops/plasma-bigscreen.nix)
-
-
-
-## ft\.printing\.enable
-
-
-
-Starts CUPS with a virtual PDF printer (CUPS-PDF) and Avahi for mDNS/Bonjour network printer discovery\. Disable either sub-feature with ` enableVirtualPdfPrinter ` or ` enableNetworkDiscovery `\. Add hardware drivers via ` extraDrivers `\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
+- [modules/nixos/services/printing.nix](services/printing.nix)
 
+### ft.printing.enableNetworkDiscovery
 
-
-## ft\.printing\.enableNetworkDiscovery
-
-
-
-Enable Avahi for network printer discovery (mDNS/Bonjour)\.
-
-
+Enable Avahi for network printer discovery (mDNS/Bonjour).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
+- [modules/nixos/services/printing.nix](services/printing.nix)
 
+### ft.printing.enableVirtualPdfPrinter
 
-
-## ft\.printing\.enableVirtualPdfPrinter
-
-
-
-Enable CUPS-PDF virtual printer\.
-
-
+Enable CUPS-PDF virtual printer.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
+- [modules/nixos/services/printing.nix](services/printing.nix)
 
+### ft.printing.extraDrivers
 
-
-## ft\.printing\.extraDrivers
-
-
-
-List of additional printer driver packages\.
-
-
+List of additional printer driver packages.
 
 *Type:*
 list of package
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
-
-
+`[ ]`
 
 *Example:*
-
-```nix
-"[ pkgs.gutenprint pkgs.hplip ]"
-```
+`"[ pkgs.gutenprint pkgs.hplip ]"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/printing.nix)
+- [modules/nixos/services/printing.nix](services/printing.nix)
 
+## ft.rclone
 
+Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
 
-## ft\.rclone\.enable
+### ft.rclone.enable
 
-
-
-Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e\.g\. Google Drive) under the configured mount point\.
-
-
+Installs rclone and FUSE system-wide and enables fuse user_allow_other, so a per-user rclone mount service can expose a cloud remote (e.g. Google Drive) under the configured mount point.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
+- [modules/nixos/system/rclone.nix](system/rclone.nix)
 
+### ft.rclone.mountPoint
 
-
-## ft\.rclone\.mountPoint
-
-
-
-Mount-point name a consumer’s per-user rclone mount service references (e\.g\. a home-manager systemd user service mounting under ~/\<mountPoint>)\. Convention only — this module does not create the mount itself\.
-
-
+Mount-point name a consumer's per-user rclone mount service references (e.g. a home-manager systemd user service mounting under ~/<mountPoint>). Convention only — this module does not create the mount itself.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"GoogleDrive"
-```
-
-
+`"GoogleDrive"`
 
 *Example:*
-
-```nix
-"GoogleDrive"
-```
+`"GoogleDrive"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
+- [modules/nixos/system/rclone.nix](system/rclone.nix)
 
+### ft.rclone.remoteName
 
-
-## ft\.rclone\.remoteName
-
-
-
-rclone remote name a consumer’s per-user mount service references (e\.g\. ` rclone mount <remoteName>: ... `)\. Convention only — this module does not create the mount itself\.
-
-
+rclone remote name a consumer's per-user mount service references (e.g. `rclone mount <remoteName>: ...`). Convention only — this module does not create the mount itself.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"gdrive"
-```
-
-
+`"gdrive"`
 
 *Example:*
-
-```nix
-"gdrive"
-```
+`"gdrive"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/rclone.nix)
+- [modules/nixos/system/rclone.nix](system/rclone.nix)
 
+## ft.repoPath
 
-
-## ft\.repoPath
-
-
-
-Absolute path to the consumer’s flake repo root\. Set this in your host file\.
-
-
+Absolute path to the consumer's flake repo root. Set this in your host file.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"/nix/ft-home"
-```
+`"/nix/ft-home"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/core.nix)
+- [modules/nixos/system/core.nix](system/core.nix)
 
+## ft.sops
 
+Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
 
-## ft\.sops\.enable
+### ft.sops.enable
 
-
-
-Wires up sops-nix pointing at ` ft.repoPath/var/secrets/secrets.yaml `, using the machine’s SSH host key for age decryption\. Enable ` ft.security.sops.useTPM ` or ` ft.security.sops.useYubikey ` for hardware-token decryption instead\.
-
-
+Wires up sops-nix pointing at `ft.repoPath/var/secrets/secrets.yaml`, using the machine's SSH host key for age decryption. Enable `ft.security.sops.useTPM` or `ft.security.sops.useYubikey` for hardware-token decryption instead.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
+- [modules/nixos/system/sops.nix](system/sops.nix)
 
+### ft.sops.useTPM
 
-
-## ft\.sops\.useTPM
-
-
-
-Adds age-plugin-tpm, enables the TPM2 subsystem, and configures sops to read the age identity from /var/lib/sops-nix/key\.txt (populated by the TPM plugin)\.
-
-
+Adds age-plugin-tpm, enables the TPM2 subsystem, and configures sops to read the age identity from /var/lib/sops-nix/key.txt (populated by the TPM plugin).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
+- [modules/nixos/system/sops.nix](system/sops.nix)
 
+### ft.sops.useYubikey
 
-
-## ft\.sops\.useYubikey
-
-
-
-Adds age-plugin-yubikey, starts pcscd for smart-card access, and configures sops to read the age identity stub from /var/lib/sops-nix/key\.txt (populated by the YubiKey plugin)\.
-
-
+Adds age-plugin-yubikey, starts pcscd for smart-card access, and configures sops to read the age identity stub from /var/lib/sops-nix/key.txt (populated by the YubiKey plugin).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/sops.nix)
+- [modules/nixos/system/sops.nix](system/sops.nix)
 
+## ft.steamConfig
 
+Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
 
-## ft\.steamConfig\.enable
+### ft.steamConfig.enable
 
-
-
-Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts\. Configure individual games under programs\.steam\.config\.apps and programs\.steam\.config\.nonSteamApps once enabled\.
-
-
+Enables steam-config-nix, which declaratively manages Steam launch options, per-game compatibility-tool overrides, and non-Steam game shortcuts. Configure individual games under programs.steam.config.apps and programs.steam.config.nonSteamApps once enabled.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/steam-config\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/steam-config.nix)
+- [modules/nixos/profiles/steam-config.nix](profiles/steam-config.nix)
 
+## ft.tailscale
 
+Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
 
-## ft\.tailscale\.enable
+### ft.tailscale.autoJoin
 
-
-
-Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app\. Set ` ft.tailscale.useRoutingFeatures = "server" ` to run as an exit node\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
-
-
-
-## ft\.tailscale\.enableTrayApp
-
-
-
-Enable Trayscale GUI tray application\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
-
-
-
-## ft\.tailscale\.autoJoin
-
-
-
-Declares the ` tailscale/authkey ` sops secret and points
-` services.tailscale.authKeyFile ` at it, so tailscaled authenticates and
+Declares the `tailscale/authkey` sops secret and points
+`services.tailscale.authKeyFile` at it, so tailscaled authenticates and
 joins the tailnet automatically on first boot instead of requiring a
-manual ` sudo tailscale up `\. Defaults to ` ft.sops.enable `, so any machine
-with sops already enabled auto-joins with no extra toggle\. Requires a
-` tailscale/authkey ` value populated in the encrypted secrets file\. The
+manual `sudo tailscale up`. Defaults to `ft.sops.enable`, so any machine
+with sops already enabled auto-joins with no extra toggle. Requires a
+`tailscale/authkey` value populated in the encrypted secrets file. The
 key must be a reusable auth key generated in the Tailscale admin
 console; if it expires, rotate it and re-encrypt the secrets file or
-auto-join silently stops working for any newly built machine\.
-
-
+auto-join silently stops working for any newly built machine.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
+- [modules/nixos/services/tailscale.nix](services/tailscale.nix)
 
+### ft.tailscale.enable
 
-
-## ft\.tailscale\.useRoutingFeatures
-
-
-
-Tailscale routing features (client or server/exit node)\.
-
-
-
-*Type:*
-one of “client”, “server”
-
-
-
-*Default:*
-
-```nix
-"client"
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
-
-
-
-## ft\.tailscale\.useSSH
-
-
-
-Enables Tailscale’s built-in SSH server (` tailscale up --ssh `), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale’s browser-based SSH Console, with no client app or authorized_keys entry needed\. Access is governed entirely by your tailnet’s ACL policy (configured in the Tailscale admin console), not by this option\.
-
-
+Connects the machine to a Tailscale mesh network, trusts the tailscale0 interface in the firewall, and installs the Trayscale GUI tray app. Set `ft.tailscale.useRoutingFeatures = "server"` to run as an exit node.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/tailscale.nix)
+- [modules/nixos/services/tailscale.nix](services/tailscale.nix)
 
+### ft.tailscale.enableTrayApp
 
-
-## ft\.users\.enable
-
-
-
-Creates wheel (sudo) users from ` superUsers ` and unprivileged users from ` normalUsers `; all get zsh and common group membership\. The privileged admin account is owned separately by the ` ft.admin ` module\.
-
-
+Enable Trayscale GUI tray application.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-
-
-*Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/services/tailscale.nix](services/tailscale.nix)
 
+### ft.tailscale.useRoutingFeatures
 
+Tailscale routing features (client or server/exit node).
 
-## ft\.users\.initialPasswords
+*Type:*
+one of "client", "server"
 
+*Default:*
+`"client"`
 
+*Declared by:*
+- [modules/nixos/services/tailscale.nix](services/tailscale.nix)
 
-Per-user initial plaintext passwords set at first boot\. Key is username; value overrides the ‘changeme’ default\. Use sops secrets for production credentials\.
+### ft.tailscale.useSSH
 
+Enables Tailscale's built-in SSH server (`tailscale up --ssh`), letting tailnet peers connect over SSH using their Tailscale identity instead of a separate SSH keypair — including from Tailscale's browser-based SSH Console, with no client app or authorized_keys entry needed. Access is governed entirely by your tailnet's ACL policy (configured in the Tailscale admin console), not by this option.
 
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/services/tailscale.nix](services/tailscale.nix)
+
+## ft.users
+
+Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
+
+### ft.users.enable
+
+Creates wheel (sudo) users from `superUsers` and unprivileged users from `normalUsers`; all get zsh and common group membership. The privileged admin account is owned separately by the `ft.admin` module.
+
+*Type:*
+boolean
+
+*Default:*
+`true`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/system/user.nix](system/user.nix)
+
+### ft.users.initialPasswords
+
+Per-user initial plaintext passwords set at first boot. Key is username; value overrides the 'changeme' default. Use sops secrets for production credentials.
 
 *Type:*
 attribute set of string
 
-
-
 *Default:*
-
-```nix
-{ }
-```
-
-
+`{ }`
 
 *Example:*
-
-```nix
-{
+`{
   admin = "mypassword";
   guest = "guestpass";
-}
-```
+}`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+### ft.users.mainUser
 
-
-## ft\.users\.mainUser
-
-
-
-The primary username other modules (like Home Manager) will target\. Defaults to the admin account created by ` ft.admin `\.
-
-
+The primary username other modules (like Home Manager) will target. Defaults to the admin account created by `ft.admin`.
 
 *Type:*
 string
 
-
-
 *Default:*
-
-```nix
-"admin"
-```
+`"admin"`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+### ft.users.normalUsers
 
-
-## ft\.users\.normalUsers
-
-
-
-Standard users with no administrative privileges\.
-
-
+Standard users with no administrative privileges.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+### ft.users.superUsers
 
-
-## ft\.users\.superUsers
-
-
-
-Extra users who get sudo (wheel) access\.
-
-
+Extra users who get sudo (wheel) access.
 
 *Type:*
 list of string
 
-
-
 *Default:*
-
-```nix
-[ ]
-```
+`[ ]`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+### ft.users.u2f.enable
 
-
-## ft\.users\.u2f\.enable
-
-
-
-Enables PAM U2F for login and sudo\. Configure per-user FIDO2 credentials via ` ft.users.u2f.mappings `\. ` nouserok ` is always set so users without a key entry fall through to password authentication\.
-
-
+Enables PAM U2F for login and sudo. Configure per-user FIDO2 credentials via `ft.users.u2f.mappings`. `nouserok` is always set so users without a key entry fall through to password authentication.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+### ft.users.u2f.mappings
 
-
-## ft\.users\.u2f\.mappings
-
-
-
-Per-user U2F key data\. Attribute name is the username; value is the raw credential string (the part after ‘username:’ in the pam-u2f authfile format)\.
-
-
+Per-user U2F key data. Attribute name is the username; value is the raw credential string (the part after 'username:' in the pam-u2f authfile format).
 
 *Type:*
 attribute set of string
 
-
-
 *Default:*
-
-```nix
-{ }
-```
-
-
+`{ }`
 
 *Example:*
-
-```nix
-{
+`{
   admin = "publicKey,keyHandle";
   guest = "publicKey2,keyHandle2";
-}
-```
+}`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/user.nix)
+- [modules/nixos/system/user.nix](system/user.nix)
 
+## ft.vendorHw
 
+Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
 
-## ft\.vendorHw\.enable
+### ft.vendorHw.asus
 
+Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) for ASUS ROG/TUF laptops. Null uses autodetect via DMI manufacturer string.
 
+*Type:*
+null or boolean
 
-Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter\.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices\.
+*Default:*
+`null`
 
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
 
+### ft.vendorHw.autodetect
+
+Read ft.facter.reportPath and enable matching vendor tooling automatically. Set to false to use only the per-brand override options below.
 
 *Type:*
 boolean
 
+*Default:*
+`true`
 
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
+
+### ft.vendorHw.corsair
+
+Override autodetect for ckb-next Corsair keyboard/mouse driver and GUI. Null uses autodetect via USB vendor ID 1b1c.
+
+*Type:*
+null or boolean
 
 *Default:*
+`null`
 
-```nix
-false
-```
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
 
+### ft.vendorHw.enable
 
+Installs and configures vendor-specific drivers, daemons, and tooling based on hardware detected in facter.json; covers Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF, and handheld gaming devices.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
 
+### ft.vendorHw.handheld
 
-
-## ft\.vendorHw\.asus
-
-
-
-Override autodetect for asusctl (asusd daemon, fan curves, AuraSync) for ASUS ROG/TUF laptops\. Null uses autodetect via DMI manufacturer string\.
-
-
+Override autodetect for InputPlumber (OGC input remapping framework) and PowerStation (TDP and power-profile control) for handheld gaming devices (Legion Go, GPD, Ayaneo, AYN). Null uses autodetect via SMBIOS chassis type 11 or known DMI manufacturer strings.
 
 *Type:*
 null or boolean
 
-
-
 *Default:*
-
-```nix
-null
-```
+`null`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
 
+### ft.vendorHw.lenovo
 
+Override autodetect for Lenovo Legion Linux (out-of-tree kernel driver and legiond daemon). Null uses autodetect via DMI manufacturer/family strings.
 
-## ft\.vendorHw\.autodetect
+*Type:*
+null or boolean
 
+*Default:*
+`null`
 
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
 
-Read ft\.facter\.reportPath and enable matching vendor tooling automatically\. Set to false to use only the per-brand override options below\.
+### ft.vendorHw.logitech
 
+Override autodetect for Solaar (Unifying/Bolt receivers) and Piper/ratbagd (gaming mice/keyboards). Null uses autodetect via USB vendor ID 046d.
 
+*Type:*
+null or boolean
+
+*Default:*
+`null`
+
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
+
+### ft.vendorHw.msi
+
+Override autodetect for the msi-ec kernel module (mainlined since Linux 5.16) and MControlCenter GUI. Null uses autodetect via DMI manufacturer string.
+
+*Type:*
+null or boolean
+
+*Default:*
+`null`
+
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
+
+### ft.vendorHw.openrgb
+
+Enable OpenRGB universal RGB lighting daemon and the i2c-dev kernel module it requires. No facter autodetect — set true to enable explicitly.
+
+*Type:*
+null or boolean
+
+*Default:*
+`null`
+
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
+
+### ft.vendorHw.razer
+
+Override autodetect for OpenRazer kernel driver/daemon and Polychromatic GUI. Null uses autodetect via USB vendor ID 1532.
+
+*Type:*
+null or boolean
+
+*Default:*
+`null`
+
+*Declared by:*
+- [modules/nixos/hardware/vendor-hw.nix](hardware/vendor-hw.nix)
+
+## ft.vicinae
+
+Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
+
+### ft.vicinae.enable
+
+Registers the upstream vicinae.cachix.org binary cache so the Vicinae launcher (ft.vicinae.enable, Home Manager) doesn't need to compile its Qt6/C++ stack from source.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.corsair
-
-
-
-Override autodetect for ckb-next Corsair keyboard/mouse driver and GUI\. Null uses autodetect via USB vendor ID 1b1c\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.handheld
-
-
-
-Override autodetect for InputPlumber (OGC input remapping framework) and PowerStation (TDP and power-profile control) for handheld gaming devices (Legion Go, GPD, Ayaneo, AYN)\. Null uses autodetect via SMBIOS chassis type 11 or known DMI manufacturer strings\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.lenovo
-
-
-
-Override autodetect for Lenovo Legion Linux (out-of-tree kernel driver and legiond daemon)\. Null uses autodetect via DMI manufacturer/family strings\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.logitech
-
-Override autodetect for Solaar (Unifying/Bolt receivers) and Piper/ratbagd (gaming mice/keyboards)\. Null uses autodetect via USB vendor ID 046d\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.msi
-
-
-
-Override autodetect for the msi-ec kernel module (mainlined since Linux 5\.16) and MControlCenter GUI\. Null uses autodetect via DMI manufacturer string\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.openrgb
-
-
-
-Enable OpenRGB universal RGB lighting daemon and the i2c-dev kernel module it requires\. No facter autodetect — set true to enable explicitly\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vendorHw\.razer
-
-
-
-Override autodetect for OpenRazer kernel driver/daemon and Polychromatic GUI\. Null uses autodetect via USB vendor ID 1532\.
-
-
-
-*Type:*
-null or boolean
-
-
-
-*Default:*
-
-```nix
-null
-```
-
-*Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/vendor-hw.nix)
-
-
-
-## ft\.vicinae\.enable
-
-
-
-Registers the upstream vicinae\.cachix\.org binary cache so the Vicinae launcher (ft\.vicinae\.enable, Home Manager) doesn’t need to compile its Qt6/C++ stack from source\.
-
-
-
-*Type:*
-boolean
-
-
-
-*Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae.nix)
+- [modules/nixos/services/vicinae.nix](services/vicinae.nix)
 
+### ft.vicinae.inputServer.enable
 
-
-## ft\.vicinae\.inputServer\.enable
-
-
-
-Wraps vicinae-input-server with cap_dac_override via security\.wrappers, granting it raw input-device access for Vicinae’s global-hotkey and keystroke-injection features\. This bypasses normal file-permission checks for the wrapped binary — leave disabled if Vicinae is only invoked through a compositor-bound shortcut (e\.g\. a KWin global shortcut running ` vicinae toggle `)\.
-
-
+Wraps vicinae-input-server with cap_dac_override via security.wrappers, granting it raw input-device access for Vicinae's global-hotkey and keystroke-injection features. This bypasses normal file-permission checks for the wrapped binary — leave disabled if Vicinae is only invoked through a compositor-bound shortcut (e.g. a KWin global shortcut running `vicinae toggle`).
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/services/vicinae.nix)
+- [modules/nixos/services/vicinae.nix](services/vicinae.nix)
 
+## ft.virt
 
+Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
 
-## ft\.virt\.enable
+### ft.virt.enable
 
-
-
-Enables libvirtd/KVM with virt-manager and adds ` ft.users.mainUser ` to the libvirtd group\. Optionally enable ` ft.virt.enableVmwareHost ` for VMware Workstation, ` ft.virt.enableIncus ` for Incus containers, and ` ft.virt.enableSpiceUsbRedirection ` for USB passthrough to VMs\.
-
-
+Enables libvirtd/KVM with virt-manager and adds `ft.users.mainUser` to the libvirtd group. Optionally enable `ft.virt.enableVmwareHost` for VMware Workstation, `ft.virt.enableIncus` for Incus containers, and `ft.virt.enableSpiceUsbRedirection` for USB passthrough to VMs.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
+- [modules/nixos/system/virt.nix](system/virt.nix)
 
+### ft.virt.enableIncus
 
-
-## ft\.virt\.enableIncus
-
-
-
-Enable Incus (LXD fork) container hypervisor\.
-
-
+Enable Incus (LXD fork) container hypervisor.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
+- [modules/nixos/system/virt.nix](system/virt.nix)
 
+### ft.virt.enableSpiceUsbRedirection
 
-
-## ft\.virt\.enableSpiceUsbRedirection
-
-
-
-Enable SPICE USB redirection for VMs\.
-
-
+Enable SPICE USB redirection for VMs.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
+- [modules/nixos/system/virt.nix](system/virt.nix)
 
+### ft.virt.enableVmwareHost
 
-
-## ft\.virt\.enableVmwareHost
-
-
-
-Enable VMware Workstation host support\.
-
-
+Enable VMware Workstation host support.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
+`false`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/system/virt.nix)
+- [modules/nixos/system/virt.nix](system/virt.nix)
 
+## ft.wine
 
+Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
 
-## ft\.wine\.enable
+### ft.wine.enable
 
-
-
-Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam\.
-
-
+Installs Bottles, Wine (WOW64 build), and Winetricks for running Windows applications outside of Steam.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/wine\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/profiles/wine.nix)
+- [modules/nixos/profiles/wine.nix](profiles/wine.nix)
 
+## ft.yubikey
 
+Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
 
-## ft\.yubikey\.enable
+### ft.yubikey.enable
 
-
-
-Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates ` ft.users.u2f `\. Set per-user FIDO2 credentials via ` ft.users.u2f.mappings ` in your machine config\.
-
-
+Installs YubiKey management tools (yubikey-manager, yubico-piv-tool, pam_u2f), enables pcscd, and activates `ft.users.u2f`. Set per-user FIDO2 credentials via `ft.users.u2f.mappings` in your machine config.
 
 *Type:*
 boolean
 
-
-
 *Default:*
-
-```nix
-false
-```
-
-
+`false`
 
 *Example:*
-
-```nix
-true
-```
+`true`
 
 *Declared by:*
- - [/nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/yubikey\.nix](file:///nix/store/2zy18yggdmwlr4kbs2gd8q06ghwk1wfj-source/modules/nixos/hardware/yubikey.nix)
-
+- [modules/nixos/hardware/yubikey.nix](hardware/yubikey.nix)
 

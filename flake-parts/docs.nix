@@ -72,11 +72,29 @@
           options = ftOptions options;
           warningsAreErrors = true;
         };
+
+      # Custom renderer over nixosOptionsDoc's optionsJSON: groups ft.*
+      # options by feature under one "##" heading each, emits a table of
+      # contents, and sources each feature's one-line summary from its
+      # `enable` option's description (every module has one per the module
+      # authoring convention). readmeRoot is the module tree's path relative
+      # to the repo root (e.g. "modules/nixos"), used to rewrite each
+      # option's "Declared by" store-path into a stable path relative to the
+      # rendered README's own location, instead of nixosOptionsDoc's default
+      # /nix/store/<hash>-source/... links (which churn on every flake.lock
+      # change regardless of whether the module tree itself changed).
+      mkGroupedDocs =
+        readmeRoot: options:
+        pkgs.runCommand "module-docs-${lib.replaceStrings [ "/" ] [ "-" ] readmeRoot}"
+          { nativeBuildInputs = [ pkgs.python3 ]; }
+          ''
+            python3 ${./lib/render-module-docs.py} ${(mkDocs options).optionsJSON}/share/doc/nixos/options.json ${readmeRoot} > $out
+          '';
     in
     {
       packages = {
-        module-docs-nixos = (mkDocs nixosEval.options).optionsCommonMark;
-        module-docs-home = (mkDocs homeEval.options).optionsCommonMark;
+        module-docs-nixos = mkGroupedDocs "modules/nixos" nixosEval.options;
+        module-docs-home = mkGroupedDocs "modules/home" homeEval.options;
       };
 
       checks = {
@@ -84,17 +102,14 @@
         option-docs-home = (mkStrictDocs homeEval.options).optionsJSON;
 
         # Fails nix flake check if modules/{nixos,home}/README.md drifts from
-        # what nixosOptionsDoc actually generates for the current module tree
+        # what mkGroupedDocs actually generates for the current module tree
         # (e.g. a module is renamed/removed but the committed README isn't
         # regenerated). Mirrors the diff style of the `format` check.
         #
-        # "Declared by" links embed the store-path hash of inputs.self itself
-        # (file:///nix/store/<hash>-source/modules/...). That hash changes
-        # whenever flake.lock is rewritten in-session — which CI's "Resolve
-        # flake inputs" step does unconditionally before running this check —
-        # even though nothing under modules/ actually changed. Both sides are
-        # normalized to strip store-path hashes before diffing so the check
-        # tracks real content drift instead of flake-lock churn.
+        # mkGroupedDocs's "Declared by" links are repo-relative (not
+        # /nix/store/<hash>-source/... paths), so they're stable across a
+        # flake.lock rewrite — but normalize defensively anyway in case a
+        # default/example value ever embeds a literal package store path.
         docs-fresh =
           pkgs.runCommand "docs-fresh-check"
             {
@@ -102,8 +117,8 @@
                 pkgs.diffutils
                 pkgs.gnused
               ];
-              nixosReadme = (mkDocs nixosEval.options).optionsCommonMark;
-              homeReadme = (mkDocs homeEval.options).optionsCommonMark;
+              nixosReadme = mkGroupedDocs "modules/nixos" nixosEval.options;
+              homeReadme = mkGroupedDocs "modules/home" homeEval.options;
             }
             ''
               normalize() {
