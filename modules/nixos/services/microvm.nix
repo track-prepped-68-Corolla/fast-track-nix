@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   inputs,
   ...
@@ -67,6 +68,12 @@
             hostInterface = lib.mkOption {
               type = lib.types.str;
               description = "Name of the host's external network interface (e.g. eth0, wlan0, enp3s0), used by networking.nat to add the MASQUERADE rule that gives the VM internet access. Set to the empty string for a VM that should have no internet access. Every VM on the same host that wants internet must agree on this value.";
+            };
+
+            shareSecrets = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Share the consumer's sops secret tree (ft.repoPath/var/secrets) into this VM read-only at /var/lib/microvm/<name>/secrets, which its guest mounts at /var/secrets (see the guest's ft.vmSecrets). The files stay sops-encrypted — only a guest holding the matching age recipient can decrypt them. Requires ft.repoPath set to your consumer repo.";
             };
 
             shareOwner = lib.mkOption {
@@ -205,12 +212,42 @@
       systemd.tmpfiles.rules = lib.concatLists (
         lib.mapAttrsToList (
           vmName: vmCfg:
-          lib.optionals vmCfg.enable [
-            "d /var/lib/microvm/${vmName} 0750 microvm - -"
-            "d /var/lib/microvm/${vmName}/share 0770 ${vmCfg.shareOwner} ${vmCfg.shareGroup} -"
-          ]
+          lib.optionals vmCfg.enable (
+            [
+              "d /var/lib/microvm/${vmName} 0750 microvm - -"
+              "d /var/lib/microvm/${vmName}/share 0770 ${vmCfg.shareOwner} ${vmCfg.shareGroup} -"
+            ]
+            # Mountpoint for the read-only sops-tree bind-mount (below), created
+            # only for VMs that opt into shareSecrets.
+            ++ lib.optional vmCfg.shareSecrets "d /var/lib/microvm/${vmName}/secrets 0700 root - -"
+          )
         ) vms
       );
+
+      # ── Host-shared sops secrets ───────────────────────────────────────────
+      # For each VM with shareSecrets, bind-mount the consumer's encrypted sops
+      # tree read-only at the path its guest (ft.vmSecrets) reads over virtiofs.
+      # Encrypted at rest; only a guest holding the matching age key decrypts it.
+      fileSystems = lib.mkMerge (
+        lib.mapAttrsToList (
+          vmName: vmCfg:
+          lib.mkIf (vmCfg.enable && vmCfg.shareSecrets) {
+            "/var/lib/microvm/${vmName}/secrets" = {
+              device = "${config.ft.repoPath}/var/secrets";
+              options = [
+                "bind"
+                "ro"
+              ];
+            };
+          }
+        ) vms
+      );
+
+      assertions = lib.mapAttrsToList (vmName: vmCfg: {
+        assertion =
+          !(vmCfg.enable && vmCfg.shareSecrets) || config.ft.repoPath != options.ft.repoPath.default;
+        message = "ft.microvms.instances.${vmName}.shareSecrets needs ft.repoPath set to your consumer repo so var/secrets can be shared into the VM — it is still the framework default (\"${options.ft.repoPath.default}\").";
+      }) vms;
 
       # ── VM definitions — ATTACH BY REFERENCE ───────────────────────────────
       # microvm.vms.<name>.flake = self pulls self.nixosConfigurations.<name>
