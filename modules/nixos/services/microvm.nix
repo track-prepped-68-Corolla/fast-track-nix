@@ -234,6 +234,10 @@
           lib.mkIf (vmCfg.enable && vmCfg.shareSecrets) {
             "/var/lib/microvm/${vmName}/secrets" = {
               device = "${config.ft.repoPath}/var/secrets";
+              # fsType "none" is required for a bind mount — fileSystems.<>.fsType
+              # has no default, and leaving it unset errors once the mount is
+              # forced to evaluate (as an enabled shareSecrets instance does).
+              fsType = "none";
               options = [
                 "bind"
                 "ro"
