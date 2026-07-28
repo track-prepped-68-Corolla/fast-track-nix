@@ -127,6 +127,8 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.containers` | OCI container runtime substrate — docker/podman × rootful/rootless, real Docker Compose v2, optional Distrobox (NixOS) / user-level rootless counterpart (HM) |
 | `ft.komodo` | Komodo Core + Periphery + FerretDB via docker-compose, layered on `ft.containers`, with opt-in GitOps auto-apply (NixOS) / user-level counterpart (HM) |
 | `ft.microvms` | Generic microVM host infrastructure |
+| `ft.vmSecrets` | Guest-side host-shared sops secrets for a microVM (age identity + `/var/secrets` mount) |
+| `ft.komodoApply` | Host-side Komodo GitOps auto-apply for a microVM, keyed by instance name |
 | `ft.nfs` | NFS client mount management |
 | `ft.flatpak` | Flatpak service, Flathub remote, and Plasma Discover frontend (NixOS) / per-user declarative app list (HM) |
 | `ft.printing` | CUPS printing service |
