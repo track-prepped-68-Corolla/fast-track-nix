@@ -20,6 +20,7 @@
 - [ft.gpu](#ftgpu) — Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
 - [ft.keepass](#ftkeepass) — Installs KeePassXC and turns off the GNOME Keyring so KeePassXC is the only place secrets are stored. This matters on desktops that mix components from different environments, where GNOME Keyring's auto-unlock could otherwise bypass your hardware key authentication.
 - [ft.komodo](#ftkomodo) — Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
+- [ft.komodoApply](#ftkomodoapply)
 - [ft.limine](#ftlimine) — Switches the boot loader to Limine and turns off systemd-boot, since having both active at once can leave the boot loader state in a confused mess.
 - [ft.liveIso](#ftliveiso) — Builds a NixOS live environment with everything needed to set up a new machine, using nixos-anywhere, disko, and nixos-facter. To produce an ISO, add a var/format marker file to the machine's directory (see flake-parts/lib/machines.nix) — the generator then emits it as packages.<system>.<name> instead of a nixosConfiguration. Add SSH keys via ft.liveIso.authorizedKeys in the machine's default.nix.
 - [ft.microvms](#ftmicrovms)
@@ -1523,6 +1524,63 @@ string
 *Declared by:*
 - [modules/nixos/services/komodo.nix](services/komodo.nix)
 
+## ft.komodoApply
+
+### ft.komodoApply
+
+Host-side Komodo GitOps auto-apply, keyed by microVM instance name. Each enabled entry reconciles that VM's Komodo with the consumer's containers/ over the API after it boots.
+
+*Type:*
+attribute set of (submodule)
+
+*Default:*
+`{ }`
+
+*Declared by:*
+- [modules/nixos/services/komodo-apply.nix](services/komodo-apply.nix)
+
+### ft.komodoApply.<name>.apiEnvSecret
+
+sops secret key holding KOMODO_API_KEY and KOMODO_API_SECRET as an env-file (KEY=VALUE lines), used to authenticate the host's komodo-apply call against the guest's Komodo API. Create a Komodo API key once to get these.
+
+*Type:*
+string
+
+*Default:*
+`"komodo/api_env"`
+
+*Declared by:*
+- [modules/nixos/services/komodo-apply.nix](services/komodo-apply.nix)
+
+### ft.komodoApply.<name>.enable
+
+After the named microVM's Komodo Core comes up, runs the bundled `komodo-apply` recipe from the host (in ft.repoPath) against Core's API, reconciling Komodo with containers/ on every rebuild — no UI needed. The attribute name must match an ft.microvms.instances.<name>; the guest Core URL is derived from that instance's address. Requires ft.cli, ft.sops and ft.repoPath, plus the apiEnvSecret below.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/services/komodo-apply.nix](services/komodo-apply.nix)
+
+### ft.komodoApply.<name>.port
+
+Port the guest's Komodo Core listens on, used to build the API URL from the microVM instance's address.
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+*Default:*
+`9120`
+
+*Declared by:*
+- [modules/nixos/services/komodo-apply.nix](services/komodo-apply.nix)
+
 ## ft.limine
 
 Switches the boot loader to Limine and turns off systemd-boot, since having both active at once can leave the boot loader state in a confused mess.
@@ -1652,6 +1710,19 @@ string
 
 *Default:*
 `"root"`
+
+*Declared by:*
+- [modules/nixos/services/microvm.nix](services/microvm.nix)
+
+### ft.microvms.instances.<name>.shareSecrets
+
+Share the consumer's sops secret tree (ft.repoPath/var/secrets) into this VM read-only at /var/lib/microvm/<name>/secrets, which its guest mounts at /var/secrets (see the guest's ft.vmSecrets). The files stay sops-encrypted — only a guest holding the matching age recipient can decrypt them. Requires ft.repoPath set to your consumer repo.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
 
 *Declared by:*
 - [modules/nixos/services/microvm.nix](services/microvm.nix)
