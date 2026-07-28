@@ -15,7 +15,10 @@
 # the age identity, the sshd that serves its public key for the one-time
 # recipient bootstrap, and the mount of the shared secrets.
 #
-# Enable it in a vms/<name>; it is inert (and guest-only) everywhere else.
+# Guest-only: it sets guest options (microvm.volumes/shares), which don't exist
+# on a real host, so it lives in the modules/vm/ subtree and is injected into
+# guests by flake-parts/vms.nix — NOT via the modules/nixos hub. Enable it in a
+# vms/<name>; inert unless enabled.
 ################################################################################
 
 let

@@ -50,6 +50,13 @@ let
   # Imported explicitly here (guests only).
   guestBase = import ../modules/vm/vm-guest-base.nix;
 
+  # Guest-only ft.vmSecrets (host-shared sops secrets). It sets guest-only
+  # options (microvm.volumes/shares), so like the baseline it lives in modules/vm/
+  # and is injected here rather than via the hub — a hub module would apply to
+  # real hosts, where microvm.shares does not exist. Inert unless a vms/<name>
+  # sets ft.vmSecrets.enable.
+  guestSecrets = import ../modules/vm/vm-secrets.nix;
+
   # Host-only / guest-incompatible modules pulled out of the hub for guests,
   # mirroring lib.vmTestBase. The microvm host module references the host-only
   # `microvm.vms` option, which a guest (guest module only) does not declare;
@@ -81,6 +88,7 @@ let
         (import ../modules/nixos)
         { disabledModules = guestDisabledModules; }
         guestBase
+        guestSecrets
         (vmsDir + "/${name}")
         {
           networking.hostName = lib.mkDefault name;
