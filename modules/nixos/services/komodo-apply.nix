@@ -31,7 +31,9 @@ let
   subnetPrefix = lib.concatStringsSep "." (lib.take 3 (lib.splitString "." netCfg.hostAddress));
   urlOf =
     name:
-    "http://${subnetPrefix}.${toString netCfg.instances.${name}.vmAddressSuffix}:${toString cfg.${name}.port}";
+    "http://${subnetPrefix}.${
+      toString netCfg.instances.${name}.vmAddressSuffix
+    }:${toString cfg.${name}.port}";
 
   # Bounded wait for the guest's Komodo Core to answer, then run komodo-apply
   # against the consumer repo. Runs as root (to read the api_env secret), so it
