@@ -117,6 +117,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.cosmicGreeter` | cosmic-greeter display manager |
 | `ft.plasma` | KDE Plasma desktop environment with SDDM |
 | `ft.plasmaBigscreen` | Plasma Bigscreen TV shell (SDDM Wayland session + HDMI-CEC) |
+| `ft.niri` | niri scrollable-tiling Wayland compositor session, with a `defaultSession` toggle |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
 | `ft.asus` | ASUS ROG/TUF laptop hardware support |
 | `ft.vendorHw` | Vendor-specific hardware software (Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG, handhelds) |
@@ -144,6 +145,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.plasmaManager` | Declarative KDE Plasma settings via plasma-manager — Home Manager |
 | `ft.karousel` | Karousel KWin tiling script — Home Manager |
 | `ft.vicinae` | Vicinae Raycast-compatible launcher: binary cache + opt-in input-server capability wrapper (NixOS) / systemd launcher service (HM) |
+| `ft.noctalia` | Noctalia QuickShell-based Wayland shell/bar for niri, launched via Vicinae: supporting NetworkManager/Bluetooth/UPower/power-profile services (NixOS) / systemd shell service (HM) |
 | `ft.atuin` | Atuin SQLite-backed searchable shell history, local-only — Home Manager |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
