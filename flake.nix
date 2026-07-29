@@ -131,6 +131,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # QuickShell-based Wayland shell/bar for niri — used by ft.noctalia.
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Declarative per-game Steam launch options, compat tools, and non-Steam
     # shortcuts — used by ft.steamConfig.
     steam-config-nix = {
