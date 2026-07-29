@@ -27,7 +27,9 @@
 - [ft.moonlight](#ftmoonlight) — Runs a Moonlight-compatible stream host (Sunshine) for remote desktop use and low-latency game streaming, opening the necessary firewall ports by default. Clients connect using Moonlight or Artemis. Anyone streaming from this machine also needs to be a member of the `input` group for virtual-input emulation (gamepad/keyboard/mouse) to work.
 - [ft.mullet](#ftmullet) — Installs every package listed in the plain text file at `ft.mullet.sourcePath`, one package name per line. This lets you add or remove packages by editing a text file instead of touching Nix code. Any name that doesn't resolve to a real package is just skipped.
 - [ft.nfs](#ftnfs) — Sets up NFS client mounts declared under `ft.nfs.mounts`. Each entry gives a `remotePath` (e.g. server:/share) and a `mountPoint`, and is mounted on demand — with a 10-minute idle timeout — via systemd's automount.
+- [ft.niri](#ftniri) — Turns on niri, a scrollable-tiling Wayland compositor, and registers it as a selectable login session. niri needs a display manager to present that session — pair it with `ft.cosmicGreeter` or `ft.plasma` (or any other display manager), whichever is already configured as the machine's primary one. Pair it with `ft.noctalia` for a bar/shell to run inside the session.
 - [ft.nixIndex](#ftnixindex) — Whether to enable nix-index with pre-built database and comma integration.
+- [ft.noctalia](#ftnoctalia) — Turns on the NixOS-level services Noctalia (a QuickShell-based Wayland shell/bar, enabled per-user via ft.noctalia in Home Manager) needs for its widgets to function: NetworkManager, Bluetooth, UPower, and a power-profile daemon. NetworkManager and Bluetooth are already on by default via ft.core; this adds UPower and power-profiles-daemon on top.
 - [ft.plasma](#ftplasma) — Turns on KDE Plasma 6 with SDDM as the login screen and the X server enabled, along with KDE Connect for pairing with phones and other devices, KWallet for storing credentials, and a curated set of KDE apps (Kate, KCalc, Spectacle, Partition Manager, and KRDC). The Elisa music player is left out by default.
 - [ft.plasmaBigscreen](#ftplasmabigscreen) — Installs Plasma Bigscreen, a TV-friendly interface, and registers its Wayland session so it can be selected as a login option. This module is exempt from the VM smoke test requirement, since it pulls in `qtwebengine` and the full KDE Frameworks stack (which depend on the binary cache) and its main input method, HDMI-CEC, can't be tested inside a VM (it depends on real hardware).
 - [ft.printing](#ftprinting) — Starts CUPS along with a virtual PDF printer (CUPS-PDF) and Avahi for finding network printers via mDNS/Bonjour. Turn either piece off with `enableVirtualPdfPrinter` or `enableNetworkDiscovery`, and add hardware drivers via `extraDrivers`.
@@ -1947,6 +1949,39 @@ string
 *Declared by:*
 - [modules/nixos/services/nfs.nix](services/nfs.nix)
 
+## ft.niri
+
+Turns on niri, a scrollable-tiling Wayland compositor, and registers it as a selectable login session. niri needs a display manager to present that session — pair it with `ft.cosmicGreeter` or `ft.plasma` (or any other display manager), whichever is already configured as the machine's primary one. Pair it with `ft.noctalia` for a bar/shell to run inside the session.
+
+### ft.niri.defaultSession
+
+Makes niri the default session the display manager starts (including for autologin), instead of just offering it as one option alongside whatever other sessions are configured.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Declared by:*
+- [modules/nixos/desktops/niri.nix](desktops/niri.nix)
+
+### ft.niri.enable
+
+Turns on niri, a scrollable-tiling Wayland compositor, and registers it as a selectable login session. niri needs a display manager to present that session — pair it with `ft.cosmicGreeter` or `ft.plasma` (or any other display manager), whichever is already configured as the machine's primary one. Pair it with `ft.noctalia` for a bar/shell to run inside the session.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/desktops/niri.nix](desktops/niri.nix)
+
 ## ft.nixIndex
 
 Whether to enable nix-index with pre-built database and comma integration.
@@ -1979,6 +2014,26 @@ boolean
 
 *Declared by:*
 - [modules/nixos/system/nix-index.nix](system/nix-index.nix)
+
+## ft.noctalia
+
+Turns on the NixOS-level services Noctalia (a QuickShell-based Wayland shell/bar, enabled per-user via ft.noctalia in Home Manager) needs for its widgets to function: NetworkManager, Bluetooth, UPower, and a power-profile daemon. NetworkManager and Bluetooth are already on by default via ft.core; this adds UPower and power-profiles-daemon on top.
+
+### ft.noctalia.enable
+
+Turns on the NixOS-level services Noctalia (a QuickShell-based Wayland shell/bar, enabled per-user via ft.noctalia in Home Manager) needs for its widgets to function: NetworkManager, Bluetooth, UPower, and a power-profile daemon. NetworkManager and Bluetooth are already on by default via ft.core; this adds UPower and power-profiles-daemon on top.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/desktops/noctalia.nix](desktops/noctalia.nix)
 
 ## ft.plasma
 
