@@ -66,7 +66,7 @@ in
   # host-specific placement state.
   systemd.network.enable = lib.mkDefault true;
   systemd.network.networks."10-eth" = {
-    matchConfig.Name = lib.mkDefault "en* eth*";
+    matchConfig.Name = lib.mkDefault "en*";
     networkConfig.DHCP = lib.mkDefault "yes";
   };
 
