@@ -22,7 +22,9 @@ let
   cfg = config.ft.noctalia;
 in
 {
-  imports = [ inputs.noctalia.nixosModules.default ];
+  # The upstream noctalia.nixosModules.default declares programs.noctalia.enable,
+  # which collides when imported alongside this module in the same evaluation.
+  # We declare everything ft.noctalia needs directly below instead.
 
   options.ft.noctalia = {
     enable = lib.mkEnableOption "Noctalia supporting system services" // {
