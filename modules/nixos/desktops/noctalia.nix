@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  inputs,
   ...
 }:
 
@@ -21,6 +22,8 @@ let
   cfg = config.ft.noctalia;
 in
 {
+  imports = [ inputs.noctalia.nixosModules.default ];
+
   options.ft.noctalia = {
     enable = lib.mkEnableOption "Noctalia supporting system services" // {
       description = "Turns on the NixOS-level services Noctalia (a QuickShell-based Wayland shell/bar, enabled per-user via ft.noctalia in Home Manager) needs for its widgets to function: NetworkManager, Bluetooth, UPower, and a power-profile daemon. NetworkManager and Bluetooth are already on by default via ft.core; this adds UPower and power-profiles-daemon on top.";
@@ -31,15 +34,6 @@ in
     programs.noctalia = {
       enable = lib.mkDefault true;
       recommendedServices.enable = lib.mkDefault true;
-      systemd.enable = lib.mkDefault true;
-      systemd.target = lib.mkDefault "graphical-session.target";
     };
-
-    hardware.bluetooth.enable = lib.mkDefault true;
-    networking.networkmanager.enable = lib.mkDefault true;
-    services.power-profiles-daemon.enable = lib.mkDefault (
-      if config.services.tuned.enable then false else true
-    );
-    services.upower.enable = lib.mkDefault true;
   };
 }
