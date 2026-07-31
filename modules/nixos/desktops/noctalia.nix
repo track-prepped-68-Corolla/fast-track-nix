@@ -13,6 +13,13 @@
 # to show real data (network, Bluetooth, power) — pair it with ft.niri for
 # a session to run it in.
 #
+# programs.noctalia (NixOS) is provided natively by nixpkgs
+# (nixos/modules/programs/wayland/noctalia.nix) — no import of the noctalia
+# flake input's own nixosModules.default needed (or wanted: it declares the
+# same option path and would conflict). The Home Manager side still needs
+# ft.noctalia's own import, since home-manager hasn't picked up an equivalent
+# module yet.
+#
 # Exempt from the VM smoke test requirement: pulls in Noctalia's QuickShell/
 # Qt6 stack (binary-cache-dependent), same exemption class as ft.vicinae.
 ################################################################################
@@ -31,15 +38,6 @@ in
     programs.noctalia = {
       enable = lib.mkDefault true;
       recommendedServices.enable = lib.mkDefault true;
-      systemd.enable = lib.mkDefault true;
-      systemd.target = lib.mkDefault "graphical-session.target";
     };
-
-    hardware.bluetooth.enable = lib.mkDefault true;
-    networking.networkmanager.enable = lib.mkDefault true;
-    services.power-profiles-daemon.enable = lib.mkDefault (
-      if config.services.tuned.enable then false else true
-    );
-    services.upower.enable = lib.mkDefault true;
   };
 }
