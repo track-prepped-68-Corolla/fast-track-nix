@@ -21,7 +21,7 @@ in
 {
   options.ft.cad3d = {
     enable = lib.mkEnableOption "3D printing and CAD toolset" // {
-      description = "Installs a 3D printing and CAD toolset for slicing and modeling: OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, admesh, and f3d. OrcaSlicer's Creality K2 profiles cover Klipper-based slicing out of the box; the rest cover parametric/mesh modeling, vector art, and STL cleanup before slicing.";
+      description = "Installs a 3D printing and CAD toolset for slicing and modeling: OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, and f3d. OrcaSlicer's Creality K2 profiles cover Klipper-based slicing out of the box; the rest cover parametric/mesh modeling, vector art, and STL cleanup before slicing.";
     };
   };
 
@@ -35,7 +35,6 @@ in
         openscad
         inkscape
         meshlab
-        admesh
         f3d
       ]
     );
