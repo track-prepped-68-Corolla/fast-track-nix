@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [ft.atuin](#ftatuin) — Replaces zsh's plain history search with atuin, which stores your shell history in a searchable database and gives you a fuzzy-search popup for it. It works entirely offline, with no sync account or background service. It takes over Ctrl+R and the up-arrow key; if `ft.terminal`'s fzf integration is also on, fzf's own Ctrl+T/Alt+C shortcuts are unaffected because atuin loads after fzf and only touches those two bindings.
+- [ft.cad3d](#ftcad3d) — Installs a 3D printing and CAD toolset for slicing and modeling: OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, admesh, and f3d. OrcaSlicer's Creality K2 profiles cover Klipper-based slicing out of the box; the rest cover parametric/mesh modeling, vector art, and STL cleanup before slicing.
 - [ft.cli](#ftcli) — Installs `just` and a small `ft` wrapper so you can run the framework's `ft` commands from any directory. This is the Home Manager equivalent of the NixOS `ft.cli` module, useful on its own for standalone Home Manager setups or non-NixOS distros like SteamOS or Bazzite. You need `ft.repoPath` set to your consumer repo's location for it to work.
 - [ft.containers](#ftcontainers) — Sets up a container runtime — Docker or Podman — that runs entirely under your own user account, no root needed. Comes with the real Docker Compose v2 and, optionally, Distrobox. Other user-level apps such as `ft.komodo` build on top of this and connect to it through `ft.containers.socket`.
 - [ft.core](#ftcore) — Turns on the required Home Manager foundation that every other module depends on: it sets `stateVersion`, the home directory, XDG base directories, generic-Linux compatibility, and allows unfree packages. This needs to stay enabled for the other home modules to work.
@@ -49,6 +50,26 @@ boolean
 
 *Declared by:*
 - [modules/home/atuin.nix](atuin.nix)
+
+## ft.cad3d
+
+Installs a 3D printing and CAD toolset for slicing and modeling: OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, admesh, and f3d. OrcaSlicer's Creality K2 profiles cover Klipper-based slicing out of the box; the rest cover parametric/mesh modeling, vector art, and STL cleanup before slicing.
+
+### ft.cad3d.enable
+
+Installs a 3D printing and CAD toolset for slicing and modeling: OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, admesh, and f3d. OrcaSlicer's Creality K2 profiles cover Klipper-based slicing out of the box; the rest cover parametric/mesh modeling, vector art, and STL cleanup before slicing.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/home/cad3d.nix](cad3d.nix)
 
 ## ft.cli
 
