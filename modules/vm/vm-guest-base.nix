@@ -70,6 +70,15 @@ in
     networkConfig.DHCP = lib.mkDefault "yes";
   };
 
+  # The guest is driven entirely by systemd-networkd (above). ft.core is enabled
+  # by default and turns on NetworkManager, which would fight networkd for the
+  # single virtio NIC — both racing to configure it leaves the guest
+  # intermittently unreachable (reachable one boot, ARP-dead the next). A
+  # headless microVM has no use for NM (or its wpa_supplicant), so turn it off
+  # here. Normal priority deliberately outranks ft.core's `mkDefault true`; a
+  # vms/<name> that genuinely needs NM can re-enable it with mkForce.
+  networking.networkmanager.enable = false;
+
   # Firewall stays at the NixOS default (enabled): guests can share a host
   # bridge, so nothing is trusted implicitly. A VM that needs inbound access
   # opens its own ports (or disables the firewall) in its vms/<name> config.
