@@ -147,7 +147,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.vicinae` | Vicinae Raycast-compatible launcher: binary cache + opt-in input-server capability wrapper (NixOS) / systemd launcher service (HM) |
 | `ft.noctalia` | Noctalia QuickShell-based Wayland shell/bar for niri, launched via Vicinae: supporting NetworkManager/Bluetooth/UPower/power-profile services (NixOS) / systemd shell service (HM) |
 | `ft.atuin` | Atuin SQLite-backed searchable shell history, local-only — Home Manager |
-| `ft.cad3d` | 3D printing/CAD toolset — OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, admesh, f3d — Home Manager |
+| `ft.cad3d` | 3D printing/CAD toolset — OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, f3d — Home Manager |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
 
