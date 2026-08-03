@@ -26,17 +26,19 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = lib.mkDefault (
-      with pkgs;
-      [
-        orca-slicer
-        blender
-        freecad
-        openscad
-        inkscape
-        meshlab
-        f3d
-      ]
-    );
+    # Not wrapped in lib.mkDefault: home.packages is a list option, and
+    # ft.terminal (enabled by default) sets it at normal priority. A
+    # mkDefault'd list here would be discarded wholesale rather than merged
+    # whenever another module also contributes to home.packages — see the
+    # module-authoring rules on list/attrset options.
+    home.packages = with pkgs; [
+      orca-slicer
+      blender
+      freecad
+      openscad
+      inkscape
+      meshlab
+      f3d
+    ];
   };
 }
