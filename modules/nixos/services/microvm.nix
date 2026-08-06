@@ -204,6 +204,17 @@
         ) vms
       );
 
+      # ── Host firewall — let guests reach the host over the bridge ──────────
+      # The bridge is the guests' DHCP server (and their gateway/resolver), but a
+      # guest's DHCP DISCOVER — and any other guest→host traffic — lands on the
+      # host's INPUT chain, which the NixOS firewall drops by default. Without
+      # this a guest never receives its lease and is unreachable (the DHCP server
+      # binds microvm0:67 but never sees the request). Trusting the internal,
+      # host-managed NAT bridge is the standard NixOS pattern: guests stay behind
+      # NAT from the outside while reaching the host services they depend on
+      # (DHCP, DNS). Gated on anyEnabled so a host running no VMs is untouched.
+      networking.firewall.trustedInterfaces = lib.mkIf anyEnabled [ "microvm0" ];
+
       # ── Host-side directories ──────────────────────────────────────────────
       # Per instance: the state dir (holds volume images microvm.nix creates) and
       # the auto share dir the guest baseline mounts at /srv/host-share. The
