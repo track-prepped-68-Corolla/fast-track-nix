@@ -24,8 +24,9 @@ in
   config = lib.mkIf cfg.enable {
     programs.steam.config = {
       enable = lib.mkDefault true;
-      # Writing config files while Steam holds them open risks corruption.
-      closeSteam = lib.mkDefault true;
+      # Writing config files while Steam holds them open risks corruption;
+      # close it (without killing any running game) before applying changes.
+      onSteamRunning = lib.mkDefault "close";
     };
   };
 }
