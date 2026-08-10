@@ -20,7 +20,7 @@ in
 
   options.ft.noctalia = {
     enable = lib.mkEnableOption "Noctalia shell" // {
-      description = "Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — bind niri's launcher keybind to `vicinae toggle` and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).";
+      description = "Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — enable ft.niri (HM) alongside this to bind niri's launcher key to `vicinae toggle` automatically, and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).";
     };
   };
 
