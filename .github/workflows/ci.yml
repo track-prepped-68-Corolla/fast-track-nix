@@ -44,8 +44,33 @@ jobs:
             git commit -am "style: auto-format"
           fi
 
-      # Runs checks.x86_64-linux.{format,lint} defined in flake.nix.
-      # format: nixfmt + deadnix diff    lint: statix
+      # Regenerate module docs against the flake inputs this run just updated,
+      # and commit locally (same local-commit-only pattern as Auto-format
+      # above). Without this, README.md only reflects whatever flake.lock was
+      # checked in the last time someone manually ran the separate
+      # `Generate Module READMEs` workflow_dispatch — which drifts the moment
+      # this job's own `nix flake update` above moves an input that a
+      # generated doc embeds (e.g. a store-path-valued option default). The
+      # checks.x86_64-linux.docs-fresh check below stays on as a safety net in
+      # case regeneration itself silently fails to produce a diff it should.
+      - name: Regenerate module docs
+        shell: bash
+        run: |
+          nix build .#module-docs-nixos -o /tmp/module-docs-nixos 2>&1 | tee /tmp/ci-docs.log
+          nix build .#module-docs-home -o /tmp/module-docs-home 2>&1 | tee -a /tmp/ci-docs.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          if [ $BUILD_EXIT -ne 0 ]; then exit $BUILD_EXIT; fi
+          cp /tmp/module-docs-nixos modules/nixos/README.md
+          cp /tmp/module-docs-home modules/home/README.md
+          if ! git diff --quiet; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -am "docs: regenerate module READMEs"
+          fi
+
+      # Runs checks.x86_64-linux.{format,lint,docs-fresh,...} defined in flake.nix.
+      # format: nixfmt + deadnix diff    lint: statix    docs-fresh: safety net,
+      # see the Regenerate module docs step above.
       - name: nix flake check
         shell: bash
         run: nix flake check -L 2>&1 | tee /tmp/ci-check.log; exit ${PIPESTATUS[0]}
@@ -85,6 +110,7 @@ jobs:
             const logFiles = {
               'Resolve flake inputs': '/tmp/ci-update.log',
               'Auto-format (treefmt)': '/tmp/ci-fmt.log',
+              'Regenerate module docs': '/tmp/ci-docs.log',
               'nix flake check': '/tmp/ci-check.log',
             };
 
