@@ -59,6 +59,29 @@
             }
           ];
         };
+      # Eval-only regression test for ft.niri's (Home Manager) launcher-bind
+      # default: actually enabling ft.vicinae to exercise this at runtime
+      # would pull in its Qt6/C++ package build — the same binary-cache
+      # dependency that exempts ft.vicinae/ft.noctalia from the ft-testing VM
+      # smoke-test suite — so this only checks the generated config.kdl text,
+      # which needs no package build.
+      mkNiriHomeConfig =
+        vicinaeEnabled:
+        inputs.home-manager.lib.homeManagerConfiguration {
+          pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+          extraSpecialArgs = { inherit inputs; };
+          modules = [
+            ../modules/home
+            {
+              home.username = "niri-check";
+              ft.core.stateVersion = "25.05";
+              ft.vicinae.enable = vicinaeEnabled;
+              ft.niri.enable = true;
+            }
+          ];
+        };
+      niriConfigWithVicinae = (mkNiriHomeConfig true).config.xdg.configFile."niri/config.kdl".text;
+      niriConfigWithoutVicinae = (mkNiriHomeConfig false).config.xdg.configFile."niri/config.kdl".text;
     in
     {
       checks = {
@@ -80,6 +103,12 @@
           assert (mkGitopsConfig true).config.services.comin.postDeploymentCommand != null;
           assert (mkGitopsConfig false).config.services.comin.postDeploymentCommand == null;
           pkgs.runCommand "gitops-auto-promote-check" { } "touch $out";
+
+        niriLauncherDefault =
+          assert lib.hasInfix "Mod+Space" niriConfigWithVicinae;
+          assert lib.hasInfix "spawn \"vicinae\" \"toggle\";" niriConfigWithVicinae;
+          assert !(lib.hasInfix "binds {" niriConfigWithoutVicinae);
+          pkgs.runCommand "niri-launcher-default-check" { } "touch $out";
 
         format =
           pkgs.runCommand "format-check"
