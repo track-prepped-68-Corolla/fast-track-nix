@@ -21,6 +21,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # nixpkgs' own programs.niri module sets services.displayManager.
+    # defaultSession = mkDefault "niri" (a defense against GDM's login-loop
+    # fallback on niri-only setups). If another desktop module enabled
+    # alongside this one — e.g. ft.plasma — also sets defaultSession via
+    # mkDefault (as plasma6.nix does, to "plasma"), the two same-priority
+    # defaults conflict and nix flake check/switch fails outright, since
+    # neither wins automatically. Pick one manually in the consuming
+    # machine's config when running ft.niri alongside another desktop:
+    #
+    #   services.displayManager.defaultSession = lib.mkForce "plasma"; # or "niri"
     programs.niri.enable = lib.mkDefault true;
 
     # Plain value, not mkDefault: guarded by cfg.defaultSession so it only
