@@ -25,11 +25,12 @@ in
     # one — e.g. ft.niri, whose upstream module defends itself the same way
     # with mkDefault "niri" — also claims defaultSession via mkDefault, the
     # two same-priority defaults conflict and nix flake check/switch fails
-    # outright, since neither wins automatically. Pick one manually in the
-    # consuming machine's config when running ft.plasma alongside another
-    # desktop:
+    # outright, since neither wins automatically. A plain assignment already
+    # outranks both mkDefaults, so no mkForce needed — pick one manually in
+    # the consuming machine's config when running ft.plasma alongside
+    # another desktop:
     #
-    #   services.displayManager.defaultSession = lib.mkForce "plasma"; # or "niri"
+    #   services.displayManager.defaultSession = "plasma"; # or "niri"
     services = {
       xserver.enable = lib.mkDefault true;
       desktopManager.plasma6.enable = lib.mkDefault true;
