@@ -8,7 +8,13 @@
 # After formatting or syncing drives, commit the updated var/bulk-drives.nix
 # and run `ft switch` to activate the new configuration.
 
-DRIVES_FILE := "machines/" + `hostname` + "/var/bulk-drives.nix"
+# `uname -n` (coreutils) rather than `hostname`: this is a parse-time backtick,
+# evaluated on every `ft` invocation because just loads all imported justfiles
+# up front — so it must not depend on a binary that a constrained PATH lacks.
+# The komodo-apply service runs just with a minimal PATH (git/jq/curl/just/
+# coreutils/bash) and has no `hostname`, which aborted every recipe at load; the
+# nodename from coreutils' `uname -n` is the same value and always present.
+DRIVES_FILE := "machines/" + `uname -n` + "/var/bulk-drives.nix"
 
 # Scan uninitialized drives, select role, format, and register. Interactive — no arguments needed.
 drives-format:
