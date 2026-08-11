@@ -59,6 +59,12 @@ let
         pkgs.curl
         pkgs.just
         pkgs.coreutils
+        # komodo-apply is a `#!/usr/bin/env bash` shebang recipe (just --shell
+        # only covers linewise recipes, not shebang ones), so bash must be on
+        # PATH for env to find it; its sourced libs (lib/komodo*.sh) use sed,
+        # which is not part of coreutils.
+        pkgs.bash
+        pkgs.gnused
       ]
     }:$PATH
     export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
