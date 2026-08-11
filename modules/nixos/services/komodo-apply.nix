@@ -52,6 +52,12 @@ let
         ]
       }:$PATH
       export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+      # just evaluates every imported justfile's top-level `:=` at load, before it
+      # reaches komodo-apply — failover.just reads FT_REPO, mullet.just reads USER.
+      # The `ft` CLI wrapper exports both; this bypasses the wrapper, so set them
+      # here too or just aborts at load with an unset-variable error.
+      export FT_REPO="${config.ft.repoPath}"
+      export USER=root
       for _ in $(seq 1 60); do
         if curl -sf -o /dev/null "${urlOf name}"; then break; fi
         sleep 5
