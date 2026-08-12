@@ -11,8 +11,10 @@ KOMODO_SYNC_FILE := "containers/komodo-sync.toml"
 #   server:  the Komodo Server resource name Periphery connects as (default
 #            "Local", matching ft.ociStack / ft.dockervm's serverName default).
 #   account: the git account *alias configured in Komodo* for private-repo
-#            access; defaults to the repo owner. Pass account="" for a public repo.
-@komodo-sync server="Local" account="":
+#            access; defaults to the repo owner. Pass account="" for a public
+#            repo — emits no git_account, so Komodo clones anonymously with no
+#            token needed.
+@komodo-sync server="Local" account="auto":
     #!/usr/bin/env bash
     set -euo pipefail
     # shellcheck source=lib/komodo.sh
@@ -36,7 +38,11 @@ KOMODO_SYNC_FILE := "containers/komodo-sync.toml"
     sync_name="${slug##*/}-stacks"
 
     account="{{account}}"
-    [ -n "$account" ] || account="${slug%%/*}"
+    # Sentinel: the unspecified default ("auto") resolves to the repo owner; an
+    # explicit account="" is honored as "no git account", so a public repo emits
+    # no git_account and Komodo clones it anonymously (komodo_emit_* already omit
+    # git_account when it is empty).
+    [ "$account" = "auto" ] && account="${slug%%/*}"
 
     komodo_generate containers "$sync_name" "{{KOMODO_SYNC_FILE}}" \
       "{{server}}" "$host" "$account" "$slug" "$branch" > "{{KOMODO_SYNC_FILE}}"
@@ -52,7 +58,8 @@ KOMODO_SYNC_FILE := "containers/komodo-sync.toml"
 # KOMODO_URL, KOMODO_API_KEY and KOMODO_API_SECRET in the environment (source
 # them from your sops secrets — see NOTES.md).
 #   account: git account alias configured in Komodo; defaults to the repo owner.
-@komodo-apply account="":
+#            Pass account="" for a public repo — no git_account, anonymous clone.
+@komodo-apply account="auto":
     #!/usr/bin/env bash
     set -euo pipefail
     # shellcheck source=lib/komodo.sh
@@ -72,7 +79,11 @@ KOMODO_SYNC_FILE := "containers/komodo-sync.toml"
     host=$(komodo_git_host "$remote")
     sync_name="${slug##*/}-stacks"
     account="{{account}}"
-    [ -n "$account" ] || account="${slug%%/*}"
+    # Sentinel: the unspecified default ("auto") resolves to the repo owner; an
+    # explicit account="" is honored as "no git account", so a public repo emits
+    # no git_account and Komodo clones it anonymously (komodo_emit_* already omit
+    # git_account when it is empty).
+    [ "$account" = "auto" ] && account="${slug%%/*}"
 
     config=$(jq -nc \
       --arg gp "$host" --arg ga "$account" --arg repo "$slug" --arg br "$branch" \
