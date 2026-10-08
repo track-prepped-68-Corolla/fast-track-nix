@@ -15,10 +15,14 @@ in
 
     launcherCommand = lib.mkOption {
       type = lib.types.nullOr (lib.types.listOf lib.types.str);
-      default = if config.ft.vicinae.enable then [
-        "vicinae"
-        "toggle"
-      ] else null;
+      default =
+        if config.ft.vicinae.enable then
+          [
+            "vicinae"
+            "toggle"
+          ]
+        else
+          null;
       description = "Command, as an argv list, that ft.niri.launcherBind runs to open the app launcher. Defaults to [\"vicinae\" \"toggle\"] when ft.vicinae.enable is also on; set to null to omit the launcher bind entirely.";
     };
 
@@ -39,7 +43,9 @@ in
     xdg.configFile."niri/config.kdl".text = lib.mkDefault ''
       ${lib.optionalString (cfg.launcherCommand != null) ''
         binds {
-            ${cfg.launcherBind} { spawn ${lib.concatMapStringsSep " " builtins.toJSON cfg.launcherCommand}; }
+            ${cfg.launcherBind} { spawn ${
+              lib.concatMapStringsSep " " builtins.toJSON cfg.launcherCommand
+            }; }
         }
       ''}
       ${cfg.extraConfig}

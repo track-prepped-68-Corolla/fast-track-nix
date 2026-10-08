@@ -16,8 +16,9 @@
 - [ft.komodo](#ftkomodo) — Deploys the upstream Komodo stack — Core, Periphery, and its FerretDB/Postgres database — as a docker-compose service running under your own user account, built on top of the Home Manager `ft.containers`. Requires `ft.containers.enable` with `compose.enable` turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 - [ft.lazyvim](#ftlazyvim) — Installs Neovim along with a full set of language servers and development tools for Python, Go, Rust, Nix, and web development. It symlinks `ft.dotfiles.path/nvim` into your XDG config as a live, editable link, and sets `EDITOR`/`VISUAL` to `nvim`.
 - [ft.mullet](#ftmullet) — Lets you add or remove your own packages by editing a plain text file instead of touching Nix. Every package name listed in the file at `ft.mullet.sourcePath` gets installed for this user; names that don't resolve to a real package are just skipped. This is the Home Manager counterpart of the NixOS `ft.mullet` module.
+- [ft.niri](#ftniri) — Generates ~/.config/niri/config.kdl declaratively. Pairs with ft.niri (NixOS) for the compositor session itself.
 - [ft.nixIndex](#ftnixindex) — Installs nix-index along with a ready-made database and the `comma` helper into your user profile, so you can look up which package provides a command. This is the Home Manager counterpart of the NixOS `ft.nixIndex` module, and is especially handy on standalone Home Manager systems or non-NixOS distros like SteamOS or Bazzite.
-- [ft.noctalia](#ftnoctalia) — Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — bind niri's launcher keybind to `vicinae toggle` and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
+- [ft.noctalia](#ftnoctalia) — Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — enable ft.niri (HM) alongside this to bind niri's launcher key to `vicinae toggle` automatically, and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
 - [ft.plasmaManager](#ftplasmamanager) — Lets you set KDE Plasma preferences — panels, keyboard shortcuts, window-manager settings, and more — directly in your Home Manager config through `programs.plasma.*`, instead of clicking through Plasma's settings app.
 - [ft.rclone](#ftrclone) — Automatically mounts a cloud storage remote (via rclone) as a folder under your home directory, kept running by a systemd user service. This pairs with the NixOS `ft.rclone` module, which installs rclone and FUSE system-wide; this module handles the actual per-user mount.
 - [ft.repoPath](#ftrepopath) — The absolute path to your consumer flake repo's root directory. Set this in `homes/<username>/default.nix`.
@@ -836,6 +837,65 @@ null or absolute path
 *Declared by:*
 - [modules/home/mullet.nix](mullet.nix)
 
+## ft.niri
+
+Generates ~/.config/niri/config.kdl declaratively. Pairs with ft.niri (NixOS) for the compositor session itself.
+
+### ft.niri.enable
+
+Generates ~/.config/niri/config.kdl declaratively. Pairs with ft.niri (NixOS) for the compositor session itself.
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/home/niri.nix](niri.nix)
+
+### ft.niri.extraConfig
+
+Extra raw KDL text appended after the generated launcher bind in config.kdl, for binds and settings ft.niri doesn't expose its own option for.
+
+*Type:*
+strings concatenated with "\n"
+
+*Default:*
+`""`
+
+*Declared by:*
+- [modules/home/niri.nix](niri.nix)
+
+### ft.niri.launcherBind
+
+niri KDL bind key combination (e.g. "Mod+Space", "Mod") that triggers ft.niri.launcherCommand. niri's own binds syntax determines which combinations are valid — check niri's config.kdl documentation before setting this to a bare modifier like "Mod".
+
+*Type:*
+string
+
+*Default:*
+`"Mod+Space"`
+
+*Declared by:*
+- [modules/home/niri.nix](niri.nix)
+
+### ft.niri.launcherCommand
+
+Command, as an argv list, that ft.niri.launcherBind runs to open the app launcher. Defaults to ["vicinae" "toggle"] when ft.vicinae.enable is also on; set to null to omit the launcher bind entirely.
+
+*Type:*
+null or (list of string)
+
+*Default:*
+`null`
+
+*Declared by:*
+- [modules/home/niri.nix](niri.nix)
+
 ## ft.nixIndex
 
 Installs nix-index along with a ready-made database and the `comma` helper into your user profile, so you can look up which package provides a command. This is the Home Manager counterpart of the NixOS `ft.nixIndex` module, and is especially handy on standalone Home Manager systems or non-NixOS distros like SteamOS or Bazzite.
@@ -871,11 +931,11 @@ boolean
 
 ## ft.noctalia
 
-Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — bind niri's launcher keybind to `vicinae toggle` and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
+Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — enable ft.niri (HM) alongside this to bind niri's launcher key to `vicinae toggle` automatically, and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
 
 ### ft.noctalia.enable
 
-Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — bind niri's launcher keybind to `vicinae toggle` and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
+Installs and runs Noctalia, a QuickShell-based Wayland shell/bar, kept running as a systemd user service. Meant to run inside a niri session (ft.niri, NixOS). Requires ft.vicinae.enable, since Vicinae is the launcher used in place of Noctalia's own built-in one — enable ft.niri (HM) alongside this to bind niri's launcher key to `vicinae toggle` automatically, and disable Noctalia's built-in launcher panel through its own settings. Configure appearance and behavior directly through `programs.noctalia.{settings,customPalettes}`, which Noctalia's own module provides. For the supporting NixOS-level services (NetworkManager, Bluetooth, UPower, power profiles), also enable the host's `ft.noctalia.enable` (NixOS).
 
 *Type:*
 boolean
@@ -1169,7 +1229,7 @@ The package that provides the monospace font.
 package
 
 *Default:*
-`<derivation nerd-fonts-atkynson-mono-3.4.0+2.001>`
+`<derivation nerd-fonts-atkynson-mono-3.5.0+2.001>`
 
 *Declared by:*
 - [modules/home/stylix.nix](stylix.nix)
@@ -1221,7 +1281,7 @@ The package that provides the serif font.
 package
 
 *Default:*
-`<derivation ibm-plex-0-unstable-2026-05-26>`
+`<derivation ibm-plex-0-unstable-2026-07-30>`
 
 *Declared by:*
 - [modules/home/stylix.nix](stylix.nix)
@@ -1247,7 +1307,7 @@ Path to the color scheme file (in Base16 YAML format) used to theme everything.
 absolute path or string
 
 *Default:*
-`"/nix/store/sdg18bn42dlvlfdg2vxpbw33i0spx05i-base16-schemes-0-unstable-2026-01-15/share/themes/catppuccin-mocha.yaml"`
+`"/nix/store/h9mhxvr3q6f7ig3mhxbqk4qh7pzw12qf-base16-schemes-0-unstable-2026-01-15/share/themes/catppuccin-mocha.yaml"`
 
 *Declared by:*
 - [modules/home/stylix.nix](stylix.nix)

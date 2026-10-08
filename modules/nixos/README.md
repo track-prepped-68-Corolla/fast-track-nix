@@ -789,7 +789,7 @@ The package providing the graphical Flathub browser.
 package
 
 *Default:*
-`<derivation discover-6.7.3>`
+`<derivation discover-6.7.5>`
 
 *Declared by:*
 - [modules/nixos/services/flatpak.nix](services/flatpak.nix)
