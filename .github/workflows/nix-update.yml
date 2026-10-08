@@ -29,6 +29,18 @@ jobs:
       - name: Format
         run: nix fmt
 
+      # Regenerate module docs against the inputs just updated, same as the
+      # matching step in ci.yml. The generated READMEs embed store-path-valued
+      # option defaults, so any input bump makes them stale and the
+      # checks.x86_64-linux.docs-fresh check below would fail. The Commit step
+      # picks the regenerated files up via `git add -u`.
+      - name: Regenerate module docs
+        run: |
+          nix build .#module-docs-nixos -o /tmp/module-docs-nixos
+          nix build .#module-docs-home -o /tmp/module-docs-home
+          cp /tmp/module-docs-nixos modules/nixos/README.md
+          cp /tmp/module-docs-home modules/home/README.md
+
       - name: nix flake check
         id: flake-check
         run: nix flake check -L
