@@ -188,11 +188,11 @@ order via the generated compose file — no per-container units to start.
 
 ## Container dependency note
 
-`komodo-core` waits for the postgres container to report healthy before starting
-(via an `ExecStartPre` polling loop using `podman healthcheck run`). PostgreSQL
-has a health-check configured (`pg_isready`) so Core will not attempt to connect
-until the database is actually ready. The same `After=`/`Requires=` pattern
-ensures Periphery starts only after Core.
+Start-up ordering is handled by the generated compose file, not by systemd
+units. The `postgres` container has a `pg_isready` health check, and `ferretdb`
+waits for it with `depends_on: condition: service_healthy`. `core` then depends
+on `ferretdb`, and `periphery` on `core`. The single `komodo` unit only waits for
+the container runtime's socket before running `docker-compose up -d`.
 
 ---
 
@@ -263,38 +263,55 @@ Populate the keys in the same sops file the base module uses
 (`var/secrets/secrets.yaml` for NixOS; `users/<username>/var/secrets.yaml` for
 standalone Home Manager).
 
-## Rootful Docker microVM (`ft.dockervm`)
+## Komodo in a microVM (`vms/<name>` + `ft.vmSecrets`)
 
-Here Periphery runs inside the guest, so sops-nix runs **inside the guest** too —
-decrypting on the guest's own persistent SSH host key. Enable a tier with:
+Here Periphery runs inside a standalone microVM guest (`vms/<name>/`), so
+sops-nix runs **inside the guest** too — decrypting on the guest's own
+persistent SSH host key. The setup has two halves:
 
 ```nix
-ft.dockervm.enable = true;
-ft.dockervm.komodo.peripherySecrets.enable = true;   # komodo/periphery_secrets
-ft.dockervm.komodo.coreSecrets.enable = true;        # komodo/core_secrets (optional)
+# vms/docker-vm/default.nix — the guest
+ft.komodo.enable = true;
+ft.komodo.secrets.periphery.enable = true;   # komodo/periphery_secrets
+ft.komodo.secrets.core.enable = true;        # komodo/core_secrets (optional)
+ft.vmSecrets.enable = true;                  # guest-side sops plumbing
+
+# machines/<host>/default.nix — the host
+ft.repoPath = "/path/to/your/consumer/repo";
+ft.microvms.instances.docker-vm = {
+  enable = true;
+  vmAddressSuffix = 2;
+  hostInterface = "eth0";
+  shareSecrets = true;                       # share var/secrets into the guest
+};
 ```
 
-Enabling either tier:
+Together these:
 
-- adds a small persistent volume for the guest's ed25519 host key (mounted at
-  `/var/lib/ssh`, so the NixOS-managed `sshd_config` is not shadowed) and enables
+- add a small persistent volume for the guest's ed25519 host key (mounted at
+  `/var/lib/ssh`, so the NixOS-managed `sshd_config` is not shadowed) and enable
   sshd in the guest so the recipient can be read;
-- shares `<repo>/var/secrets` **read-only** into the guest at `/var/secrets`;
-- decrypts `komodo/{periphery,core}_secrets` from **`var/secrets/komodo.yaml`** to
-  `/run/secrets/...` in the guest and loads them into Core/Periphery.
+- share `<repo>/var/secrets` **read-only** into the guest at `/var/secrets`
+  (host side: `shareSecrets`, which requires `ft.repoPath`);
+- decrypt `komodo/{periphery,core}_secrets` from **`var/secrets/komodo.yaml`**
+  (`ft.vmSecrets.sopsFile`) to `/run/secrets/...` in the guest and load them
+  into Core/Periphery.
 
 `komodo.yaml` is a **separate** sops file, encrypted **only** to the guest
 recipient — so the guest key cannot decrypt your host's main `secrets.yaml`, even
 though the whole (encrypted) `var/secrets` directory is visible in the guest.
+
+See `ft-testing`'s `vms/docker-vm-secrets` + `machines/dockervm-host-secrets`
+for a complete, CI-evaluated pair.
 
 ### One-time guest recipient bootstrap
 
 The guest's host key does not exist until the guest first boots, so bring the
 feature up in two phases (this mirrors how real machines onboard to sops):
 
-1. Set `peripherySecrets.enable = true` (and/or `coreSecrets`) and deploy. The
-   guest boots and generates its persistent ed25519 host key. The Komodo Stack
-   may error until step 4 — expected.
+1. Enable `ft.vmSecrets` in the guest and `shareSecrets` on the host (leave the
+   `ft.komodo.secrets.*` tiers off for now), then deploy. The guest boots and
+   generates its persistent ed25519 host key.
 2. Read the guest's host key and convert it to an age recipient:
 
    ```sh
@@ -308,11 +325,9 @@ feature up in two phases (this mirrors how real machines onboard to sops):
    sops var/secrets/komodo.yaml   # add the komodo/{periphery,core}_secrets keys
    ```
 
-4. Redeploy (or restart the guest). sops-nix decrypts on the persistent host key
-   and Komodo loads the `[secrets]` file; `[[KEY]]` references now resolve.
-
-`ft.dockervm.komodo.{peripherySecrets,coreSecrets}` require `ft.repoPath` to be
-set (an assertion enforces this) so `var/secrets` can be located and shared in.
+4. Enable the `ft.komodo.secrets.{periphery,core}` tiers in the guest and
+   redeploy. sops-nix decrypts on the persistent host key and Komodo loads the
+   `[secrets]` file; `[[KEY]]` references now resolve.
 
 ---
 
@@ -345,7 +360,8 @@ This writes `containers/komodo-sync.toml`:
   if present (see below).
 
 `server` must match the Komodo Server resource name Periphery connects as — the
-`serverName` option of `ft.komodo` / `ft.dockervm` (default `Local`).
+`serverName` option of `ft.komodo` (default `Local`) — set in the guest's
+`vms/<name>` when Komodo runs in a microVM.
 `account` is the **git account alias configured in Komodo** for private-repo
 access (Settings → Git Accounts), not a GitHub username; it defaults to the repo
 owner. Pass `account=""` for a public repo.
@@ -409,7 +425,7 @@ Instead of (or alongside) `ft komodo-apply`, enable the sync's **git webhook**
 pushes re-execute it automatically. Pair it with a batch-deploy **Procedure** on
 the same webhook to work around #1120.
 
-## Fully hands-off on deploy (`ft.komodo.autoApply` / `ft.dockervm.komodo.autoApply`)
+## Fully hands-off on deploy (`ft.komodo.autoApply` / `ft.komodoApply.<name>`)
 
 An opt-in systemd oneshot runs `ft komodo-apply` automatically after each
 rebuild, so every `ft switch` reconciles Komodo with `containers/` — zero
@@ -432,18 +448,23 @@ name with `ft.komodo.autoApply.apiEnvSecret` (default `komodo/api_env`). The sam
 options work in a Home Manager profile — there it's a `systemd --user` oneshot
 reading a user `komodo/api_env` sops key.
 
-**microVM Komodo (`ft.dockervm`):**
+**microVM Komodo (`vms/<name>`):**
 
 ```nix
-ft.dockervm.enable = true;
+# on the host
 ft.cli.enable = true;
 ft.sops.enable = true;
-ft.dockervm.komodo.autoApply.enable = true;
+ft.repoPath = "/path/to/your/consumer/repo";
+ft.microvms.instances.docker-vm.enable = true;
+ft.komodoApply.docker-vm.enable = true;      # name must match the instance
 ```
 
 This one runs on the **host** (which has the repo checkout, sops, and network
-access to the *guest's* Core), waits for Core at `ft.dockervm.komodo.host`, then
-drives the same recipe.
+access to the *guest's* Core) as `komodo-apply-<name>.service`, after
+`microvm@<name>.service`. It waits for Core at the instance's address (port
+`ft.komodoApply.<name>.port`, default `9120`), then drives the same recipe. The
+guest runs Komodo headlessly with no repo, which is why this half lives on the
+host.
 
 In both cases credentials come from a `komodo/api_env` sops secret in your
 `secrets.yaml`:

@@ -227,7 +227,7 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 ## 👾 Scripts & CLI
 
 - [ ] **`ft_py`** (`scripts/ft_py`) — in-development Python CLI; `flake.nix` explicitly keeps it framework-internal for now, not part of `lib.mkFlake`'s consumer-facing import list. Define scope and promote once stable.
-- [ ] Write a wrapper for the Lix fork of the Determinate Systems installer
+- [x] Write a wrapper for the Lix fork of the Determinate Systems installer — lives in the separate `ft-install` repo (`install.sh`)
 - [ ] **Graceful Degradation:** Wrap git integrations (`git diff`, `delta`, auto-commits) in `git rev-parse --is-inside-work-tree` checks
 - [ ] **`ft.jj` module** — optional, gated colocated Jujutsu setup for consumers who want jj ergonomics on top of the existing git-backed repo
   - [ ] `ft.jj.enable` runs `jj git init --colocate` against `ft.repoPath` (idempotent — skip if `.jj/` already exists) and installs the `jj` package
@@ -249,7 +249,7 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
 
 > From a container-module inventory (docker / podman / komodo) across
 > fast-track-nix, ft-home, ft-testing. The Komodo/runtime consolidation and the
-> microVM Phase 1 cleanup are done; the Phase 2 factory refactor remains.
+> both microVM cleanup phases are done.
 
 - [x] **Consolidate the container/Komodo modules** — collapsed the three
   overlapping Komodo implementations into one runtime substrate plus one app,
@@ -266,7 +266,7 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
   dropped as a failed experiment) along with the now-unused `hermes-agent`
   flake input. Added `ft.komodo.assumeSopsConfigured` so the guest's
   directly-configured sops-nix passes the [secrets]-tier assertion.
-- [ ] **MicroVM cleanup — Phase 2 (factory refactor)** — pull VM definitions out
+- [x] **MicroVM cleanup — Phase 2 (factory refactor)** — pull VM definitions out
   of the host module system: standalone, cacheable VM `nixosConfigurations`
   discovered from a `vms/` directory (analogous to `machines/`), with the host
   slimmed to bridge/NAT/TAP + attach-by-reference. Removes the inline-guest
@@ -281,10 +281,11 @@ Migration of all GitHub Actions workflows to Forgejo Actions. No hard blockers �
     `/srv/host-share`, ownership via `shareOwner`/`shareGroup`).
   - [x] Retired `ft.dockervm` (`microvm-docker.nix`) — the inline-guest
     appliance; its guest becomes a `vms/docker-vm/` template.
-  - [ ] Consumer migration: `vms/docker-vm/` template in `ft-testing`/
-    `ft-template`; migrate `ft-testing` dockervm machines and `ft-home`
-    strix/mimir to `vms/<name>/` guest + `ft.microvms.instances.<name>` host
-    entry.
+  - [x] Consumer migration: `vms/docker-vm/` template in `ft-testing`/
+    `ft-template`; `ft-testing`'s dockervm machines and `ft-home`'s
+    strix/mimir now use a `vms/<name>/` guest + `ft.microvms.instances.<name>`
+    host entry. Guest secrets and Komodo auto-apply are split out as
+    `ft.vmSecrets` (guest) + `ft.komodoApply.<name>` (host).
 
 ---
 

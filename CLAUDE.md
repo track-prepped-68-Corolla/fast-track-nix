@@ -119,8 +119,10 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.plasmaBigscreen` | Plasma Bigscreen TV shell (SDDM Wayland session + HDMI-CEC) |
 | `ft.niri` | niri scrollable-tiling Wayland compositor session, with a `defaultSession` toggle (NixOS) / declarative `config.kdl` generation, with an overridable launcher bind (HM) |
 | `ft.diskBtrfs` | btrfs disk layout with optional LUKS |
-| `ft.asus` | ASUS ROG/TUF laptop hardware support |
-| `ft.vendorHw` | Vendor-specific hardware software (Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG, handhelds) |
+| `ft.vendorHw` | Vendor-specific hardware software, autodetected from facter (Lenovo Legion, Razer, MSI, Logitech, Corsair, OpenRGB, ASUS ROG/TUF via `ft.vendorHw.asus`, handhelds) |
+| `ft.facter` | nixos-facter hardware report ingestion (`reportPath`) |
+| `ft.gpu` | Universal GPU configuration (AMD / Intel / NVIDIA), detected from facter |
+| `ft.cardwire` | Cardwire GPU manager |
 | `ft.steamConfig` | Declarative per-game Steam launch options, compat tools, and non-Steam shortcuts via steam-config-nix (NixOS) / per-user counterpart (HM) |
 | `ft.yubikey` | YubiKey hardware support |
 | `ft.sops` | sops-nix secret management (NixOS) / per-user sops age key (HM) |
@@ -137,6 +139,16 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.virt` | Libvirt/QEMU, Incus, VMware host |
 | `ft.nixIndex` | nix-index with pre-built database and comma integration |
 | `ft.cli` | The `ft` CLI helper |
+| `ft.users` | User management |
+| `ft.admin` | The privileged admin user |
+| `ft.deploy` | Colmena fleet deployment target (emitted into `colmenaHive` by `flake-parts/colmena.nix`) |
+| `ft.gitops` | comin pull-based GitOps deployment (NixOS) / standalone Home Manager counterpart (HM) |
+| `ft.liveIso` | Bootstrap live ISO environment |
+| `ft.mullet` | Imperative package escape hatch fed by `mullet.txt` (NixOS) / per-user counterpart (HM) |
+| `ft.rclone` | rclone cloud storage tooling (NixOS) / per-user rclone mount service (HM) |
+| `ft.gaming` | Gaming stack (NixOS) / gaming companion tools (HM) |
+| `ft.wine` | Wine/Bottles compatibility stack (NixOS + HM) |
+| `ft.moonlight` | Moonlight game-stream host |
 | `ft.keepass` | KeePassXC secret service |
 | `ft.theme` | System-wide theming via Stylix — Home Manager |
 | `ft.terminal` | Terminal stack — Home Manager |
@@ -147,6 +159,8 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.vicinae` | Vicinae Raycast-compatible launcher: binary cache + opt-in input-server capability wrapper (NixOS) / systemd launcher service (HM) |
 | `ft.noctalia` | Noctalia QuickShell-based Wayland shell/bar for niri, launched via Vicinae: supporting NetworkManager/Bluetooth/UPower/power-profile services (NixOS) / systemd shell service (HM) |
 | `ft.atuin` | Atuin SQLite-backed searchable shell history, local-only — Home Manager |
+| `ft.webapps` | Site-specific webapp launchers — Home Manager |
+| `ft.gitWorkflow` | lefthook conventional-commit workflow — Home Manager |
 | `ft.cad3d` | 3D printing/CAD toolset — OrcaSlicer, Blender, FreeCAD, OpenSCAD, Inkscape, MeshLab, f3d — Home Manager |
 
 Every module must declare `options.ft.<feature>.enable` using `lib.mkEnableOption`. Modules without a corresponding `enable` option are not permitted.
@@ -180,6 +194,14 @@ flake-parts/
   exports.nix              # lib.mkFlake, nixosModules, homeManagerModules, packages
   formatter.nix            # nix fmt entry-point
   generator.nix            # machine/user discovery → nixosConfigurations etc.
+  vms.nix                  # vms/<name>/ discovery → standalone microVM nixosConfigurations + runners
+  colmena.nix              # flake.colmenaHive from machines with ft.deploy.enable
+  kexec.nix                # kexec installer images for machines marked var/kexec
+  docs.nix                 # module-docs-{nixos,home} packages + docs-fresh check
+  git-workflow-check.nix   # check exercising the ft.gitWorkflow commit-msg hook
+  python.nix               # uv2nix build of scripts/ft_py — framework-internal only
+  rust.nix                 # scripts/mullet-rs experiment — framework-internal only
+  lib/                     # plain helpers (not flake-parts modules), e.g. shared machine discovery
 modules/
   darwin/
     default.nix            # hub: listFilesRecursive — stub, no modules yet
@@ -188,8 +210,12 @@ modules/
     desktops/
     hardware/
     profiles/
+    apps/
     services/
     system/
+  vm/                      # microVM guest-only modules (guest baseline, ft.vmSecrets),
+                           # injected by flake-parts/vms.nix — NOT via the nixos hub
+  installer/               # kexec auto-install image module
   home/
     default.nix            # hub: listFilesRecursive — no manual imports
     home-core.nix          # home modules live as flat files directly here
@@ -201,7 +227,7 @@ machines/
 users/
   admin/                   # reference/template users — no personal data
   guest/
-staging/                   # WIP modules not yet promoted to modules/
+staging/                   # (optional, currently absent) WIP modules not yet promoted to modules/
                            # Files here are drafts; do not import from staging/
                            # in production code. Graduate to modules/ after review.
 scripts/                   # ft CLI just-recipes, bundled into the framework
@@ -212,7 +238,12 @@ scripts/                   # ft CLI just-recipes, bundled into the framework
   mullet.just                 # package escape hatch: add/remove/list packages
   store.just                  # dotfile store management (experimental)
   drives.just                  # drive/disk utilities (mount, format, SMART checks)
-  komodo.just                  # komodo-sync: generate Komodo resource-sync TOML from containers/*.yaml
+  komodo.just                  # komodo-sync / komodo-apply / komodo-deploy: Komodo GitOps from containers/*.yaml
+  fleet.just                   # colmena passthrough for ft.deploy fleets
+  lib/                         # pure-logic shell helpers sourced by the recipes (tested in ft-testing)
+  select-disk.sh               # interactive disk picker used by bootstrap
+  ft_py/                       # in-development Python CLI (framework-internal)
+  mullet-rs/                   # experimental Rust replica of mullet.just (not wired into ft)
 ```
 
 `scripts/` is the single canonical copy of the `ft` CLI justfiles, baked into the Nix store at build time and run by the `ft.cli` wrapper (`modules/nixos/system/just.nix`) against whichever consumer repo `ft.repoPath` names. Consumer repos do not keep their own copies.
