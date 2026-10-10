@@ -44,7 +44,15 @@ in
         consumerInputs:
         let
           mergedInputs = mergeInputs consumerInputs;
-          pkgs = mergedInputs.nixpkgs.legacyPackages.x86_64-linux;
+          # runNixOSTest hands the nodes this pkgs read-only, so a module's
+          # nixpkgs.config never applies inside a test. Mirror ft.core's
+          # allowUnfree default here instead, or any test node pulling an
+          # unfree package (e.g. bottles -> lsfg-vk) fails to evaluate even
+          # though the same config works on a real machine.
+          pkgs = import mergedInputs.nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
         in
         spec:
         pkgs.testers.runNixOSTest (
