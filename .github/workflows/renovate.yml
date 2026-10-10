@@ -13,9 +13,15 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - uses: renovatebot/github-action@v40
+      # renovatebot/github-action publishes only full vX.Y.Z tags — there is no
+      # floating major tag, so a bare `@v40` never resolved. Pinned by SHA like
+      # the other workflows; Renovate keeps this pin current itself.
+      #
+      # No checkout or configurationFile: Renovate clones the repo and reads its
+      # renovate.json as repo config. RENOVATE_REPOSITORIES tells the
+      # self-hosted run which repo to process (it does nothing without it).
+      - uses: renovatebot/github-action@c314dda4a9a93b08239ec978f2043b9a433b9ac4 # v46.3.0
         with:
-          configurationFile: renovate.json
           token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
