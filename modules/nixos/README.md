@@ -4,7 +4,7 @@
 
 - [ft.admin](#ftadmin) — Sets up a dedicated admin account with sudo access, present on every machine by default (you can turn it off). It can log in with an SSH key via `authorizedKeys`, a password via `initialPassword`, or both, so you're never locked out. This account is kept separate from `ft.users` so there's always one predictable place that owns the admin user.
 - [ft.bulkPool](#ftbulkpool) — Sets up a pooled bulk storage array: reads machines/<host>/var/bulk-drives.nix for the drives you've registered (labelled bulk-*), mounts each one, combines the data and cache drives into a single pool with mergerfs, and protects the data drives with nightly SnapRAID parity syncs. Does nothing when drivesFile is unset or every drive list is empty.
-- [ft.cachyos](#ftcachyos) — Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
+- [ft.cachyos](#ftcachyos) — Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation. No binary cache is configured, so the kernel is built from source on first use (expect a long build).
 - [ft.cardwire](#ftcardwire) — Turns on the cardwired service, which can block or unblock GPU device nodes so you can switch between integrated, hybrid, or manual GPU power modes. It works by hooking into the kernel with eBPF, so it needs a kernel built with `CONFIG_BPF_LSM=y` and `lsm=...,bpf` added to the boot parameters.
 - [ft.cli](#ftcli) — Installs `just` along with a small `ft` command that runs the framework's built-in recipes from anywhere on the system. It's on by default since almost every machine wants it. It needs `ft.repoPath` set to your consumer repo's location — turn this off for machines that don't have a real checkout of your repo, like a live ISO or a test-only build.
 - [ft.containers](#ftcontainers) — Sets up a container runtime — Docker or Podman, running as root or rootless — along with the real Docker Compose v2 binary and, optionally, Distrobox. Other features, like ft.komodo, build on top of this and reach the daemon through the Docker-API-compatible socket this module provides.
@@ -206,11 +206,11 @@ string
 
 ## ft.cachyos
 
-Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
+Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation. No binary cache is configured, so the kernel is built from source on first use (expect a long build).
 
 ### ft.cachyos.enable
 
-Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.
+Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation. No binary cache is configured, so the kernel is built from source on first use (expect a long build).
 
 *Type:*
 boolean
