@@ -1307,7 +1307,7 @@ Path to the color scheme file (in Base16 YAML format) used to theme everything.
 absolute path or string
 
 *Default:*
-`"/nix/store/h9mhxvr3q6f7ig3mhxbqk4qh7pzw12qf-base16-schemes-0-unstable-2026-01-15/share/themes/catppuccin-mocha.yaml"`
+`"/nix/store/v25x99faf6215piibvkzdwq8fc0jckzs-base16-schemes-0-unstable-2026-01-15/share/themes/catppuccin-mocha.yaml"`
 
 *Declared by:*
 - [modules/home/stylix.nix](stylix.nix)
