@@ -111,7 +111,7 @@ in
       };
 
       tpm.enable = lib.mkEnableOption "TPM2+PIN unlock for the LUKS volume" // {
-        description = "Lets you unlock the LUKS volume at boot with a short PIN instead of typing the full passphrase, using a key sealed inside the TPM2 chip. Turning this on switches the initrd to systemd and adds `tpm2-device=auto` to the device's crypttab options, so boot prompts for the PIN (the TPM rate-limits guesses) while the original passphrase keyslot stays available as a fallback. It doesn't bind to any boot-chain measurements (PCRs) — the PIN itself is the secret. This option only wires up the configuration; you still need to run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after installing to actually add the TPM+PIN keyslot, since the PIN can't be declared in config. Requires `luks.enable` to also be on.";
+        description = "Lets you unlock the LUKS volume at boot with a short PIN instead of typing the full passphrase, using a key sealed inside the TPM2 chip. Turning this on adds `tpm2-device=auto` to the device's crypttab options, so boot prompts for the PIN (the TPM rate-limits guesses) while the original passphrase keyslot stays available as a fallback. It doesn't bind to any boot-chain measurements (PCRs) — the PIN itself is the secret. This option only wires up the configuration; you still need to run `systemd-cryptenroll --tpm2-device=auto --tpm2-with-pin=yes <luks-partition>` once after installing to actually add the TPM+PIN keyslot, since the PIN can't be declared in config. Requires `luks.enable` to also be on.";
       };
     };
 
@@ -261,14 +261,13 @@ in
         directory = *
     '';
 
-    # TPM2+PIN unlock: the systemd-based initrd plus tpm2-device=auto on the
-    # crypttab entry disko generates for the LUKS device. The TPM+PIN keyslot is
-    # enrolled once post-install (systemd-cryptenroll --tpm2-device=auto
-    # --tpm2-with-pin=yes; see ft.diskBtrfs.luks.tpm.enable); until then boot
-    # falls back to the passphrase keyslot.
-    boot.initrd = lib.mkIf (cfg.luks.enable && cfg.luks.tpm.enable) {
-      systemd.enable = lib.mkDefault true;
-      luks.devices.${cfg.luks.label}.crypttabExtraOpts = [ "tpm2-device=auto" ];
+    # TPM2+PIN unlock: tpm2-device=auto on the crypttab entry disko generates
+    # for the LUKS device (the initrd is always systemd-based now). The TPM+PIN
+    # keyslot is enrolled once post-install (systemd-cryptenroll
+    # --tpm2-device=auto --tpm2-with-pin=yes; see ft.diskBtrfs.luks.tpm.enable);
+    # until then boot falls back to the passphrase keyslot.
+    boot.initrd.luks.devices = lib.mkIf (cfg.luks.enable && cfg.luks.tpm.enable) {
+      ${cfg.luks.label}.crypttabExtraOpts = [ "tpm2-device=auto" ];
     };
 
     environment.persistence."/persist" = lib.mkIf cfg.impermanence.enable {

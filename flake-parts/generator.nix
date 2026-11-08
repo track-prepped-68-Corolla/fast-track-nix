@@ -70,21 +70,10 @@ let
           inputs.microvm.nixosModules.host
           ../modules/nixos
           machine.path
-          {
-            nixpkgs.hostPlatform = lib.mkDefault machine.system;
-
-            # NixOS's Ventoy/USB boot support — the stage-1 handling of the
-            # `findiso=` kernel parameter that loop-mounts the ISO and its
-            # nix-store.squashfs (/nix/.ro-store) — exists only in the scripted
-            # initrd. Injected modules (e.g. the microVM host) can flip stage-1
-            # to systemd, which lacks that handling: the image then finds the
-            # medium by label but fails to mount /nix/.ro-store under Ventoy and
-            # drops to emergency mode. Force the scripted initrd so installer
-            # images boot from Ventoy and USB the way the stock NixOS installer
-            # ISO does. Safety invariant for image machines — mkForce overrides
-            # whatever an injected module set.
-            boot.initrd.systemd.enable = lib.mkForce false;
-          }
+          # Ventoy/GRUB loopback boot: resolves the ISO's `findiso=` kernel
+          # parameter in the systemd initrd (see the module for details).
+          ../modules/installer/iso-findiso.nix
+          { nixpkgs.hostPlatform = lib.mkDefault machine.system; }
         ];
       };
     in

@@ -215,7 +215,7 @@ modules/
     system/
   vm/                      # microVM guest-only modules (guest baseline, ft.vmSecrets),
                            # injected by flake-parts/vms.nix — NOT via the nixos hub
-  installer/               # kexec auto-install image module
+  installer/               # image-only modules: kexec auto-install, ISO findiso= (Ventoy)
   home/
     default.nix            # hub: listFilesRecursive — no manual imports
     home-core.nix          # home modules live as flat files directly here
