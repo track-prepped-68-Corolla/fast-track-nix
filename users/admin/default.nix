@@ -9,9 +9,15 @@ _:
 
   programs.git = {
     enable = true;
-    userName = "admin";
-    userEmail = "admin@fasttrack.os";
-    delta.enable = true;
+    settings.user = {
+      name = "admin";
+      email = "admin@fasttrack.os";
+    };
+  };
+
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
   };
 
   # ----------------------------------------------------------------------------
