@@ -91,9 +91,8 @@ in
 
     programs.git.enable = lib.mkDefault true;
 
-    programs.git.extraConfig = lib.mkDefault {
-      core.hooksPath = "${config.home.homeDirectory}/.config/git/hooks";
-    };
+    programs.git.settings.core.hooksPath =
+      lib.mkDefault "${config.home.homeDirectory}/.config/git/hooks";
 
     home.file = {
       ".config/git/hooks/pre-commit" = lib.mkDefault {

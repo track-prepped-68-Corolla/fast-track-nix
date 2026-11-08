@@ -11,7 +11,7 @@ in
 {
   options.ft.cachyos = {
     enable = lib.mkEnableOption "CachyOS optimized kernel" // {
-      description = "Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation.";
+      description = "Swaps the default kernel for a CachyOS build tuned for performance, pulled from the nix-cachyos flake input. Pick which build with `ft.cachyos.variant` (default: latest) — variants ending in `-x86_64-v3`, `-x86_64-v4`, or `-zen4` are tuned for specific CPU generations, and variants ending in `-lto` are compiled with link-time optimisation. No binary cache is configured, so the kernel is built from source on first use (expect a long build).";
     };
     variant = lib.mkOption {
       type = lib.types.enum [
@@ -64,10 +64,5 @@ in
       pkgs.linuxPackagesFor
         inputs.nix-cachyos.packages.${pkgs.stdenv.hostPlatform.system}."linux-cachyos-${cfg.variant}"
     );
-
-    nix.settings = {
-      extra-substituters = [ "https://attic.xuyh0120.win/lantian" ];
-      extra-trusted-public-keys = [ "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" ];
-    };
   };
 }
