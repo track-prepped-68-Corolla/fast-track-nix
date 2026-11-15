@@ -20,7 +20,7 @@ jobs:
       # No checkout or configurationFile: Renovate clones the repo and reads its
       # renovate.json as repo config. RENOVATE_REPOSITORIES tells the
       # self-hosted run which repo to process (it does nothing without it).
-      - uses: renovatebot/github-action@c314dda4a9a93b08239ec978f2043b9a433b9ac4 # v46.3.0
+      - uses: renovatebot/github-action@266fef21329c44765ad42f9dea1f01f5d2d91084 # v46.3.13
         with:
           token: ${{ secrets.RENOVATE_TOKEN }}
         env:
