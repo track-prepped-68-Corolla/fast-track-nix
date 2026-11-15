@@ -137,6 +137,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # PC host for the Steam Frame standalone shell (WiVRn server) — used by ft.frameShell.
+    frame-shell = {
+      url = "github:konsti219/frame-shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Declarative per-game Steam launch options, compat tools, and non-Steam
     # shortcuts — used by ft.steamConfig.
     steam-config-nix = {
