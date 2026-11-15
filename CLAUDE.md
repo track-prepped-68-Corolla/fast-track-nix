@@ -149,6 +149,7 @@ All options are two levels deep: `ft.<feature>.enable`. Every `ft.*` option is a
 | `ft.gaming` | Gaming stack (NixOS) / gaming companion tools (HM) |
 | `ft.wine` | Wine/Bottles compatibility stack (NixOS + HM) |
 | `ft.moonlight` | Moonlight game-stream host |
+| `ft.frameShell` | frame-shell PC host for the Steam Frame headset (WiVRn server user service, mDNS, uinput) |
 | `ft.keepass` | KeePassXC secret service |
 | `ft.theme` | System-wide theming via Stylix — Home Manager |
 | `ft.terminal` | Terminal stack — Home Manager |
