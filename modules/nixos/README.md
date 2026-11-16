@@ -15,6 +15,7 @@
 - [ft.diskBtrfs](#ftdiskbtrfs) — Sets up disk partitioning for a machine: a small 1 GiB boot partition (ESP) and a btrfs root split into subvolumes for `/home`, `/nix` (with copy-on-write turned off), `/src`, and `/.snapshots`, all using zstd compression. You can optionally wrap the btrfs partition in LUKS2 encryption. When `impermanence.enable` is on, the root subvolume becomes a tmpfs ramdisk that's wiped on every boot, with a separate `@persist` subvolume added at `/persist` to hold the state that should survive. `/src` is set up so members of the `wheel` group can write to it without `sudo` — it's owned `root:wheel` with permissions `2775` and a default ACL that grants group-write on everything created inside it, plus a repair pass at boot that fixes older files created before the ACL existed. Git's global `safe.directory` protection is also turned off system-wide, because every repository under `/src` gets placed there as root by `nixos-anywhere` during provisioning.
 - [ft.facter](#ftfacter) — Uses a hardware report to detect and configure kernel modules automatically, instead of a hand-written `hardware-configuration.nix`. Generate the report on the target machine by running `nixos-facter`, commit it to `machines/<name>/var/facter.json`, and point `ft.facter.reportPath` at it (e.g. `./var/facter.json`) from the machine's `default.nix`.
 - [ft.flatpak](#ftflatpak) — Turns on the system Flatpak service and adds the Flathub remote. Once enabled, `services.flatpak.packages` (provided by nix-flatpak) becomes the place to declare system-wide Flatpak apps — set it in any machine file, profile, or other module, and every definition merges together automatically. Pair this with `ft.flatpak.frontend.enable` to also get a graphical Flathub browser.
+- [ft.frameShell](#ftframeshell) — Runs the PC side of frame-shell, an unofficial standalone shell for the Valve Steam Frame headset: a WiVRn server started as a systemd user service with each graphical session, advertised over mDNS so the headset can find and pair with this machine. The headset side is installed separately on the device. x86_64-linux only. Exempt from VM smoke tests (hardware-dependent).
 - [ft.gaming](#ftgaming) — Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
 - [ft.gitops](#ftgitops) — Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.
 - [ft.gpu](#ftgpu) — Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
@@ -793,6 +794,78 @@ package
 
 *Declared by:*
 - [modules/nixos/services/flatpak.nix](services/flatpak.nix)
+
+## ft.frameShell
+
+Runs the PC side of frame-shell, an unofficial standalone shell for the Valve Steam Frame headset: a WiVRn server started as a systemd user service with each graphical session, advertised over mDNS so the headset can find and pair with this machine. The headset side is installed separately on the device. x86_64-linux only. Exempt from VM smoke tests (hardware-dependent).
+
+### ft.frameShell.autoStart
+
+Starts the frame-shell server automatically with each graphical session. When off, start it manually with `systemctl --user start frame-shell`.
+
+*Type:*
+boolean
+
+*Default:*
+`true`
+
+*Declared by:*
+- [modules/nixos/profiles/frame-shell.nix](profiles/frame-shell.nix)
+
+### ft.frameShell.enable
+
+Runs the PC side of frame-shell, an unofficial standalone shell for the Valve Steam Frame headset: a WiVRn server started as a systemd user service with each graphical session, advertised over mDNS so the headset can find and pair with this machine. The headset side is installed separately on the device. x86_64-linux only. Exempt from VM smoke tests (hardware-dependent).
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/profiles/frame-shell.nix](profiles/frame-shell.nix)
+
+### ft.frameShell.inputUsers
+
+Users whose sessions receive the headset's keyboard and mouse input. They are added to the uinput group.
+
+*Type:*
+list of string
+
+*Default:*
+`[ ]`
+
+*Declared by:*
+- [modules/nixos/profiles/frame-shell.nix](profiles/frame-shell.nix)
+
+### ft.frameShell.openFirewall
+
+Opens WiVRn's port (9757, TCP and UDP) so the headset can connect over the local network.
+
+*Type:*
+boolean
+
+*Default:*
+`true`
+
+*Declared by:*
+- [modules/nixos/profiles/frame-shell.nix](profiles/frame-shell.nix)
+
+### ft.frameShell.openvrCompat
+
+Points the server at frame-shell's patched xrizer build, so OpenVR (SteamVR) games run on the headset through OpenXR.
+
+*Type:*
+boolean
+
+*Default:*
+`true`
+
+*Declared by:*
+- [modules/nixos/profiles/frame-shell.nix](profiles/frame-shell.nix)
 
 ## ft.gaming
 
