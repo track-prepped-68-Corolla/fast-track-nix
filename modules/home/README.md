@@ -1281,7 +1281,7 @@ The package that provides the serif font.
 package
 
 *Default:*
-`<derivation ibm-plex-0-unstable-2026-07-30>`
+`<derivation ibm-plex-0-unstable-2026-11-18>`
 
 *Declared by:*
 - [modules/home/stylix.nix](stylix.nix)
