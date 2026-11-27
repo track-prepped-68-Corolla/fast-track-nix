@@ -38,6 +38,24 @@ in
       };
     };
 
+    controllerWake = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Lets the USB controller receivers listed in `usbIds` wake the system from suspend, using a udev rule that turns on their `power/wakeup`. Linux leaves wakeup off for anything that isn't a keyboard, so without this a receiver's remote-wakeup signal is ignored. The receiver's firmware must send that signal, and USB wake from S3 must be allowed in firmware/BIOS. Exempt from VM smoke tests (hardware-dependent).";
+      };
+
+      usbIds = lib.mkOption {
+        type = lib.types.listOf (lib.types.strMatching "[0-9a-f]{4}:[0-9a-f]{4}");
+        default = [
+          "28de:1304"
+          "28de:1305"
+        ];
+        defaultText = lib.literalExpression ''[ "28de:1304" "28de:1305" ]'';
+        description = "USB `vendor:product` IDs (lowercase hex) of the controller receivers allowed to wake the system. The defaults are Valve's Steam Controller Puck and Steam Machine internal receiver.";
+      };
+    };
+
     bigPicture = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -46,6 +64,18 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    services.udev.extraRules = lib.mkIf cfg.controllerWake.enable (
+      lib.concatMapStrings (
+        id:
+        let
+          parts = lib.splitString ":" id;
+        in
+        ''
+          ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="${builtins.elemAt parts 0}", ATTR{idProduct}=="${builtins.elemAt parts 1}", TEST=="power/wakeup", ATTR{power/wakeup}="enabled"
+        ''
+      ) cfg.controllerWake.usbIds
+    );
+
     programs = {
       gamemode.enable = lib.mkDefault true;
 
