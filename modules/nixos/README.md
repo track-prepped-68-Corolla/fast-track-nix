@@ -1014,6 +1014,19 @@ boolean
 *Declared by:*
 - [modules/nixos/services/gitops.nix](services/gitops.nix)
 
+### ft.gitops.homeUsers
+
+Users whose standalone Home Manager configuration is activated automatically at boot when they don't have a Home Manager profile yet, using `homeConfigurations."<user>@<system>"` from the first entry in `remotes` at `deployBranch`. After that first switch, the user's own Home Manager `ft.gitops` service keeps them in sync, and this does nothing. Only works with a publicly readable first remote. Exempt from VM smoke tests (needs network access to fetch the flake).
+
+*Type:*
+list of string
+
+*Default:*
+`[ ]`
+
+*Declared by:*
+- [modules/nixos/services/gitops.nix](services/gitops.nix)
+
 ### ft.gitops.pollPeriod
 
 How often, in seconds, comin checks each remote for new commits (comin's remotes[].poller.period).
