@@ -884,6 +884,32 @@ boolean
 *Declared by:*
 - [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
 
+### ft.gaming.controllerWake.enable
+
+Lets the USB controller receivers listed in `usbIds` wake the system from suspend, using a udev rule that turns on their `power/wakeup`. Linux leaves wakeup off for anything that isn't a keyboard, so without this a receiver's remote-wakeup signal is ignored. The receiver's firmware must send that signal, and USB wake from S3 must be allowed in firmware/BIOS. Exempt from VM smoke tests (hardware-dependent).
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Declared by:*
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
+
+### ft.gaming.controllerWake.usbIds
+
+USB `vendor:product` IDs (lowercase hex) of the controller receivers allowed to wake the system. The defaults are Valve's Steam Controller Puck and Steam Machine internal receiver.
+
+*Type:*
+list of string matching the pattern [0-9a-f]{4}:[0-9a-f]{4}
+
+*Default:*
+`[ "28de:1304" "28de:1305" ]`
+
+*Declared by:*
+- [modules/nixos/profiles/gaming.nix](profiles/gaming.nix)
+
 ### ft.gaming.enable
 
 Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
