@@ -19,6 +19,7 @@
 - [ft.gaming](#ftgaming) — Sets up the Steam gaming stack: Steam itself plus GameMode, gamescope, MangoHud, Proton-GE, and a curated set of launchers and tools. Turn on ft.gaming.bigPicture to have Steam boot straight into Big Picture mode using a gamescope session.
 - [ft.gitops](#ftgitops) — Runs comin, a daemon that watches your git remotes and automatically deploys this machine's own configuration whenever new commits land: pushes to `deployBranch` are applied permanently with `switch`, while comin's per-host `testing-<hostname>` branch is applied only temporarily with `test` (a reboot reverts it). You can list multiple remotes and comin polls all of them, so no single remote being down stops deployments.
 - [ft.gpu](#ftgpu) — Sets up graphics drivers for NVIDIA, AMD, or Intel GPUs. It can automatically detect which vendor you have and configure PRIME offloading for hybrid (Optimus) laptops with both an integrated and a discrete GPU.
+- [ft.isponsorblocktv](#ftisponsorblocktv) — Runs iSponsorBlockTV as a system service that skips SponsorBlock segments, and optionally skips or mutes ads, on YouTube TV clients paired with it (including YouTube's TV web interface at youtube.com/tv). It does not block ads: unskippable ads are muted at most. Pair a device with `sudo ft-isponsorblocktv-pair`. Exempt from VM smoke tests (needs network access to YouTube and SponsorBlock).
 - [ft.keepass](#ftkeepass) — Installs KeePassXC and turns off the GNOME Keyring so KeePassXC is the only place secrets are stored. This matters on desktops that mix components from different environments, where GNOME Keyring's auto-unlock could otherwise bypass your hardware key authentication.
 - [ft.komodo](#ftkomodo) — Deploys Komodo's standard stack (Core, Periphery, and the FerretDB/Postgres database) using docker-compose, on top of ft.containers. Requires ft.containers.enable with compose.enable turned on. Exempt from VM smoke tests, since it pulls container images from ghcr.io at runtime.
 - [ft.komodoApply](#ftkomodoapply)
@@ -1312,6 +1313,52 @@ one of "nvidia", "amd", "intel"
 
 *Declared by:*
 - [modules/nixos/hardware/gpu.nix](hardware/gpu.nix)
+
+## ft.isponsorblocktv
+
+Runs iSponsorBlockTV as a system service that skips SponsorBlock segments, and optionally skips or mutes ads, on YouTube TV clients paired with it (including YouTube's TV web interface at youtube.com/tv). It does not block ads: unskippable ads are muted at most. Pair a device with `sudo ft-isponsorblocktv-pair`. Exempt from VM smoke tests (needs network access to YouTube and SponsorBlock).
+
+### ft.isponsorblocktv.devicesFile
+
+Path to a JSON list of paired devices (iSponsorBlockTV's `devices` config entries). Each device's `screen_id` can control that YouTube session, so treat it as a secret: point this at a sops secret's path, or keep the default and fill it with `sudo ft-isponsorblocktv-pair`. The service waits until this file exists.
+
+*Type:*
+string
+
+*Default:*
+`"/var/lib/isponsorblocktv/devices.json"`
+
+*Declared by:*
+- [modules/nixos/services/isponsorblocktv.nix](services/isponsorblocktv.nix)
+
+### ft.isponsorblocktv.enable
+
+Runs iSponsorBlockTV as a system service that skips SponsorBlock segments, and optionally skips or mutes ads, on YouTube TV clients paired with it (including YouTube's TV web interface at youtube.com/tv). It does not block ads: unskippable ads are muted at most. Pair a device with `sudo ft-isponsorblocktv-pair`. Exempt from VM smoke tests (needs network access to YouTube and SponsorBlock).
+
+*Type:*
+boolean
+
+*Default:*
+`false`
+
+*Example:*
+`true`
+
+*Declared by:*
+- [modules/nixos/services/isponsorblocktv.nix](services/isponsorblocktv.nix)
+
+### ft.isponsorblocktv.settings
+
+Non-secret iSponsorBlockTV configuration (its config.json keys, e.g. `skip_categories`, `skip_ads`, `mute_ads`, `auto_play`, `join_name`), merged with the paired devices from `devicesFile`. The framework defaults each of `skip_categories`, `skip_ads`, `mute_ads` and `auto_play` individually, so setting one key keeps the others.
+
+*Type:*
+JSON value
+
+*Default:*
+`{ }`
+
+*Declared by:*
+- [modules/nixos/services/isponsorblocktv.nix](services/isponsorblocktv.nix)
 
 ## ft.keepass
 
