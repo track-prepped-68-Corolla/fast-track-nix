@@ -1367,7 +1367,7 @@ attribute set of (submodule)
 Overrides which browser launches this particular webapp. Leave unset to use `ft.webapps.browser`.
 
 *Type:*
-null or one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium"
+null or one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium", "brave-origin"
 
 *Default:*
 `null`
@@ -1441,7 +1441,7 @@ string
 Which Chromium-family browser to use for launching webapps in `--app=` mode. Only Chromium-family browsers support this; Firefox isn't offered here since it needs the separate PWAsForFirefox setup to do something similar.
 
 *Type:*
-one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium"
+one of "chromium", "google-chrome", "brave", "vivaldi", "ungoogled-chromium", "brave-origin"
 
 *Default:*
 `"chromium"`

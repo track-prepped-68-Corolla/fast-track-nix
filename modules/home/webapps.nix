@@ -18,6 +18,7 @@ let
     "brave"
     "vivaldi"
     "ungoogled-chromium"
+    "brave-origin"
   ];
 
   # The enum values already match the nixpkgs attribute names; only the binary
@@ -28,6 +29,7 @@ let
     brave = "brave";
     vivaldi = "vivaldi";
     ungoogled-chromium = "chromium";
+    brave-origin = "brave-origin";
   };
 
   browserFor = app: if app.browser != null then app.browser else cfg.browser;
