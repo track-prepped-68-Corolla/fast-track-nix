@@ -38,6 +38,26 @@ let
   faviconPath = id: "${iconDir}/${id}.png";
 
   hostOf = url: lib.head (lib.splitString "/" (lib.last (lib.splitString "://" url)));
+
+  # One launcher per webapp, shared by its desktop entry and anything else that
+  # needs to start it (e.g. a Steam shortcut). A script rather than a raw Exec
+  # line so extraArgs containing spaces (a --user-agent=...) are quoted safely.
+  launcherFor =
+    id: app:
+    pkgs.writeShellScriptBin "ft-webapp-${id}" ''
+      exec ${
+        lib.escapeShellArgs (
+          [
+            (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
+            "--app=${app.url}"
+            "--user-data-dir=${profileDir id}"
+            "--class=ft-webapp-${id}"
+          ]
+          ++ app.extraArgs
+        )
+      } "$@"
+    '';
+  launchers = lib.mapAttrs launcherFor cfg.apps;
 in
 {
   options.ft.webapps = {
@@ -82,16 +102,24 @@ in
               default = [ "Network" ];
               description = "Desktop-entry categories that control where this webapp shows up in application menus.";
             };
+
+            extraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+              description = "Extra command-line flags passed to this webapp's browser, after the built-in `--app`, `--user-data-dir` and `--class` flags, e.g. `--start-fullscreen` or `--user-agent=...`. Each list item is one argument, so values containing spaces need no extra quoting.";
+            };
           };
         }
       );
       default = { };
-      description = "The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class.";
+      description = "The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class. Each one also gets an `ft-webapp-<id>` command on your PATH that launches it the same way its desktop entry does, for use from other launchers such as a Steam shortcut.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = lib.mkDefault (map (b: pkgs.${b}) usedBrowsers);
+    # Unwrapped so these merge with home.packages from other modules instead
+    # of being replaced by them (see CLAUDE.md on mkDefault and lists).
+    home.packages = map (b: pkgs.${b}) usedBrowsers ++ lib.attrValues launchers;
 
     xdg.dataFile = lib.mapAttrs' (
       id: app:
@@ -103,12 +131,7 @@ in
               desktopName = app.name;
               inherit (app) categories;
               icon = if app.icon != null then toString app.icon else faviconPath id;
-              exec = lib.concatStringsSep " " [
-                (lib.getExe' pkgs.${browserFor app} browserBins.${browserFor app})
-                "--app=${app.url}"
-                "--user-data-dir=${profileDir id}"
-                "--class=ft-webapp-${id}"
-              ];
+              exec = lib.getExe launchers.${id};
             };
           in
           "${item}/share/applications/${id}.desktop";

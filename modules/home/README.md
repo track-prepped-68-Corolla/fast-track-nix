@@ -1351,7 +1351,7 @@ Creates application-launcher shortcuts that open any website in its own app-like
 
 ### ft.webapps.apps
 
-The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class.
+The set of websites to expose as desktop launchers, keyed by a short id used for the app's isolated profile folder and window class. Each one also gets an `ft-webapp-<id>` command on your PATH that launches it the same way its desktop entry does, for use from other launchers such as a Steam shortcut.
 
 *Type:*
 attribute set of (submodule)
@@ -1386,6 +1386,19 @@ list of string
 `[
   "Network"
 ]`
+
+*Declared by:*
+- [modules/home/webapps.nix](webapps.nix)
+
+### ft.webapps.apps.<name>.extraArgs
+
+Extra command-line flags passed to this webapp's browser, after the built-in `--app`, `--user-data-dir` and `--class` flags, e.g. `--start-fullscreen` or `--user-agent=...`. Each list item is one argument, so values containing spaces need no extra quoting.
+
+*Type:*
+list of string
+
+*Default:*
+`[ ]`
 
 *Declared by:*
 - [modules/home/webapps.nix](webapps.nix)
