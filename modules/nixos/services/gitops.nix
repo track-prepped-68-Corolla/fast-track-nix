@@ -116,6 +116,50 @@ let
       echo 0 > "$state"
     fi
   '';
+
+  # First-time activation of standalone Home Manager for cfg.homeUsers. A
+  # user's own Home Manager ft.gitops service only exists once their Home
+  # Manager config has been activated at least once, and nothing else does
+  # that first activation - so a freshly provisioned kiosk user would never
+  # start syncing. This runs that first `home-manager switch` against the same
+  # repo and branch comin deploys, and is a no-op once a profile exists.
+  firstRemote = lib.head cfg.remotes;
+  homeFlakeRef =
+    let
+      inherit (firstRemote) url;
+    in
+    "${if lib.hasPrefix "git+" url then url else "git+${url}"}?ref=${cfg.deployBranch}";
+  homeSystem = pkgs.stdenv.hostPlatform.system;
+
+  homeBootstrapScript = pkgs.writeShellScript "ft-home-bootstrap" ''
+    set -euo pipefail
+    user="$1"
+    home=$(getent passwd "$user" | cut -d: -f6)
+
+    for profile in "$home/.local/state/nix/profiles/home-manager" "/nix/var/nix/profiles/per-user/$user/home-manager"; do
+      if [ -e "$profile" ]; then
+        echo "ft-home-bootstrap: $user already has a Home Manager profile ($profile), nothing to do"
+        exit 0
+      fi
+    done
+
+    export HOME="$home" USER="$user"
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    runtime="/run/user/$(id -u)"
+    if [ -d "$runtime" ]; then
+      # The user's session is up: let activation (re)load their user units.
+      export XDG_RUNTIME_DIR="$runtime" DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus"
+    fi
+
+    echo "ft-home-bootstrap: activating ${homeFlakeRef}#$user@${homeSystem}"
+    # -b: back up pre-existing files (e.g. a hand-made autostart entry)
+    # instead of aborting the first activation over them.
+    home-manager switch -b hm-bak --flake "${homeFlakeRef}#$user@${homeSystem}"
+
+    if [ -n "''${XDG_RUNTIME_DIR:-}" ]; then
+      systemctl --user start ft-gitops.service || true
+    fi
+  '';
 in
 {
   imports = [ inputs.comin.nixosModules.comin ];
@@ -167,6 +211,12 @@ in
       description = "Paths to armored GPG public key files; comin only deploys a commit if it's signed by one of these (comin's gpgPublicKeyPaths). Leaving this empty disables signature checking, meaning any commit pushed to a polled branch deploys automatically — strongly discouraged outside of testing.";
     };
 
+    homeUsers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Users whose standalone Home Manager configuration is activated automatically at boot when they don't have a Home Manager profile yet, using `homeConfigurations.\"<user>@<system>\"` from the first entry in `remotes` at `deployBranch`. After that first switch, the user's own Home Manager `ft.gitops` service keeps them in sync, and this does nothing. Only works with a publicly readable first remote. Exempt from VM smoke tests (needs network access to fetch the flake).";
+    };
+
     retry = {
       enable =
         lib.mkEnableOption "automatic retry of failed comin evaluations, builds, and deployments"
@@ -204,12 +254,19 @@ in
         assertion = tokenRemotes == [ ] || config.ft.sops.enable;
         message = "ft.gitops remotes with a tokenSecret require ft.sops.enable = true.";
       }
-    ];
+    ]
+    ++ map (user: {
+      assertion = config.users.users ? ${user};
+      message = "ft.gitops.homeUsers lists \"${user}\", which is not a user on this machine.";
+    }) cfg.homeUsers;
 
     warnings =
       lib.optional (cfg.signingKeys == [ ])
         "ft.gitops.signingKeys is empty: comin will deploy unsigned commits unattended. Set signingKeys to a list of trusted GPG public keys."
-      ++ lib.optional cfg.autoPromote.enable "ft.gitops.autoPromote.enable is on: successful deployBranch deployments become the bootloader default automatically, with no human confirmation step.";
+      ++ lib.optional cfg.autoPromote.enable "ft.gitops.autoPromote.enable is on: successful deployBranch deployments become the bootloader default automatically, with no human confirmation step."
+      ++
+        lib.optional (cfg.homeUsers != [ ] && cfg.remotes != [ ] && hasToken firstRemote)
+          "ft.gitops.homeUsers: the first remote uses a tokenSecret, but the Home Manager bootstrap fetches anonymously, so it will fail on a private repository.";
 
     # Declare a sops secret for each token-authenticated remote so comin's
     # access_token_path resolves to a decrypted credential at runtime.
@@ -228,6 +285,36 @@ in
     # lacks a path (e.g. an emergency fix pushed to the Codeberg fallback that no
     # Forgejo runner pre-built), build locally instead of failing.
     nix.settings.fallback = lib.mkDefault true;
+
+    systemd.services."ft-home-bootstrap@" = lib.mkIf (cfg.homeUsers != [ ]) {
+      description = "First-time standalone Home Manager activation for %i (ft.gitops.homeUsers)";
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+      path = [
+        pkgs.home-manager
+        config.nix.package
+        pkgs.git
+        pkgs.getent
+        pkgs.coreutils
+        config.systemd.package
+      ];
+      # Retry forever (e.g. network or a cache not reachable yet) instead of
+      # hitting systemd's start-rate limit.
+      unitConfig.StartLimitIntervalSec = 0;
+      serviceConfig = {
+        Type = "oneshot";
+        User = "%i";
+        ExecStart = "${homeBootstrapScript} %i";
+        Restart = "on-failure";
+        RestartSec = "5min";
+        # A first build can take a long time; don't time it out.
+        TimeoutStartSec = "infinity";
+      };
+    };
+
+    # Not ordered before the display manager: a long first build must not
+    # hold up the login screen.
+    systemd.targets.multi-user.wants = map (user: "ft-home-bootstrap@${user}.service") cfg.homeUsers;
 
     systemd.services.ft-gitops-retry-watchdog = lib.mkIf cfg.retry.enable {
       description = "Restart comin after an eval, build, or deployment failure (ft.gitops.retry)";
